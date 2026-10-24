@@ -7,12 +7,12 @@ export function Hero() {
       <div id="top" className="flex flex-wrap items-center gap-16">
         <div className="min-w-0 flex-[1_1_440px]">
           <Eyebrow>Policy-bound agent payments</Eyebrow>
-          <h1 className="text-[clamp(42px,6.2vw,72px)] font-semibold leading-[1.02] tracking-display">
+          <h1 className="text-[clamp(42px,6.2vw,72px)] font-semibold leading-[1.02] tracking-display text-ink dark:text-white">
             Steer your agents,
             <br />
-            <span className="text-[#7A8494]">don&apos;t trust them.</span>
+            <span className="text-[#7A8494] dark:text-[#9BA3AF]">don&apos;t trust them.</span>
           </h1>
-          <p className="mt-7 max-w-[480px] text-[19px] leading-[1.6] text-mute">
+          <p className="mt-7 max-w-[480px] text-[19px] leading-[1.6] text-mute dark:text-dark-mute">
             Bridle lets an AI agent spend across chains without ever holding a
             key. You set the limits once, and a contract enforces them.
           </p>
@@ -22,7 +22,7 @@ export function Hero() {
             </PrimaryButton>
             <SecondaryButton href="#how">Read how it works</SecondaryButton>
           </div>
-          <p className="mt-7 font-mono text-xs text-mute">
+          <p className="mt-7 font-mono text-xs text-mute dark:text-dark-mute">
             Built on NEAR Chain Signatures and Intents
           </p>
         </div>

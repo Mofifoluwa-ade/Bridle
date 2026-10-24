@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect } from "react";
 import { Proposal } from "@/types/mandate";
 import { computeSlashBreakdown } from "@/lib/mandate-engine";
 
@@ -14,6 +17,19 @@ export function WatcherSlashModal({
   onClose,
   onConfirm,
 }: WatcherSlashModalProps) {
+  useEffect(() => {
+    if (isOpen && proposal) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+      };
+    }
+  }, [isOpen, proposal]);
+
   if (!isOpen || !proposal) return null;
 
   const bondAmount = proposal.agentBondLocked || 1.0;

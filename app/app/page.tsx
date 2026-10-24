@@ -13,6 +13,7 @@ import { ProposalDetailModal } from "@/components/app/ProposalDetailModal";
 import { ManualProposalModal } from "@/components/app/ManualProposalModal";
 import { WatcherSlashModal } from "@/components/app/WatcherSlashModal";
 import { GettingStartedModal } from "@/components/app/GettingStartedModal";
+import { AppSettings } from "@/components/app/AppSettings";
 
 export default function AppPage() {
   const [mandate, setMandate] = useState<Mandate>(DEFAULT_MANDATE);
@@ -243,19 +244,26 @@ export default function AppPage() {
                 ? "Policy monitor"
                 : activeTab === "builder"
                 ? "Mandate builder"
-                : "Verification & limits"}
+                : activeTab === "threats"
+                ? "Verification & limits"
+                : "Settings"}
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-mute dark:text-dark-mute">
               {activeTab === "monitor"
                 ? "Your agent's spending leash, approved limits, and multi-chain execution."
                 : activeTab === "builder"
                 ? "Configure deterministic policy rules signed once by the owner."
-                : "Formal threat model and cryptographically verified boundaries."}
+                : activeTab === "threats"
+                ? "Formal threat model and cryptographically verified boundaries."
+                : "Configure interface appearance, network endpoints, and protocol accounts."}
             </p>
           </div>
 
-          {/* Hero Card: Daily Budget & Actions (Matching Gloam's Hero Card) */}
-          <div className="mb-6 rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 sm:p-7 shadow-sm transition-colors">
+          {/* Conditional Overview Cards (Hidden on Settings) */}
+          {activeTab !== "settings" && (
+            <>
+              {/* Hero Card: Daily Budget & Actions (Matching Gloam's Hero Card) */}
+              <div className="mb-6 rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 sm:p-7 shadow-sm transition-colors">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5">
                 <span className="text-xs font-medium text-mute dark:text-dark-mute">
@@ -376,6 +384,8 @@ export default function AppPage() {
               </p>
             </div>
           </div>
+        </>
+      )}
 
           {/* Tab Content */}
           {activeTab === "monitor" && (
@@ -488,6 +498,30 @@ export default function AppPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {activeTab === "settings" && (
+            <AppSettings
+              theme={theme}
+              onSelectTheme={(t) => {
+                setTheme(t);
+                try {
+                  localStorage.setItem("bridle_theme", t);
+                } catch {}
+                document.documentElement.classList.toggle("dark", t === "dark");
+                showNotification(`Theme set to ${t} mode.`);
+              }}
+              ownerAccount={mandate.owner}
+              agentAccount={mandate.agent}
+              onOpenGettingStarted={() => setIsGettingStartedOpen(true)}
+              onResetGuide={() => {
+                try {
+                  localStorage.removeItem("bridle_hide_getting_started");
+                } catch {}
+                setIsGettingStartedOpen(true);
+                showNotification("Getting started guide reset.");
+              }}
+            />
           )}
         </main>
       </div>

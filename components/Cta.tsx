@@ -12,11 +12,11 @@ export function Cta() {
         <LogoMark size={44} className="mx-auto text-accent" />
         <h2
           id="cta-title"
-          className="mx-auto mt-7 max-w-[760px] text-[clamp(38px,5.4vw,64px)] font-semibold leading-[1.04] tracking-display"
+          className="mx-auto mt-7 max-w-[760px] text-[clamp(38px,5.4vw,64px)] font-semibold leading-[1.04] tracking-display text-ink dark:text-white"
         >
           Give your agent a bridle.
         </h2>
-        <p className="mx-auto mt-[22px] max-w-[460px] text-[19px] leading-[1.6] text-mute">
+        <p className="mx-auto mt-[22px] max-w-[460px] text-[19px] leading-[1.6] text-mute dark:text-dark-mute">
           Set the limits once. Let it work.
         </p>
         <div className="mt-10 flex flex-wrap justify-center gap-3">

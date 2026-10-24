@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect } from "react";
 import { Proposal } from "@/types/mandate";
 
 type ProposalDetailModalProps = {
@@ -9,6 +12,19 @@ export function ProposalDetailModal({
   proposal,
   onClose,
 }: ProposalDetailModalProps) {
+  useEffect(() => {
+    if (proposal) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+      };
+    }
+  }, [proposal]);
+
   if (!proposal) return null;
 
   return (

@@ -25,18 +25,18 @@ export function HowItWorks() {
         <Eyebrow>How it works</Eyebrow>
         <h2
           id="how-title"
-          className="max-w-[720px] text-[clamp(30px,4.2vw,46px)] font-semibold leading-[1.08] tracking-heading"
+          className="max-w-[720px] text-[clamp(30px,4.2vw,46px)] font-semibold leading-[1.08] tracking-heading text-ink dark:text-white"
         >
           One mandate. Four fields. No keys.
         </h2>
         <ol className="mt-16 grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-10">
           {steps.map((s) => (
-            <li key={s.n} className="border-t border-rule pt-6">
-              <span className="font-mono text-[13px] text-mute">{s.n}</span>
-              <h3 className="mb-2.5 mt-3.5 text-2xl font-semibold tracking-[-0.02em]">
+            <li key={s.n} className="border-t border-rule dark:border-dark-border pt-6">
+              <span className="font-mono text-[13px] text-mute dark:text-dark-mute">{s.n}</span>
+              <h3 className="mb-2.5 mt-3.5 text-2xl font-semibold tracking-[-0.02em] text-ink dark:text-white">
                 {s.title}
               </h3>
-              <p className="text-base leading-[1.65] text-mute">{s.body}</p>
+              <p className="text-base leading-[1.65] text-mute dark:text-dark-mute">{s.body}</p>
             </li>
           ))}
         </ol>

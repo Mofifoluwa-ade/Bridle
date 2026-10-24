@@ -67,18 +67,18 @@ function StatusIcon({ kind }: { kind: FeedItem["kind"] }) {
 export function MandateCard() {
   return (
     <div>
-      <div className="rounded-3xl border border-line bg-white p-8">
+      <div className="rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-8 shadow-sm transition-colors text-ink dark:text-dark-text">
         <div className="flex items-center justify-between gap-3">
-          <span className="font-mono text-xs uppercase tracking-[0.1em] text-mute">
+          <span className="font-mono text-xs uppercase tracking-[0.1em] text-mute dark:text-dark-mute">
             Mandate
           </span>
-          <span className="inline-flex items-center gap-2 rounded-full bg-accent-tint px-3 py-1.5 text-[13px] font-semibold text-accent">
+          <span className="inline-flex items-center gap-2 rounded-full bg-accent-tint border border-accent/20 px-3 py-1.5 text-[13px] font-semibold text-accent">
             <span className="h-2 w-2 rounded-full bg-accent" />
             Active
           </span>
         </div>
 
-        <p className="mt-5 text-[25px] font-medium leading-[1.3] tracking-[-0.02em]">
+        <p className="mt-5 text-[25px] font-medium leading-[1.3] tracking-[-0.02em] text-ink dark:text-white">
           Up to $50 a day, to three approved recipients. Pause anything over
           $20.
         </p>
@@ -87,15 +87,15 @@ export function MandateCard() {
           {["Base", "Solana", "USDC"].map((chip) => (
             <span
               key={chip}
-              className="rounded-full border border-line px-3 py-1.5 text-[13px] text-mute"
+              className="rounded-full border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-3 py-1.5 text-[13px] text-mute dark:text-dark-mute"
             >
               {chip}
             </span>
           ))}
         </div>
 
-        <div className="mb-2 mt-7 h-px bg-line" />
-        <span className="mb-1 block font-mono text-xs uppercase tracking-[0.1em] text-mute">
+        <div className="mb-2 mt-7 h-px bg-line dark:bg-dark-border" />
+        <span className="mb-1 block font-mono text-xs uppercase tracking-[0.1em] text-mute dark:text-dark-mute">
           Live feed
         </span>
 
@@ -104,7 +104,7 @@ export function MandateCard() {
             <li
               key={item.title}
               className={`flex items-center gap-3.5 py-4 ${
-                i < feed.length - 1 ? "border-b border-line" : "pb-1"
+                i < feed.length - 1 ? "border-b border-line dark:border-dark-border" : "pb-1"
               }`}
             >
               <div
@@ -113,12 +113,12 @@ export function MandateCard() {
                 <StatusIcon kind={item.kind} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[15px] font-semibold">{item.title}</div>
-                <div className="text-[13px] text-mute">{item.detail}</div>
+                <div className="text-[15px] font-semibold text-ink dark:text-white">{item.title}</div>
+                <div className="text-[13px] text-mute dark:text-dark-mute">{item.detail}</div>
               </div>
               <div
                 className={`font-mono text-sm font-medium ${
-                  item.kind === "blocked" ? "text-mute" : ""
+                  item.kind === "blocked" ? "text-mute dark:text-dark-mute" : "text-ink dark:text-white"
                 }`}
               >
                 {item.amount}
@@ -127,10 +127,10 @@ export function MandateCard() {
           ))}
         </ul>
       </div>
-      <p className="mt-3.5 text-center text-[12.5px] text-mute">
+      <p className="mt-3.5 text-center text-[12.5px] text-mute dark:text-dark-mute">
         <a
           href="/app"
-          className="font-medium text-ink underline transition-colors hover:text-accent"
+          className="font-medium text-ink dark:text-white underline transition-colors hover:text-accent dark:hover:text-accent"
         >
           Open policy monitor →
         </a>

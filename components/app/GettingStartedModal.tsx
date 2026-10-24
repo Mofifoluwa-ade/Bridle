@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type GettingStartedModalProps = {
   isOpen: boolean;
@@ -27,6 +27,19 @@ export function GettingStartedModal({
 }: GettingStartedModalProps) {
   const [completedSteps, setCompletedSteps] = useState<number[]>([1]);
 
+  // Lock background scrolling completely on body and documentElement when modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const steps: Step[] = [
@@ -40,7 +53,7 @@ export function GettingStartedModal({
       id: 2,
       title: "Sign your agent's mandate",
       description:
-        "Define caps, cooling thresholds, and allowlisted addresses. The agent never holds a private key.",
+        "Define caps, cooling thresholds, and allowlisted addresses. The agent never holds a key.",
       actionText: "Configure",
       isDone: completedSteps.includes(2),
     },
@@ -56,7 +69,7 @@ export function GettingStartedModal({
       id: 4,
       title: "Test policy enforcement",
       description:
-        "Dispatch a legitimate payment or simulate a prompt-injection overspend to verify the leash.",
+        "Dispatch a legitimate spend or simulate prompt-injection to verify limits.",
       actionText: "Test spend",
       isDone: completedSteps.includes(4),
     },
@@ -98,14 +111,14 @@ export function GettingStartedModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/75 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto"
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-[460px] rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 sm:p-7 shadow-2xl text-ink dark:text-dark-text transition-colors">
+      <div className="relative w-full max-w-[420px] my-auto max-h-[min(540px,calc(100vh-2rem))] flex flex-col rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 shadow-2xl text-ink dark:text-dark-text transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute font-semibold">
+        <div className="flex items-center justify-between flex-none">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-mute dark:text-dark-mute font-semibold">
             {doneCount} OF {steps.length} DONE
           </span>
           <button
@@ -118,28 +131,30 @@ export function GettingStartedModal({
           </button>
         </div>
 
-        <h2 className="text-2xl font-semibold tracking-[-0.03em] text-ink dark:text-white mt-2">
-          Getting started
-        </h2>
-        <p className="text-xs text-mute dark:text-dark-mute mt-1">
-          A few steps to get going. Each one takes a minute.
-        </p>
+        <div className="flex-none mt-1">
+          <h2 className="text-lg sm:text-xl font-semibold tracking-[-0.03em] text-ink dark:text-white">
+            Getting started
+          </h2>
+          <p className="text-xs text-mute dark:text-dark-mute mt-0.5">
+            A few steps to get going. Each one takes a minute.
+          </p>
+        </div>
 
         {/* Progress Bar */}
-        <div className="h-1 w-full bg-line dark:bg-dark-border rounded-full mt-4 overflow-hidden">
+        <div className="h-1 w-full bg-line dark:bg-dark-border rounded-full mt-2.5 overflow-hidden flex-none">
           <div
             className="h-full bg-ink dark:bg-white transition-all duration-300"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        {/* Steps List */}
-        <div className="mt-6 space-y-4">
+        {/* Steps List (Scrollable if screen is extremely short, otherwise fits cleanly) */}
+        <div className="mt-2.5 space-y-1.5 overflow-y-auto max-h-[38vh] sm:max-h-[42vh] pr-0.5">
           {steps.map((step) => {
             return (
               <div
                 key={step.id}
-                className="flex items-start justify-between gap-3.5 p-3 rounded-2xl hover:bg-paper dark:hover:bg-dark-card-hover/50 transition-colors"
+                className="flex items-start justify-between gap-2.5 p-2 rounded-xl hover:bg-paper dark:hover:bg-dark-card-hover/50 transition-colors"
               >
                 {/* Left: Checkmark or Number */}
                 <div className="pt-0.5">
@@ -147,13 +162,13 @@ export function GettingStartedModal({
                     <button
                       type="button"
                       onClick={() => toggleStepDone(step.id)}
-                      className="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-white dark:bg-white dark:text-ink text-[11px] font-bold"
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-white dark:bg-white dark:text-ink text-[10px] font-bold"
                       title="Mark incomplete"
                     >
                       ✓
                     </button>
                   ) : (
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full border border-line dark:border-dark-mute text-[11px] font-medium text-mute dark:text-dark-mute">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full border border-line dark:border-dark-mute text-[10px] font-medium text-mute dark:text-dark-mute">
                       {step.id}
                     </div>
                   )}
@@ -162,13 +177,13 @@ export function GettingStartedModal({
                 {/* Middle: Title & Subtitle */}
                 <div className="flex-1 min-w-0">
                   <div
-                    className={`text-sm font-semibold leading-tight ${
+                    className={`text-xs sm:text-[13px] font-semibold leading-tight ${
                       step.isDone ? "text-mute dark:text-dark-mute line-through" : "text-ink dark:text-white"
                     }`}
                   >
                     {step.title}
                   </div>
-                  <p className="text-xs text-mute dark:text-dark-mute mt-1 leading-relaxed">
+                  <p className="text-[11px] text-mute dark:text-dark-mute mt-0.5 leading-snug">
                     {step.description}
                   </p>
                 </div>
@@ -179,7 +194,7 @@ export function GettingStartedModal({
                     <button
                       type="button"
                       onClick={() => handleAction(step.id)}
-                      className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-3.5 py-1 text-xs font-semibold shadow-sm transition-transform hover:scale-105"
+                      className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-2.5 py-1 text-[11px] font-semibold shadow-sm transition-transform hover:scale-105"
                     >
                       {step.actionText}
                     </button>
@@ -187,7 +202,7 @@ export function GettingStartedModal({
                     <button
                       type="button"
                       onClick={() => toggleStepDone(step.id)}
-                      className="text-xs text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors"
+                      className="text-[11px] text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors"
                     >
                       Mark done
                     </button>
@@ -199,7 +214,7 @@ export function GettingStartedModal({
         </div>
 
         {/* Footer */}
-        <div className="mt-7 pt-4 border-t border-line dark:border-dark-border flex items-center justify-between">
+        <div className="mt-3 pt-2.5 border-t border-line dark:border-dark-border flex items-center justify-between flex-none">
           <button
             type="button"
             onClick={handleDontShowAgain}
@@ -210,7 +225,7 @@ export function GettingStartedModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-5 py-2 text-xs font-semibold text-ink dark:text-white hover:bg-line/40 dark:hover:bg-dark-card-hover transition-colors"
+            className="rounded-full border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-3.5 py-1 text-xs font-semibold text-ink dark:text-white hover:bg-line/40 dark:hover:bg-dark-card-hover transition-colors"
           >
             Close
           </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mandate, ChainType, Proposal } from "@/types/mandate";
 import {
   validateProposal,
@@ -28,6 +28,19 @@ export function ManualProposalModal({
   const [recipientLabel, setRecipientLabel] = useState<string>(
     mandate.recipients[0]?.label || ""
   );
+
+  useEffect(() => {
+    if (isOpen) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+      };
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
