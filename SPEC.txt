@@ -1,0 +1,269 @@
+﻿Bridle: Technical Spec
+Oct 23, 2026 · @Mofifoluwa Adelowo
+Overview
+Bridle is a NEAR contract that lets an AI agent spend funds on other chains without ever holding a key, within limits the owner signs once.
+* Pitch: steer your agents, don't trust them.
+* Target: the NEAR "Build Beyond Boundaries" hackathon, build window Nov 1 to Nov 14, 2026. Submissions close Nov 14 at 23:59 UTC. A public repo and an X demo post are required.
+* Tracks it fits: agent economy, autonomous payments, cross-chain intents, and private AI if the agent runs in a TEE.
+Goals
+1. One mandate governs an agent's spending on two chains (one EVM chain and Solana).
+2. The agent supplies only four fields. The contract builds every transaction itself.
+3. A human veto, with a bond-and-slash incentive for watchers.
+4. A 90-second demo in which an adversarial agent fails to drain funds.
+Non-goals for v1
+* Arbitrary DeFi calls or contract interactions.
+* USD-denominated caps. v1 caps are stablecoin amounts, so no price oracle is needed.
+* A token.
+* More than small test balances before the contract is audited.
+Problem and thesis
+An agent that holds a key is one prompt injection away from an empty wallet, and an agent behind per-action human approval is not autonomous. Bridle removes the key and keeps the autonomy.
+The problem
+* Give an agent a key and its worst day costs everything that key can reach.
+* Gate every action behind a human and the agent saves no time.
+The thesis
+* Satoshi: replace trust in a counterparty with cryptographic proof and no trusted third party. Here the counterparty is the agent, so the owner verifies a policy and never has to judge the agent's intentions. Signing authority lives in a contract, and the execute call is open to anyone, so liveness does not depend on one operator.
+* Vitalik: "AI as the engine, humans as the steering wheel" is the control model. The agent does the work and a human steers at the edges. "On Collusion" shapes the bond economics, because any reward for catching bad behavior invites a self-dealing attack.
+What Bridle does not claim: it does not remove trust in the Chain Signatures MPC network. That assumption is stated in the threat model.
+Related reading on vitalik.eth.limo: "AI as the engine, humans as the steering wheel" (2025), "On Collusion" (2019), "What I would love to see in a wallet" (2024).
+Architecture
+ architecture · 9 components, one contract at the center 
+
+architecture · 9 components, one contract at the center
+Everything the agent can do passes through one contract call. The signer and the executor sit behind it, and only the contract can ask the signer for a signature on its derived addresses.
+Mandate specification
+The mandate is the one object the owner signs, and every agent action is checked against it. Defaults below are suggestions for the demo, not requirements.
+Field
+	Type
+	Suggested default
+	Validation
+	owner
+	NEAR account
+	the signer
+	Must sign the creation call
+	agent
+	NEAR account
+	none
+	Required. One agent per mandate in v1
+	chains
+	list
+	Base, Solana
+	Only chains that have an adapter
+	assets
+	per-chain list
+	USDC
+	Stablecoins only, matched by contract address or mint
+	recipients
+	per-chain allowlist
+	empty (deny all)
+	Must be non-empty. Address format checked per chain
+	per_tx_cap
+	stablecoin amount
+	25 USDC
+	At most daily_cap
+	daily_cap
+	stablecoin amount per UTC day
+	50 USDC
+	Counter resets at 00:00 UTC
+	cooling_threshold
+	stablecoin amount
+	20 USDC
+	At most per_tx_cap. Above it, a proposal waits
+	challenge_window
+	seconds
+	600
+	Between 60 and 86,400
+	bond
+	NEAR
+	1 NEAR
+	Agent must lock it before an over-threshold proposal
+	expiry
+	timestamp
+	7 days from creation
+	At most 30 days out
+	state
+	enum
+	Active
+	Active or Revoked
+	Rules the contract enforces
+1. Amounts are integers in the stablecoin's smallest unit, so no floating point and no price oracle.
+2. An empty recipient list means the agent can spend nothing.
+3. Tightening is instant, loosening is delayed. Lowering a cap or removing a recipient takes effect at once. Raising a cap or adding a recipient takes effect after one challenge window, so a stolen owner session cannot widen the leash and drain funds in the same minute.
+4. Revoking is instant and freezes every pending proposal.
+5. v1 uses a UTC-day counter for the daily cap. A true rolling window is a later upgrade.
+Proposal lifecycle
+ proposal lifecycle · 8 states, 2 decisions 
+
+proposal lifecycle · 8 states, 2 decisions
+Proposals above the cooling threshold wait out the challenge window. A flag pauses them, and a flagged proposal never executes unless the owner dismisses the flag. A confirmed flag slashes the agent's bond. Anyone can call execute once a proposal is signed or its window ends.
+Bond and veto economics
+The owner is the judge of their own funds. Watchers are alarm bells, and the bond makes both lying and silence cost something.
+Mechanics
+1. For a proposal above the cooling threshold, the agent's bond is locked.
+2. Any watcher can flag it by posting a small flag bond. The owner can also veto directly, for free.
+3. A flagged proposal never executes without the owner's dismissal. If the owner stays silent, it expires and the funds stay put. The failure mode is a missed payment, never a lost one.
+4. If the owner confirms the flag, the agent's bond is slashed and the proposal is cancelled.
+5. If the owner dismisses the flag, the watcher's flag bond is forfeited to the agent and the proposal continues to its window.
+Suggested slash split: 40% to the watcher, 30% to the owner, 30% burned. The numbers are a starting point to tune after the first spike.
+Collusion analysis (the "On Collusion" lesson applied)
+Attack
+	Why it fails or what remains
+	Agent and watcher are the same party, with a different owner
+	Slashing returns only 40% to them and burns or pays out the other 60%, so farming slashes loses money
+	Watcher spams flags to harass the agent
+	Each flag costs a bond that is forfeited on dismissal
+	Owner is asleep or offline
+	Flagged proposals expire without executing
+	Owner falsely confirms flags to take the agent's bond
+	Not prevented. The bond is small and the agent operator chooses the owner. In v1 the owner and agent operator are usually the same party
+	Threat model
+Bridle bounds the loss an agent can cause, and it does not make the surrounding system trustless. The table separates what is covered from what is not.
+Threat
+	Covered?
+	Notes
+	Prompt-injected agent tries to overspend
+	Yes
+	Per-transaction and daily caps reject it at propose time
+	Agent proposes a recipient not on the list
+	Yes
+	Rejected immediately
+	Agent tries to smuggle extra instructions into a transaction
+	Yes
+	The agent sends four fields and the adapter builds the bytes
+	Owner's allowlist contains a bad address
+	No
+	The mandate is only as good as the owner's list
+	Stolen owner session tries to widen limits
+	Partly
+	Loosening waits one challenge window, and revoke is instant
+	Contract bug
+	No
+	Needs an audit. Keep balances small until then
+	MPC network failure or collusion
+	No
+	Inherited from Chain Signatures
+	Signed transaction fails on the destination chain
+	Partly
+	The proposal is marked failed. Whether it refunds the daily counter is an open question
+	Replay of a signed transaction
+	Partly
+	Each proposal signs once and is then marked executed
+	Derived address has no gas
+	Operational
+	Needs native gas on each destination chain
+	Trust assumptions, stated plainly
+1. NEAR consensus.
+2. The Chain Signatures MPC network, which holds the key shares behind every derived address.
+3. 1Click solvers and deposit addresses, for the cross-chain payment path only.
+4. The destination chain's RPC, for broadcast liveness only. It cannot move funds.
+Data model and frontend
+The contract is the source of truth. The Next.js app and Prisma database only mirror contract events so the interface is fast and searchable.
+Prisma entity
+	Key fields
+	Filled from
+	Mandate
+	owner, agent, state, caps, allowlists, expiry
+	create_mandate, update_mandate, revoke events
+	Proposal
+	mandate, chain, asset, amount, recipient, state, tx hash, execute-after time
+	propose, execute, veto events
+	Flag
+	proposal, watcher, bond, outcome
+	flag, confirm, dismiss events
+	Bond
+	mandate, party, amount, state
+	deposit, lock, slash, release events
+	ActivityEvent
+	mandate, kind, payload, timestamp
+	every event, for the live feed
+	Screens
+1. Mandate builder: sentence-style rules with live validation against the rules above.
+2. Live feed: approved, blocked and waiting actions, with an explorer link per chain.
+3. Proposal detail: why it was allowed or blocked, tied to the exact rule.
+4. Veto and revoke: one tap each, always visible.
+5. Watcher view: pending over-threshold proposals with a flag button.
+Agent tool schema (the agent's only action)
+{
+ "name": "propose_payment",
+ "description": "Propose a stablecoin payment. The mandate decides whether it is allowed.",
+ "input_schema": {
+   "type": "object",
+   "properties": {
+     "chain": { "type": "string", "enum": ["base", "solana"] },
+     "asset": { "type": "string", "enum": ["USDC"] },
+     "amount": { "type": "string", "description": "Integer in the asset's smallest unit" },
+     "recipient": { "type": "string" }
+   },
+   "required": ["chain", "asset", "amount", "recipient"]
+ }
+}
+The reference agent also runs in an adversarial mode that deliberately proposes overspends and unlisted recipients, for the demo.
+Build plan
+ build plan · 6 phases, 2 milestones 
+
+build plan · 6 phases, 2 milestones
+The spike on day one decides the chain plan, and the contract is finished by Nov 8. If the schedule slips, cut in this order: the second chain, the 1Click payment path, the TEE stretch, then the bond economics, keeping a plain owner veto. Never cut the adversarial demo. Submissions close Nov 14 at 23:59 UTC, so aim to submit by midday UTC.
+Day-one spike checklist
+The spike decides the chain plan: by the end of day one you know whether the contract can sign real transactions on both chains. Time-box it to one working day, and if a step is not passing after 2.5 hours, cut that chain instead of pushing on.
+What the spike must settle
+* Whether the signer contract can sign for Solana (an ed25519 key) as well as for EVM chains. Community tools suggest it can, but this is unconfirmed against the official docs.
+* The correct testnet signer contract address. The community repos I found refer to v1.signer, which may be the mainnet name, so look up the testnet address in the official Chain Signatures docs.
+* How long one signature takes, and what deposit or gas the signer call needs.
+* That the contract can build valid transaction bytes for each chain without help from the agent.
+Before you start (about an hour)
+* ☐ NEAR testnet account funded from a faucet, plus the near-cli and a Rust toolchain with cargo-near.
+* ☐ Base Sepolia and Solana devnet RPC endpoints, with test ETH, test USDC and devnet SOL.
+* ☐ A SPIKE.md file in the repo where you log each result and timing as you go.
+Spike steps
+* ☐ 1. Contract skeleton. Deploy a near-sdk contract with one view method. Pass: the view call returns on testnet.
+* ☐ 2. Find the signer. Read the official docs for the testnet signer address and the sign request format. Pass: you can call it with a test payload and get a response, even an error you understand.
+* ☐ 3. Derive an EVM address. Derive a Base Sepolia address from your contract account and a path such as the mandate ID. Pass: the same inputs give the same address twice. Fund it with test ETH and USDC.
+* ☐ 4. Sign and send an ERC-20 transfer. The contract builds the transfer from four parameters, requests a signature, and your executor broadcasts it. Pass: the transaction confirms on Base Sepolia with the derived address as sender. Time-box: 2.5 hours.
+* ☐ 5. Derive a Solana address. Pass: the signer accepts an ed25519 request for your path and returns an address you can fund with devnet SOL.
+* ☐ 6. Sign and send a Solana transfer. The contract builds the transfer message. The executor supplies the recent blockhash as an input, since the contract cannot fetch it, and the message content still comes from the contract. Pass: the transfer confirms on devnet. Time-box: 2.5 hours.
+* ☐ 7. Measure. Record signing latency in seconds, any deposit the signer needs, and the gas the contract call used.
+* ☐ 8. Policy smoke test. Add one hard-coded cap, then call it with an over-cap amount. Pass: the call is rejected and no signature is requested.
+Decision
+Spike result
+	Plan
+	EVM and Solana both pass
+	Plan A: build as specified, with both adapters
+	EVM passes, Solana fails
+	Plan B: EVM only, using Base and a second EVM chain for the cross-chain demo. Solana moves to the roadmap
+	Solana passes, EVM fails
+	Plan C: Solana only. Unlikely, but it is a complete plan
+	Neither passes in the time box
+	Plan D: keep funds in NEAR-side assets and reach other chains only through 1Click, with the mandate checking the deposit transfer
+	Write the chosen plan at the top of SPIKE.md before day two. Everything after day one assumes it.
+Demo script and submission checklist
+The demo's job is to show the leash holding under attack, in about 90 seconds, and the same recording is the required X post.
+Demo script
+1. 0:00 to 0:15. Write a mandate in one sentence: up to $50 a day, three allowed recipients, pause anything over $20.
+2. 0:15 to 0:30. The agent pays a legitimate invoice. The feed shows it approved and an explorer link opens the confirmed transaction.
+3. 0:30 to 0:55. Switch on adversarial mode. The agent tries to overspend, then to pay an unknown address, on both chains. Each is blocked on screen, with the exact rule named.
+4. 0:55 to 1:15. A large payment queues. A watcher flags it and the owner confirms, and the bond is slashed.
+5. 1:15 to 1:30. Hit Revoke and show the agent frozen. Close on the line: steer your agents, don't trust them.
+Submission checklist
+* ☐ Public repo with a README that states the v1 limits: transfers only, stablecoin caps, and the MPC trust assumption.
+* ☐ Contract deployed on NEAR, with the account IDs listed in the README.
+* ☐ Working demo, either live or as a recording.
+* ☐ X demo post published, with the repo link.
+* ☐ Re-read the official hackathon rules for any required NEAR components or track-specific requirements. This spec uses the details supplied by the project owner, not the official page.
+* ☐ Submit with margin. The deadline is Nov 14 at 23:59 UTC, which is 00:59 on Nov 15 in Lagos, so aim to submit by midday UTC on Nov 14.
+Open questions and post-hackathon path
+Six questions are open, and the day-one spike answers the first. The rest are design choices to settle during the build.
+Open questions
+* ☐ Does the signer support an ed25519 request for Solana on testnet? The spike answers this.
+* ☐ Who pays for gas on destination chains: an owner top-up, or a relayer?
+* ☐ Does a failed broadcast refund the daily cap counter?
+* ☐ Is one agent per mandate enough, or should an owner be able to appoint several?
+* ☐ Which agent runtime to use, and is TEE attestation realistic inside 14 days?
+* ☐ What slash split works best once there are real flags to observe?
+After the hackathon
+1. Audit the contract before any real balances.
+2. Replace the UTC-day counter with a rolling window.
+3. Parse transactions so agents can make DeFi calls, not only transfers.
+4. Add USD-denominated caps through a price oracle.
+5. Token. Its natural job is the bond asset: agents stake it for credibility and watchers earn it from slashing. Design it after seeing how bonds are used in practice, and do not launch it during judging.
+Name checks before announcing Bridle
+* ☐ Ticker, so it does not collide with an existing token. Bridle was chosen over Leash because an established LEASH token exists.
+* ☐ Domain, X handle, GitHub organization, npm package and a .near account name.
