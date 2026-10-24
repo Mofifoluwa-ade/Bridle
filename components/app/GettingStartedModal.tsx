@@ -137,7 +137,7 @@ export function GettingStartedModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-[420px] rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 shadow-2xl text-ink dark:text-dark-text transition-colors">
+      <div className="animate-modal-in relative w-full max-w-[420px] rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 shadow-2xl text-ink dark:text-dark-text transition-colors">
         {/* Header: Progress Counter and Close Icon */}
         <div className="flex items-center justify-between">
           <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium">

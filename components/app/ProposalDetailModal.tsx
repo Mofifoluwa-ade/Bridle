@@ -33,7 +33,7 @@ export function ProposalDetailModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-2xl rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 sm:p-7 shadow-2xl max-h-[90vh] overflow-y-auto text-ink dark:text-dark-text transition-colors">
+      <div className="animate-modal-in relative w-full max-w-2xl rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 sm:p-7 shadow-2xl max-h-[90vh] overflow-y-auto text-ink dark:text-dark-text transition-colors">
         {/* Header */}
         <div className="flex items-center justify-between gap-4 pb-4 border-b border-line dark:border-dark-border">
           <div>

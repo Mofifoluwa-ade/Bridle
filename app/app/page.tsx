@@ -364,8 +364,9 @@ export default function AppPage() {
         </>
       )}
 
-          {/* Tab Content */}
-          {activeTab === "monitor" && (
+          {/* Tab Content with smooth transition */}
+          <div key={activeTab} className="animate-fade-in">
+            {activeTab === "monitor" && (
             <LiveProposalFeed
               proposals={proposals}
               mandate={mandate}
@@ -500,7 +501,8 @@ export default function AppPage() {
               }}
             />
           )}
-        </main>
+        </div>
+      </main>
       </div>
 
       {/* Getting Started Guide Modal (Matching Screenshot 2) */}

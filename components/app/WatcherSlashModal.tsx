@@ -41,7 +41,7 @@ export function WatcherSlashModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-lg rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 sm:p-7 shadow-2xl text-ink dark:text-dark-text transition-colors">
+      <div className="animate-modal-in relative w-full max-w-lg rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 sm:p-7 shadow-2xl text-ink dark:text-dark-text transition-colors">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-line dark:border-dark-border">
           <div>

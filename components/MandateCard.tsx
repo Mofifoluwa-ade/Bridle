@@ -28,19 +28,28 @@ const feed: FeedItem[] = [
 ];
 
 const tone = {
-  approved: { bg: "bg-accent-tint", fg: "text-accent" },
-  blocked: { bg: "bg-bad-tint", fg: "text-bad" },
-  waiting: { bg: "bg-warn-tint", fg: "text-warn" },
+  approved: {
+    bg: "bg-[#E7F2EE] dark:bg-accent-tint",
+    fg: "text-[#0A7C59] dark:text-[#46D9A4]",
+  },
+  blocked: {
+    bg: "bg-[#FDECEA] dark:bg-bad-tint/15",
+    fg: "text-[#B42318] dark:text-bad",
+  },
+  waiting: {
+    bg: "bg-[#FEF3E2] dark:bg-warn-tint/15",
+    fg: "text-[#B54708] dark:text-warn",
+  },
 } as const;
 
 function StatusIcon({ kind }: { kind: FeedItem["kind"] }) {
   const common = {
-    width: 18,
-    height: 18,
+    width: 17,
+    height: 17,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: 2.2,
+    strokeWidth: 2.4,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     "aria-hidden": true,
@@ -59,7 +68,7 @@ function StatusIcon({ kind }: { kind: FeedItem["kind"] }) {
     );
   return (
     <svg {...common}>
-      <path d="M10 8v8M14 8v8" />
+      <path d="M9 7v10M15 7v10" />
     </svg>
   );
 }
@@ -67,13 +76,12 @@ function StatusIcon({ kind }: { kind: FeedItem["kind"] }) {
 export function MandateCard() {
   return (
     <div>
-      <div className="rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-8 shadow-sm transition-colors text-ink dark:text-dark-text">
+      <div className="rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-7 sm:p-8 shadow-sm transition-colors text-ink dark:text-dark-text">
         <div className="flex items-center justify-between gap-3">
-          <span className="font-mono text-xs uppercase tracking-[0.1em] text-mute dark:text-dark-mute">
+          <span className="font-mono text-xs uppercase tracking-[0.1em] text-mute dark:text-dark-mute font-medium">
             Mandate
           </span>
-          <span className="inline-flex items-center gap-2 rounded-full bg-accent-tint border border-accent/20 px-3 py-1.5 text-[13px] font-semibold text-accent">
-            <span className="h-2 w-2 rounded-full bg-accent" />
+          <span className="inline-flex items-center rounded-full bg-accent-tint border border-accent/20 px-3 py-1 text-xs font-semibold text-accent dark:text-[#46D9A4]">
             Active
           </span>
         </div>
@@ -87,7 +95,7 @@ export function MandateCard() {
           {["Base", "Solana", "USDC"].map((chip) => (
             <span
               key={chip}
-              className="rounded-full border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-3 py-1.5 text-[13px] text-mute dark:text-dark-mute"
+              className="rounded-full border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-3 py-1.5 text-[13px] text-mute dark:text-dark-mute font-medium"
             >
               {chip}
             </span>
@@ -95,20 +103,20 @@ export function MandateCard() {
         </div>
 
         <div className="mb-2 mt-7 h-px bg-line dark:bg-dark-border" />
-        <span className="mb-1 block font-mono text-xs uppercase tracking-[0.1em] text-mute dark:text-dark-mute">
+        <span className="mb-2 block font-mono text-xs uppercase tracking-[0.1em] text-mute dark:text-dark-mute font-medium">
           Live feed
         </span>
 
-        <ul>
+        <ul className="space-y-1">
           {feed.map((item, i) => (
             <li
               key={item.title}
-              className={`flex items-center gap-3.5 py-4 ${
-                i < feed.length - 1 ? "border-b border-line dark:border-dark-border" : "pb-1"
+              className={`flex items-center gap-4 py-3.5 px-3 -mx-3 rounded-2xl transition-all duration-200 hover:bg-paper/70 dark:hover:bg-dark-card-hover/50 ${
+                i < feed.length - 1 ? "border-b border-line/60 dark:border-dark-border/60" : ""
               }`}
             >
               <div
-                className={`flex h-[38px] w-[38px] flex-none items-center justify-center rounded-full ${tone[item.kind].bg} ${tone[item.kind].fg}`}
+                className={`flex h-11 w-11 flex-none items-center justify-center rounded-full transition-transform hover:scale-105 shadow-2xs ${tone[item.kind].bg} ${tone[item.kind].fg}`}
               >
                 <StatusIcon kind={item.kind} />
               </div>
@@ -117,8 +125,8 @@ export function MandateCard() {
                 <div className="text-[13px] text-mute dark:text-dark-mute">{item.detail}</div>
               </div>
               <div
-                className={`font-mono text-sm font-medium ${
-                  item.kind === "blocked" ? "text-mute dark:text-dark-mute" : "text-ink dark:text-white"
+                className={`font-mono text-base font-semibold ${
+                  item.kind === "blocked" ? "text-mute dark:text-dark-mute line-through" : "text-ink dark:text-white"
                 }`}
               >
                 {item.amount}
