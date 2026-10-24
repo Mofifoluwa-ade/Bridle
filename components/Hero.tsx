@@ -17,8 +17,8 @@ export function Hero() {
             key. You set the limits once, and a contract enforces them.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <PrimaryButton href="#demo" large>
-              Watch the demo
+            <PrimaryButton href="/app" large>
+              Open app
             </PrimaryButton>
             <SecondaryButton href="#how">Read how it works</SecondaryButton>
           </div>

@@ -27,7 +27,7 @@ export function Nav() {
               {l.label}
             </a>
           ))}
-          <PrimaryButton href="#demo">Watch the demo</PrimaryButton>
+          <PrimaryButton href="/app">Open app</PrimaryButton>
         </div>
       </nav>
     </Container>

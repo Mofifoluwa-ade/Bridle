@@ -8,7 +8,7 @@ const SPEC_URL = "#how"; // e.g. your published spec
 export function Cta() {
   return (
     <Container className="pb-36 pt-[120px] text-center">
-      <section id="demo" aria-labelledby="cta-title">
+      <section id="cta" aria-labelledby="cta-title">
         <LogoMark size={44} className="mx-auto text-accent" />
         <h2
           id="cta-title"
@@ -20,10 +20,10 @@ export function Cta() {
           Set the limits once. Let it work.
         </p>
         <div className="mt-10 flex flex-wrap justify-center gap-3">
-          <PrimaryButton href={DEMO_URL} large>
-            Watch the demo
+          <PrimaryButton href="/app" large>
+            Open app
           </PrimaryButton>
-          <SecondaryButton href={SPEC_URL}>Read the spec</SecondaryButton>
+          <SecondaryButton href="#how">Read how it works</SecondaryButton>
         </div>
       </section>
     </Container>

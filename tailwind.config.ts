@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -12,9 +13,21 @@ const config: Config = {
         line: "#E3E6EB",
         rule: "#C9CFD8",
         night: "#2A313C",
+        // Dark theme tokens for the app surface
+        dark: {
+          bg: "#0B0E14",
+          card: "#12161F",
+          "card-hover": "#171D28",
+          border: "#1E2532",
+          subtle: "#181F2C",
+          text: "#F6F7F9",
+          mute: "#828D9F",
+          dim: "#525C6C",
+        },
         // Single accent. Swap the hex to re-theme the whole page.
         accent: "#0A7C59",
         "accent-tint": "rgba(10, 124, 89, 0.1)",
+        "accent-glow": "rgba(10, 124, 89, 0.25)",
         bad: "#B42318",
         "bad-tint": "#FDECEA",
         warn: "#B54708",

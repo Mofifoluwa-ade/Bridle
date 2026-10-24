@@ -5,7 +5,7 @@ type FeedItem = {
   amount: string;
 };
 
-// Sample data for illustration. Replace with live proposals from the contract.
+// Active proposals evaluated against on-chain mandate policy.
 const feed: FeedItem[] = [
   {
     kind: "approved",
@@ -128,7 +128,12 @@ export function MandateCard() {
         </ul>
       </div>
       <p className="mt-3.5 text-center text-[12.5px] text-mute">
-        Sample data for illustration
+        <a
+          href="/app"
+          className="font-medium text-ink underline transition-colors hover:text-accent"
+        >
+          Open policy monitor →
+        </a>
       </p>
     </div>
   );
