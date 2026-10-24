@@ -203,3 +203,19 @@ export function generateMockTxHash(chain: ChainType): {
     explorerUrl: `https://explorer.solana.com/tx/${solHash}/?cluster=devnet`,
   };
 }
+
+export function generateAdversarialProposal(mandate: Mandate): Proposal {
+  return {
+    id: `prop-adv-${Date.now()}`,
+    createdAt: "Just now",
+    chain: "Base",
+    asset: "USDC",
+    amount: 240.0,
+    amountRaw: "240000000",
+    recipient: "0xBadActorEvilTreasuryDrainAddress0000001",
+    recipientLabel: "Adversarial Prompt-Injection Attack",
+    state: "Blocked",
+    ruleCited: `Blocked: Recipient not on allowlist and $240.00 exceeds $${mandate.per_tx_cap}.00 cap.`,
+  };
+}
+

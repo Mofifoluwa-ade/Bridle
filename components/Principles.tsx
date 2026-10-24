@@ -72,16 +72,16 @@ export function Principles() {
           >
             Built so the agent can&apos;t talk its way out.
           </h2>
-          <div className="mt-[72px] grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-x-16 gap-y-14">
+          <div className="mt-12 sm:mt-14 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 lg:gap-7">
             {principles.map((p) => (
-              <div key={p.title}>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-night text-[#F3F4F6]">
+              <div key={p.title} className="flex flex-col">
+                <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-night text-[#F3F4F6] transition-transform hover:scale-105">
                   {p.icon}
                 </div>
-                <h3 className="mb-2.5 mt-[22px] text-[22px] font-semibold tracking-[-0.02em] text-white">
+                <h3 className="mb-2 mt-4 text-[17px] sm:text-[18px] font-semibold tracking-[-0.02em] text-white leading-snug">
                   {p.title}
                 </h3>
-                <p className="text-base leading-[1.65] text-dim">{p.body}</p>
+                <p className="text-[13.5px] sm:text-[14px] leading-[1.58] text-dim">{p.body}</p>
               </div>
             ))}
           </div>

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 type GettingStartedModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  onStartTour?: (stepId?: number) => void;
   onOpenMandateBuilder: () => void;
   onOpenManualProposal: () => void;
   onRunStressTest: () => void;
@@ -20,6 +21,7 @@ type Step = {
 export function GettingStartedModal({
   isOpen,
   onClose,
+  onStartTour,
   onOpenMandateBuilder,
   onOpenManualProposal,
   onRunStressTest,
@@ -48,28 +50,28 @@ export function GettingStartedModal({
       title: "Connect owner wallet",
       description:
         "Owner account authenticated on NEAR Testnet (mofifoluwa.testnet).",
-      actionText: "Connected",
+      actionText: "Focus wallet",
     },
     {
       id: 2,
       title: "Sign your agent's mandate",
       description:
         "Define caps, cooling thresholds, and allowlisted addresses. The agent never holds a private key.",
-      actionText: "Go",
+      actionText: "Go to mandate",
     },
     {
       id: 3,
-      title: "Verify multi-chain derived accounts",
+      title: "Test policy enforcement",
       description:
-        "Inspect the agent's derived MPC addresses on Base Sepolia and Solana Devnet.",
-      actionText: "Inspect",
+        "Dispatch a payment or simulate a prompt-injection overspend to verify the contract leash.",
+      actionText: "Test defense",
     },
     {
       id: 4,
-      title: "Test policy enforcement",
+      title: "The Watcher Veto",
       description:
-        "Dispatch a payment or simulate a prompt-injection overspend to verify the leash.",
-      actionText: "Test spend",
+        "Every payment above the pause limit waits in a challenge window where you keep the veto.",
+      actionText: "Watch station",
     },
   ];
 
@@ -98,6 +100,15 @@ export function GettingStartedModal({
     setActiveStepId(id);
   };
 
+  // Trigger spotlight walkthrough on a specific step
+  const handleSpotlightStep = (stepId: number) => {
+    if (onStartTour) {
+      onStartTour(stepId);
+    } else {
+      handleAction(stepId);
+    }
+  };
+
   // Complete a step and advance sequentially
   const handleCompleteAndAdvance = (stepId: number) => {
     if (!completedSteps.includes(stepId)) {
@@ -112,15 +123,20 @@ export function GettingStartedModal({
   const handleAction = (stepId: number) => {
     handleCompleteAndAdvance(stepId);
 
+    if (onStartTour) {
+      onStartTour(stepId);
+      return;
+    }
+
     if (stepId === 2) {
       onClose();
       onOpenMandateBuilder();
     } else if (stepId === 3) {
       onClose();
-      onOpenMandateBuilder();
+      onRunStressTest();
     } else if (stepId === 4) {
       onClose();
-      onRunStressTest();
+      onOpenMandateBuilder();
     }
   };
 
@@ -159,9 +175,33 @@ export function GettingStartedModal({
             Getting started
           </h2>
           <p className="text-xs text-mute dark:text-dark-mute mt-1">
-            A few steps to get going. Each one takes a minute.
+            Tap any step to dim the screen and spotlight that exact button.
           </p>
         </div>
+
+        {/* Game Tutorial Mode Trigger Banner */}
+        <button
+          type="button"
+          onClick={() => handleSpotlightStep(activeStepId)}
+          className="mt-3.5 w-full flex items-center justify-between p-3 rounded-2xl border border-accent/30 bg-accent-tint/30 dark:bg-accent-tint/15 text-left hover:border-accent transition-all group shadow-2xs"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-ink dark:bg-white text-white dark:text-ink font-bold text-xs shadow-sm">
+              🎯
+            </span>
+            <div>
+              <span className="block text-xs font-semibold text-ink dark:text-white">
+                Launch Spotlight Mode
+              </span>
+              <span className="block text-[11px] text-mute dark:text-dark-mute">
+                Dims screen and guides you to each button
+              </span>
+            </div>
+          </div>
+          <span className="text-xs font-semibold text-accent dark:text-[#46D9A4] group-hover:translate-x-0.5 transition-transform">
+            Start tour →
+          </span>
+        </button>
 
         {/* Progress Bar */}
         <div className="h-[2px] w-full bg-line dark:bg-white/10 rounded-full mt-4 overflow-hidden">
@@ -209,24 +249,14 @@ export function GettingStartedModal({
 
                   {/* Action or Resume button */}
                   <div className="flex-none pt-0.5 pl-2">
-                    {isDone ? (
-                      <button
-                        type="button"
-                        onClick={() => setActiveStepId(highestCurrentStepId)}
-                        className="rounded-full border border-line dark:border-white/20 px-3 py-1 text-xs text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors"
-                        title="Resume where you left off"
-                      >
-                        Resume →
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleAction(step.id)}
-                        className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-4 py-1.5 text-xs font-semibold shadow-sm transition-transform hover:scale-105"
-                      >
-                        {step.actionText}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleSpotlightStep(step.id)}
+                      className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-transform hover:scale-105 flex items-center gap-1"
+                    >
+                      <span>🎯</span>
+                      <span>{step.actionText}</span>
+                    </button>
                   </div>
                 </div>
               );
@@ -237,14 +267,19 @@ export function GettingStartedModal({
               return (
                 <div
                   key={step.id}
-                  className="flex items-center gap-3.5 group cursor-pointer"
-                  onClick={() => handleSelectStep(step.id)}
+                  className="flex items-center justify-between group cursor-pointer py-1"
+                  onClick={() => handleSpotlightStep(step.id)}
                 >
-                  <div className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-ink text-white dark:bg-white dark:text-ink text-[10px] font-bold shadow-2xs">
-                    ✓
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-ink text-white dark:bg-white dark:text-ink text-[10px] font-bold shadow-2xs">
+                      ✓
+                    </div>
+                    <span className="text-sm font-medium text-ink/80 dark:text-white/80 group-hover:text-ink dark:group-hover:text-white transition-colors">
+                      {step.title}
+                    </span>
                   </div>
-                  <span className="text-sm font-medium text-ink/80 dark:text-white/80 group-hover:text-ink dark:group-hover:text-white transition-colors">
-                    {step.title}
+                  <span className="text-[11.5px] text-mute group-hover:text-accent dark:group-hover:text-[#46D9A4] opacity-0 group-hover:opacity-100 transition-opacity">
+                    Spotlight →
                   </span>
                 </div>
               );
@@ -256,27 +291,34 @@ export function GettingStartedModal({
             return (
               <div
                 key={step.id}
-                className={`flex items-center gap-3.5 py-0.5 ${
+                className={`flex items-center justify-between py-1 ${
                   isUnlocked
                     ? "cursor-pointer group"
                     : "opacity-40 cursor-default select-none"
                 }`}
                 onClick={() => {
-                  if (isUnlocked) handleSelectStep(step.id);
+                  if (isUnlocked) handleSpotlightStep(step.id);
                 }}
               >
-                <span className="w-5 text-center text-xs font-medium text-mute dark:text-dark-mute">
-                  {step.id}
-                </span>
-                <span
-                  className={`text-sm font-medium ${
-                    isUnlocked
-                      ? "text-mute dark:text-dark-mute group-hover:text-ink dark:group-hover:text-white transition-colors"
-                      : "text-mute dark:text-dark-mute"
-                  }`}
-                >
-                  {step.title}
-                </span>
+                <div className="flex items-center gap-3.5">
+                  <span className="w-5 text-center text-xs font-medium text-mute dark:text-dark-mute">
+                    {step.id}
+                  </span>
+                  <span
+                    className={`text-sm font-medium ${
+                      isUnlocked
+                        ? "text-mute dark:text-dark-mute group-hover:text-ink dark:group-hover:text-white transition-colors"
+                        : "text-mute dark:text-dark-mute"
+                    }`}
+                  >
+                    {step.title}
+                  </span>
+                </div>
+                {isUnlocked && (
+                  <span className="text-[11.5px] text-mute group-hover:text-accent dark:group-hover:text-[#46D9A4] opacity-0 group-hover:opacity-100 transition-opacity">
+                    Show me →
+                  </span>
+                )}
               </div>
             );
           })}
