@@ -269,33 +269,10 @@ export default function AppPage() {
                 <span className="text-xs font-medium text-mute dark:text-dark-mute">
                   Daily budget
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-tint border border-accent/20 px-2 py-0.5 text-[10.5px] font-semibold text-accent">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                <span className="inline-flex items-center rounded-full bg-accent-tint border border-accent/20 px-2.5 py-0.5 text-[10.5px] font-semibold text-accent">
                   {isRevoked ? "Frozen" : "Policy bound"}
                 </span>
               </div>
-
-              {/* Getting Started Trigger button */}
-              <button
-                type="button"
-                onClick={() => setIsGettingStartedOpen(true)}
-                className="flex items-center gap-1.5 text-xs text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors"
-              >
-                <span>Getting started</span>
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-                </svg>
-              </button>
             </div>
 
             {/* Big Metric Display */}

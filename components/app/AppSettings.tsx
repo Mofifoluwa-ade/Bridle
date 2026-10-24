@@ -122,8 +122,7 @@ export function AppSettings({
                 Contract: v1.signer-prod.testnet
               </span>
             </div>
-            <span className="inline-flex items-center gap-1.5 text-accent text-[11px] font-sans font-semibold">
-              <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+            <span className="text-accent text-[11px] font-sans font-semibold">
               Connected
             </span>
           </div>
@@ -137,8 +136,7 @@ export function AppSettings({
                 USDC: 0x036CbD53842c5426634e7929541eC2318f3dCF7e
               </span>
             </div>
-            <span className="inline-flex items-center gap-1.5 text-accent text-[11px] font-sans font-semibold">
-              <span className="h-2 w-2 rounded-full bg-accent" />
+            <span className="text-accent text-[11px] font-sans font-semibold">
               Ready
             </span>
           </div>
@@ -152,8 +150,7 @@ export function AppSettings({
                 USDC: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
               </span>
             </div>
-            <span className="inline-flex items-center gap-1.5 text-accent text-[11px] font-sans font-semibold">
-              <span className="h-2 w-2 rounded-full bg-accent" />
+            <span className="text-accent text-[11px] font-sans font-semibold">
               Ready
             </span>
           </div>
