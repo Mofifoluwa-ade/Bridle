@@ -80,24 +80,24 @@ export function ManualProposalModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/75 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-lg rounded-3xl border border-dark-border bg-dark-card p-6 sm:p-7 shadow-2xl text-dark-text">
-        <div className="flex items-center justify-between pb-4 border-b border-dark-border">
+      <div className="relative w-full max-w-lg rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 sm:p-7 shadow-2xl text-ink dark:text-dark-text transition-colors">
+        <div className="flex items-center justify-between pb-4 border-b border-line dark:border-dark-border">
           <div>
-            <span className="font-mono text-[11px] uppercase tracking-wider text-dark-mute">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute">
               Payment dispatch
             </span>
-            <h3 className="text-xl font-semibold tracking-[-0.02em] text-white mt-0.5">
+            <h3 className="text-xl font-semibold tracking-[-0.02em] text-ink dark:text-white mt-0.5">
               Propose payment
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-dark-border text-dark-mute hover:text-white hover:border-dark-mute transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-line dark:border-dark-border text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white hover:border-rule dark:hover:border-dark-mute transition-colors"
             aria-label="Close modal"
           >
             ✕
@@ -107,7 +107,7 @@ export function ManualProposalModal({
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           {/* Preset Buttons */}
           <div>
-            <span className="block text-xs font-medium text-dark-mute mb-1.5">
+            <span className="block text-xs font-medium text-mute dark:text-dark-mute mb-1.5">
               Quick presets
             </span>
             <div className="flex flex-wrap gap-2 text-xs">
@@ -118,8 +118,8 @@ export function ManualProposalModal({
                   onClick={() => handleSelectPreset(r.address, r.label, r.chain)}
                   className={`rounded-full border px-3 py-1 text-xs transition-colors ${
                     recipient === r.address
-                      ? "bg-white text-ink font-semibold border-white"
-                      : "bg-dark-bg text-dark-mute hover:text-white border-dark-border"
+                      ? "bg-ink text-white font-semibold border-ink dark:bg-white dark:text-ink dark:border-white shadow-sm"
+                      : "bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white border-line dark:border-dark-border"
                   }`}
                 >
                   {r.label} ({r.chain})
@@ -136,8 +136,8 @@ export function ManualProposalModal({
                 }
                 className={`rounded-full border px-3 py-1 text-xs transition-colors ${
                   recipient === "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
-                    ? "bg-bad text-white font-semibold border-bad"
-                    : "bg-bad-tint/10 text-bad border-bad/30 hover:bg-bad hover:text-white"
+                    ? "bg-bad text-white font-semibold border-bad shadow-sm"
+                    : "bg-bad-tint/60 dark:bg-bad-tint/10 text-bad border-bad/30 hover:bg-bad hover:text-white"
                 }`}
               >
                 ⚠️ Unknown address
@@ -148,21 +148,21 @@ export function ManualProposalModal({
           {/* Chain & Amount */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-dark-mute mb-1">
+              <label className="block text-xs font-medium text-mute dark:text-dark-mute mb-1">
                 Chain
               </label>
               <select
                 value={chain}
                 onChange={(e) => setChain(e.target.value as ChainType)}
                 aria-label="Chain selection"
-                className="w-full rounded-xl border border-dark-border bg-dark-bg px-3 py-2 text-xs font-medium text-white focus:outline-none"
+                className="w-full rounded-xl border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-3 py-2 text-xs font-medium text-ink dark:text-white focus:outline-none"
               >
                 <option value="Base">Base Sepolia (EVM)</option>
                 <option value="Solana">Solana Devnet</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-dark-mute mb-1">
+              <label className="block text-xs font-medium text-mute dark:text-dark-mute mb-1">
                 Amount (USDC)
               </label>
               <input
@@ -172,7 +172,7 @@ export function ManualProposalModal({
                 max="500"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full rounded-xl border border-dark-border bg-dark-bg px-3 py-2 font-mono text-xs text-white focus:outline-none"
+                className="w-full rounded-xl border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-3 py-2 font-mono text-xs text-ink dark:text-white focus:outline-none"
                 required
               />
             </div>
@@ -180,7 +180,7 @@ export function ManualProposalModal({
 
           {/* Recipient Address */}
           <div>
-            <label className="block text-xs font-medium text-dark-mute mb-1">
+            <label className="block text-xs font-medium text-mute dark:text-dark-mute mb-1">
               Recipient address
             </label>
             <input
@@ -190,16 +190,16 @@ export function ManualProposalModal({
                 setRecipient(e.target.value);
                 setRecipientLabel("");
               }}
-              className="w-full rounded-xl border border-dark-border bg-dark-bg px-3 py-2 font-mono text-xs text-white focus:outline-none placeholder-dark-dim"
+              className="w-full rounded-xl border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-3 py-2 font-mono text-xs text-ink dark:text-white focus:outline-none placeholder:text-dim dark:placeholder:text-dark-dim"
               placeholder={chain === "Base" ? "0x..." : "Base58 address..."}
               required
             />
           </div>
 
           {/* Live Verdict Preview */}
-          <div className="p-3.5 rounded-2xl bg-dark-bg border border-dark-border text-xs">
+          <div className="p-3.5 rounded-2xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border text-xs">
             <div className="flex items-center justify-between mb-1">
-              <span className="font-mono uppercase tracking-wider text-[10px] text-dark-mute font-medium">
+              <span className="font-mono uppercase tracking-wider text-[10px] text-mute dark:text-dark-mute font-medium">
                 Contract verdict preview
               </span>
               <span
@@ -214,7 +214,7 @@ export function ManualProposalModal({
                 {validation.status}
               </span>
             </div>
-            <p className="text-dark-mute leading-relaxed">
+            <p className="text-mute dark:text-dark-mute leading-relaxed">
               {validation.ruleCited}
             </p>
           </div>
@@ -224,13 +224,13 @@ export function ManualProposalModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-dark-border px-4 py-2 text-xs font-medium text-dark-mute hover:text-white"
+              className="rounded-full border border-line dark:border-dark-border px-4 py-2 text-xs font-medium text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-full bg-white px-5 py-2 text-xs font-semibold text-ink hover:opacity-90"
+              className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-5 py-2 text-xs font-semibold shadow-sm transition-colors"
             >
               Propose to contract
             </button>
