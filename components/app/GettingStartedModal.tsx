@@ -237,21 +237,14 @@ export function GettingStartedModal({
               return (
                 <div
                   key={step.id}
-                  className="flex items-center justify-between gap-3 group cursor-pointer"
+                  className="flex items-center gap-3.5 group cursor-pointer"
                   onClick={() => handleSelectStep(step.id)}
-                  title="Click to retrace this step"
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-ink text-white dark:bg-white dark:text-ink text-[10px] font-bold shadow-2xs">
-                      ✓
-                    </div>
-                    <span className="text-sm font-medium text-ink/80 dark:text-white/80 group-hover:text-ink dark:group-hover:text-white transition-colors truncate">
-                      {step.title}
-                    </span>
+                  <div className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-ink text-white dark:bg-white dark:text-ink text-[10px] font-bold shadow-2xs">
+                    ✓
                   </div>
-
-                  <span className="text-xs text-mute dark:text-dark-mute opacity-0 group-hover:opacity-100 transition-opacity">
-                    Retrace
+                  <span className="text-sm font-medium text-ink/80 dark:text-white/80 group-hover:text-ink dark:group-hover:text-white transition-colors">
+                    {step.title}
                   </span>
                 </div>
               );
@@ -263,40 +256,27 @@ export function GettingStartedModal({
             return (
               <div
                 key={step.id}
-                className={`flex items-center justify-between gap-3 py-0.5 ${
+                className={`flex items-center gap-3.5 py-0.5 ${
                   isUnlocked
                     ? "cursor-pointer group"
-                    : "opacity-40 cursor-not-allowed select-none"
+                    : "opacity-40 cursor-default select-none"
                 }`}
                 onClick={() => {
                   if (isUnlocked) handleSelectStep(step.id);
                 }}
-                title={
-                  isUnlocked
-                    ? "Click to view this step"
-                    : "Complete the previous step first"
-                }
               >
-                <div className="flex items-center gap-3.5">
-                  <span className="w-5 text-center text-xs font-medium text-mute dark:text-dark-mute">
-                    {step.id}
-                  </span>
-                  <span
-                    className={`text-sm font-medium ${
-                      isUnlocked
-                        ? "text-mute dark:text-dark-mute group-hover:text-ink dark:group-hover:text-white transition-colors"
-                        : "text-mute dark:text-dark-mute"
-                    }`}
-                  >
-                    {step.title}
-                  </span>
-                </div>
-
-                {!isUnlocked && (
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">
-                    Locked
-                  </span>
-                )}
+                <span className="w-5 text-center text-xs font-medium text-mute dark:text-dark-mute">
+                  {step.id}
+                </span>
+                <span
+                  className={`text-sm font-medium ${
+                    isUnlocked
+                      ? "text-mute dark:text-dark-mute group-hover:text-ink dark:group-hover:text-white transition-colors"
+                      : "text-mute dark:text-dark-mute"
+                  }`}
+                >
+                  {step.title}
+                </span>
               </div>
             );
           })}
