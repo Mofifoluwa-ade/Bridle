@@ -189,13 +189,62 @@ function SpotlightOverlay() {
     left: number;
     width: number;
     height: number;
+    radius: number;
   } | null>(null);
+
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== "undefined" ? window.innerWidth : 1920,
+    height: typeof window !== "undefined" ? window.innerHeight : 1080,
+  });
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardPosition, setCardPosition] = useState<{
     top: number;
     left: number;
   }>({ top: 100, left: 100 });
+
+  // Prevent background scrolling while spotlight is active
+  useEffect(() => {
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    const preventScroll = (e: Event) => {
+      if (cardRef.current && cardRef.current.contains(e.target as Node)) {
+        return;
+      }
+      e.preventDefault();
+    };
+
+    const preventKeyScroll = (e: KeyboardEvent) => {
+      if (
+        ["Space", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(e.code) &&
+        !(cardRef.current && cardRef.current.contains(e.target as Node))
+      ) {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener("wheel", preventScroll, { passive: false });
+    window.addEventListener("touchmove", preventScroll, { passive: false });
+    window.addEventListener("keydown", preventKeyScroll, { passive: false });
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.touchAction = originalTouchAction;
+      window.removeEventListener("wheel", preventScroll);
+      window.removeEventListener("touchmove", preventScroll);
+      window.removeEventListener("keydown", preventKeyScroll);
+    };
+  }, []);
 
   // Update target rect on step change, resize, or scroll
   useEffect(() => {
@@ -216,15 +265,33 @@ function SpotlightOverlay() {
         });
 
         const r = el.getBoundingClientRect();
-        // Add comfortable padding around target so glow borders look clean
+        // Add comfortable padding around target
         const pad = 6;
+        const computedStyle = window.getComputedStyle(el);
+        const computedRadius = parseFloat(computedStyle.borderRadius) || 16;
+
+        const spotW = r.width + pad * 2;
+        const spotH = r.height + pad * 2;
+        // Auto-contour: if pill button, radius is half-height. Otherwise match element radius.
+        const spotRadius = Math.min(
+          spotH / 2,
+          spotW / 2,
+          Math.max(8, computedRadius + pad / 2)
+        );
+
         const spotlightRect = {
           top: Math.max(0, r.top - pad),
           left: Math.max(0, r.left - pad),
-          width: r.width + pad * 2,
-          height: r.height + pad * 2,
+          width: spotW,
+          height: spotH,
+          radius: spotRadius,
         };
         setRect(spotlightRect);
+
+        setWindowSize({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
 
         // Calculate HUD card position
         const cardW = 360;
@@ -316,78 +383,76 @@ function SpotlightOverlay() {
     }
   };
 
+  const buildCutoutPath = () => {
+    if (!rect) return "";
+    const w = windowSize.width;
+    const h = windowSize.height;
+    const { left, top, width, height, radius: r } = rect;
+
+    const maxR = Math.min(width / 2, height / 2);
+    const cr = Math.max(0, Math.min(r, maxR));
+
+    return [
+      `M 0 0 H ${w} V ${h} H 0 Z`,
+      `M ${left + cr} ${top}`,
+      `H ${left + width - cr}`,
+      `A ${cr} ${cr} 0 0 1 ${left + width} ${top + cr}`,
+      `V ${top + height - cr}`,
+      `A ${cr} ${cr} 0 0 1 ${left + width - cr} ${top + height}`,
+      `H ${left + cr}`,
+      `A ${cr} ${cr} 0 0 1 ${left} ${top + height - cr}`,
+      `V ${top + cr}`,
+      `A ${cr} ${cr} 0 0 1 ${left + cr} ${top}`,
+      `Z`,
+    ].join(" ");
+  };
+
   return (
     <>
-      {/* 1. Backdrop Quadrants: Dim everything EXCEPT the illuminated target cutout */}
+      {/* 1. Backdrop with Smooth Rounded Cutout Hole */}
       {rect ? (
         <>
-          {/* Top quadrant */}
-          <div
-            className="fixed z-40 bg-[#05070a]/80 backdrop-blur-xs pointer-events-auto transition-all duration-200"
-            style={{ top: 0, left: 0, right: 0, height: `${Math.max(0, rect.top)}px` }}
-          />
-          {/* Bottom quadrant */}
-          <div
-            className="fixed z-40 bg-[#05070a]/80 backdrop-blur-xs pointer-events-auto transition-all duration-200"
-            style={{
-              top: `${rect.top + rect.height}px`,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-          />
-          {/* Left quadrant */}
-          <div
-            className="fixed z-40 bg-[#05070a]/80 backdrop-blur-xs pointer-events-auto transition-all duration-200"
-            style={{
-              top: `${rect.top}px`,
-              left: 0,
-              width: `${Math.max(0, rect.left)}px`,
-              height: `${rect.height}px`,
-            }}
-          />
-          {/* Right quadrant */}
-          <div
-            className="fixed z-40 bg-[#05070a]/80 backdrop-blur-xs pointer-events-auto transition-all duration-200"
-            style={{
-              top: `${rect.top}px`,
-              left: `${rect.left + rect.width}px`,
-              right: 0,
-              height: `${rect.height}px`,
-            }}
-          />
+          <svg
+            className="fixed inset-0 z-40 w-full h-full pointer-events-auto"
+            aria-hidden="true"
+          >
+            <path
+              d={buildCutoutPath()}
+              fillRule="evenodd"
+              className="fill-black/45 dark:fill-[#05070a]/80 backdrop-blur-xs transition-colors duration-200"
+            />
+          </svg>
 
-          {/* Illuminated Target Reticle Glow (pointer-events-none so clicks hit target) */}
+          {/* Highlighted Target Border matching exact rounded corners (static, no pulsing) */}
           <div
-            className="fixed z-40 pointer-events-none rounded-2xl border-2 border-[#46D9A4] ring-4 ring-[#46D9A4]/30 shadow-[0_0_35px_rgba(70,217,164,0.55)] animate-pulse transition-all duration-200"
+            className="fixed z-40 pointer-events-none border-2 border-ink dark:border-[#46D9A4] ring-4 ring-black/10 dark:ring-[#46D9A4]/25 shadow-md dark:shadow-[0_0_20px_rgba(70,217,164,0.35)] transition-all duration-200"
             style={{
               top: `${rect.top}px`,
               left: `${rect.left}px`,
               width: `${rect.width}px`,
               height: `${rect.height}px`,
+              borderRadius: `${rect.radius}px`,
             }}
-          >
-            <div className="absolute -inset-1 rounded-[18px] border border-white/40 opacity-75" />
-          </div>
+          />
         </>
       ) : (
-        <div className="fixed inset-0 z-40 bg-black/80 backdrop-blur-xs pointer-events-auto transition-opacity duration-300" />
+        <div className="fixed inset-0 z-40 bg-black/45 dark:bg-black/80 backdrop-blur-xs pointer-events-auto transition-opacity duration-300" />
       )}
 
-      {/* 2. Floating Game HUD Objective Card (High z-index, pointer-events-auto) */}
+      {/* 2. Floating Objective HUD Card (Hand in hand with Light / Dark theme) */}
       <div
         ref={cardRef}
         style={{
           top: `${cardPosition.top}px`,
           left: `${cardPosition.left}px`,
         }}
-        className="fixed z-50 w-[350px] sm:w-[370px] animate-modal-in rounded-3xl border border-[#46D9A4]/35 bg-[#0F1116]/95 p-5 text-white shadow-[0_20px_60px_rgba(0,0,0,0.85)] backdrop-blur-md transition-all duration-200 pointer-events-auto"
+        className="fixed z-50 w-[350px] sm:w-[370px] animate-modal-in rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-5 text-ink dark:text-dark-text shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.85)] transition-all duration-200 pointer-events-auto"
       >
         {/* Quest Badge & Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-white/10">
+        <div className="flex items-center justify-between pb-2.5 border-b border-line dark:border-dark-border">
           <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-[#46D9A4] shadow-[0_0_8px_#46D9A4] animate-ping" />
-            <span className="font-mono text-[11px] font-semibold tracking-wider text-[#46D9A4] uppercase">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent dark:bg-[#46D9A4]" />
+            <span className="font-mono text-[11px] font-semibold tracking-wider text-accent dark:text-[#46D9A4] uppercase">
               {step.questNumber} • STEP {currentStepIndex + 1} OF{" "}
               {TOUR_STEPS.length}
             </span>
@@ -395,7 +460,7 @@ function SpotlightOverlay() {
           <button
             type="button"
             onClick={endTour}
-            className="text-white/50 hover:text-white transition-colors text-xs p-1"
+            className="text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors text-xs p-1"
             title="Exit tutorial"
           >
             ✕
@@ -404,28 +469,20 @@ function SpotlightOverlay() {
 
         {/* Quest Title & Description */}
         <div className="mt-3">
-          <h3 className="text-[17px] font-semibold tracking-tight text-white">
+          <h3 className="text-[17px] font-semibold tracking-tight text-ink dark:text-white">
             {step.title}
           </h3>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-gray-300">
+          <p className="mt-1.5 text-[12.5px] leading-relaxed text-mute dark:text-dark-mute">
             {step.description}
           </p>
         </div>
 
-        {/* Interactive Pointer Hint */}
-        <div className="mt-3.5 flex items-center gap-2 rounded-xl bg-white/[0.06] border border-white/[0.08] px-3 py-2 text-[11.5px] text-[#46D9A4]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#46D9A4]" />
-          <span className="font-medium text-gray-200 truncate">
-            Target illuminated on screen. Tap to interact.
-          </span>
-        </div>
-
         {/* Controls Bar */}
-        <div className="mt-4 flex items-center justify-between pt-3 border-t border-white/10">
+        <div className="mt-4 flex items-center justify-between pt-3 border-t border-line dark:border-dark-border">
           <button
             type="button"
             onClick={openGuideModal}
-            className="text-[11.5px] text-gray-400 hover:text-white underline underline-offset-2 transition-colors"
+            className="text-[11.5px] text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white underline underline-offset-2 transition-colors"
           >
             Checklist
           </button>
@@ -435,7 +492,7 @@ function SpotlightOverlay() {
               <button
                 type="button"
                 onClick={prevStep}
-                className="rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/10 transition-colors"
+                className="rounded-full border border-line dark:border-dark-border bg-paper dark:bg-dark-card-hover px-3 py-1.5 text-xs font-medium text-ink dark:text-white hover:bg-line/40 dark:hover:bg-white/10 transition-colors"
               >
                 ← Back
               </button>
@@ -444,10 +501,10 @@ function SpotlightOverlay() {
             <button
               type="button"
               onClick={handleAction}
-              className="rounded-full bg-[#46D9A4] hover:bg-[#3bc493] text-black px-4 py-1.5 text-xs font-semibold shadow-md transition-transform hover:scale-105 flex items-center gap-1.5"
+              className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-4 py-1.5 text-xs font-semibold shadow-xs transition-transform hover:scale-102 flex items-center gap-1.5"
             >
               <span>{step.actionText}</span>
-              <span>→</span>
+              <span className="text-[11px]">→</span>
             </button>
           </div>
         </div>
