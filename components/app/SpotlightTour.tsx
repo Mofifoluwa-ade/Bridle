@@ -349,9 +349,14 @@ function SpotlightOverlay() {
       armed = true;
     }, 400);
 
-    const handleTargetClicked = () => {
+    let advanceTimer: NodeJS.Timeout | null = null;
+
+    const handleTargetClicked = (e: MouseEvent) => {
       if (!armed) return;
-      setTimeout(() => {
+      if (cardRef.current && cardRef.current.contains(e.target as Node)) {
+        return;
+      }
+      advanceTimer = setTimeout(() => {
         nextStep();
       }, 300);
     };
@@ -359,6 +364,7 @@ function SpotlightOverlay() {
     el.addEventListener("click", handleTargetClicked);
     return () => {
       clearTimeout(armTimer);
+      if (advanceTimer) clearTimeout(advanceTimer);
       el?.removeEventListener("click", handleTargetClicked);
     };
   }, [step, nextStep]);
@@ -367,8 +373,6 @@ function SpotlightOverlay() {
 
   const handleAction = () => {
     if (step.id === 1) {
-      const btn = document.getElementById("tour-wallet-btn");
-      if (btn) btn.click();
       nextStep();
     } else if (step.id === 2) {
       router.push("/app/mandates/new");
