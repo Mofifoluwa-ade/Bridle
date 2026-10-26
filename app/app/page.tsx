@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { MandateCard } from "@/components/app/MandateCard";
 import { ProposalRow } from "@/components/app/ProposalRow";
@@ -35,10 +35,19 @@ export default function Dashboard() {
   const liveProposals = useProposalsFor(liveMandates.data);
 
   // Local state for interactive test proposals & stress testing
+  // Demo mode is an opt-in developer switch to explore simulated data without contract
+  const [demoMode, setDemoMode] = useState(false);
   const [localProposals, setLocalProposals] = useState<any[]>(INITIAL_PROPOSALS);
   const [filter, setFilter] = useState<string>("All");
   const [inspectProposal, setInspectProposal] = useState<any | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    try {
+      setDemoMode(window.localStorage.getItem("bridle:developer-demo-mode") === "true");
+    } catch {}
+  }, []);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -74,17 +83,14 @@ export default function Dashboard() {
     },
   ], [accountId]);
 
-  // Combine live proposals (if contract configured) or interactive local proposals
-  const displayMandates =
-    isContractConfigured && liveMandates.data && liveMandates.data.length > 0
-      ? liveMandates.data
-      : fallbackMandates;
+  // Never silently replace missing/failed live data with sample data
+  const displayMandates: Mandate[] = demoMode
+    ? fallbackMandates
+    : (liveMandates.data ?? []);
 
   const displayProposals: any[] = useMemo(() => {
-    if (isContractConfigured && liveProposals.data && liveProposals.data.length > 0) {
-      return liveProposals.data;
-    }
-    // Map local engine proposals to match Proposal format
+    if (!demoMode) return liveProposals.data ?? [];
+    // Demo-only: map local engine proposals to match the live Proposal format
     return localProposals.map((lp, idx) => ({
       id: idx + 1,
       mandate_id: 1,
@@ -111,13 +117,14 @@ export default function Dashboard() {
       tx_hash: lp.txHash || null,
       recipientLabel: lp.recipientLabel,
     }));
-  }, [isContractConfigured, liveProposals.data, localProposals]);
+  }, [demoMode, liveProposals.data, localProposals]);
 
-  // Stress test handler
+  // Stress test handler (local simulation)
   const handleStressTest = () => {
+    if (!demoMode) return;
     const attack = generateAdversarialProposal(DEFAULT_MANDATE);
     setLocalProposals((prev) => [attack, ...prev]);
-    showNotification("Defense verified: Prompt-injection attack blocked on-chain!");
+    showNotification("Demo simulation: Prompt-injection attack blocked by policy engine!");
   };
 
   // Filtered proposals with smooth counts
@@ -180,14 +187,43 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {process.env.NODE_ENV === "development" && (
+            <button
+              type="button"
+              aria-pressed={demoMode}
+              onClick={() => {
+                const next = !demoMode;
+                setDemoMode(next);
+                try {
+                  window.localStorage.setItem("bridle:developer-demo-mode", String(next));
+                } catch {}
+                setFilter("All");
+                setLocalProposals(INITIAL_PROPOSALS);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                demoMode
+                  ? "border-amber-400 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+                  : "border-line dark:border-dark-border bg-white dark:bg-dark-card text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover"
+              }`}
+              title="Developer-only switch: toggle between live contract data and simulated demo data"
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${demoMode ? "bg-amber-500" : "bg-mute"}`} />
+              <span>{demoMode ? "Demo mode: ON" : "Demo mode: OFF"}</span>
+            </button>
+          )}
           <button
             id="tour-stress-test-btn"
             type="button"
             onClick={handleStressTest}
-            className="inline-flex items-center gap-1.5 rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3.5 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover shadow-2xs transition-all"
-            title="Test defensive leash against prompt injection"
+            disabled={!demoMode}
+            className="inline-flex items-center gap-1.5 rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3.5 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover shadow-2xs transition-all disabled:cursor-not-allowed disabled:opacity-40"
+            title={
+              demoMode
+                ? "Simulate prompt-injection defense locally"
+                : "Enable developer Demo Mode to run local stress test simulation"
+            }
           >
-            <span>Stress test defense</span>
+            <span>Stress test {demoMode ? "(demo)" : "defense"}</span>
           </button>
           <Link
             id="tour-new-mandate-btn"
@@ -200,15 +236,50 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Developer Demo & Live State Notices */}
+      {process.env.NODE_ENV === "development" && demoMode && (
+        <div className="rounded-xl border border-amber-400/50 bg-amber-50 dark:bg-amber-950/40 p-3 text-xs text-amber-950 dark:text-amber-100">
+          <strong>Developer demo mode:</strong> All sample mandates, proposals, spending figures, and stress-test results are simulated locally. Nothing here confirms on-chain state.
+        </div>
+      )}
+
+      {!demoMode && !isContractConfigured && (
+        <div className="rounded-xl border border-warn/30 bg-warn-tint/20 dark:bg-warn-tint/10 p-3 text-xs text-ink dark:text-white">
+          <strong>Live data unavailable:</strong> No contract ID is configured in .env.local. Demo data is not being substituted automatically. Toggle <strong>Demo mode: ON</strong> above to preview with simulated data.
+        </div>
+      )}
+
+      {!demoMode && isContractConfigured && liveMandates.error && (
+        <div className="rounded-xl border border-warn/30 bg-warn-tint/20 dark:bg-warn-tint/10 p-3 text-xs text-ink dark:text-white flex items-center justify-between">
+          <div>
+            <strong>Could not load live mandates:</strong> {liveMandates.error}
+          </div>
+          <button type="button" onClick={liveMandates.refresh} className="underline text-xs ml-2">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!demoMode && isContractConfigured && liveProposals.error && (
+        <div className="rounded-xl border border-warn/30 bg-warn-tint/20 dark:bg-warn-tint/10 p-3 text-xs text-ink dark:text-white flex items-center justify-between">
+          <div>
+            <strong>Could not load live proposals:</strong> {liveProposals.error}
+          </div>
+          <button type="button" onClick={liveProposals.refresh} className="underline text-xs ml-2">
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Top 3 Metric Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Stat
           label="Active mandates"
           value={`${activeMandates.length} active`}
-          sub={`${displayMandates.length} registered on-chain`}
+          sub={demoMode ? "Sample data · not on-chain" : `${displayMandates.length} registered on-chain`}
           badge={
             <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4] border border-accent/20">
-              Enforced
+              {demoMode ? "Simulated" : "Enforced"}
             </span>
           }
         />
@@ -287,15 +358,32 @@ export default function Dashboard() {
             </div>
 
             <div className="mt-3.5 space-y-3">
-              {displayMandates.map((m) => (
-                <MandateCard
-                  key={m.id}
-                  m={m}
-                  now={now}
-                  viewer={accountId || m.owner}
-                  compact
-                />
-              ))}
+              {displayMandates.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-line dark:border-dark-border p-6 text-center text-xs text-mute dark:text-dark-mute">
+                  {liveMandates.loading
+                    ? "Loading mandates…"
+                    : liveMandates.error
+                    ? "Mandates could not be loaded. See the error above."
+                    : "No mandates found for this wallet yet."}
+                  {!liveMandates.loading && !liveMandates.error && isContractConfigured && (
+                    <div className="mt-3">
+                      <Link className="font-semibold text-accent dark:text-[#46D9A4] hover:underline" href="/app/mandates/new">
+                        Create your first mandate →
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                displayMandates.map((m) => (
+                  <MandateCard
+                    key={m.id}
+                    m={m}
+                    now={now}
+                    viewer={accountId || m.owner}
+                    compact
+                  />
+                ))
+              )}
             </div>
           </div>
         </section>
@@ -307,7 +395,7 @@ export default function Dashboard() {
             <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3.5 border-b border-line dark:border-dark-border">
               <div>
                 <span className="font-mono text-[10px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium">
-                  Live Stream
+                  {demoMode ? "SIMULATED FEED" : "Live Stream"}
                 </span>
                 <h2 className="text-base sm:text-[17px] font-semibold tracking-[-0.01em] text-ink dark:text-white">
                   Agent payment feed
@@ -349,7 +437,13 @@ export default function Dashboard() {
             <div className="max-h-[390px] overflow-y-auto divide-y divide-line dark:divide-dark-border -mx-4 sm:-mx-5 px-4 sm:px-5 scrollbar-thin">
               {filteredProposals.length === 0 ? (
                 <div className="py-12 text-center text-xs text-mute dark:text-dark-mute">
-                  No proposals match the active filter.
+                  {demoMode
+                    ? "No demo proposals match this filter."
+                    : liveProposals.loading
+                    ? "Loading proposals…"
+                    : liveProposals.error
+                    ? "Proposals could not be loaded. See the error above."
+                    : "No proposals found for this mandate yet."}
                 </div>
               ) : (
                 filteredProposals.map((p, index) => (

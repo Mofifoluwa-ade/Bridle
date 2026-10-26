@@ -136,6 +136,7 @@ function WalletButton() {
 export function AppShell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
+  const { accountId } = useWallet();
   const {
     isGuideModalOpen,
     openGuideModal,
@@ -397,8 +398,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         isOpen={isGuideModalOpen}
         onClose={closeGuideModal}
         onStartTour={(stepId) => startTour(stepId)}
+        accountId={accountId}
         onOpenMandateBuilder={() => router.push("/app/mandates/new")}
-        onOpenManualProposal={() => router.push("/app")}
+        onOpenManualProposal={() => router.push("/app/agent")}
         onRunStressTest={() => {
           router.push("/app");
           setTimeout(() => {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 
 type GettingStartedModalProps = {
+  accountId?: string | null;
   isOpen: boolean;
   onClose: () => void;
   onStartTour?: (stepId?: number) => void;
@@ -19,6 +20,7 @@ type Step = {
 };
 
 export function GettingStartedModal({
+  accountId = null,
   isOpen,
   onClose,
   onStartTour,
@@ -26,8 +28,37 @@ export function GettingStartedModal({
   onOpenManualProposal,
   onRunStressTest,
 }: GettingStartedModalProps) {
-  const [completedSteps, setCompletedSteps] = useState<number[]>([1]);
-  const [activeStepId, setActiveStepId] = useState<number>(2);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [activeStepId, setActiveStepId] = useState<number>(1);
+  const [progressLoaded, setProgressLoaded] = useState(false);
+
+  // Keep checklist progress between visits; do not imply completion by default
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("bridle_getting_started_progress");
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter((id): id is number =>
+            Number.isInteger(id) && id >= 1 && id <= 4
+          );
+          setCompletedSteps(valid);
+          setActiveStepId([1, 2, 3, 4].find((id) => !valid.includes(id)) ?? 4);
+        }
+      } else if (accountId) {
+        setCompletedSteps([1]);
+        setActiveStepId(2);
+      }
+    } catch {}
+    setProgressLoaded(true);
+  }, [accountId]);
+
+  useEffect(() => {
+    if (!progressLoaded) return;
+    try {
+      localStorage.setItem("bridle_getting_started_progress", JSON.stringify(completedSteps));
+    } catch {}
+  }, [completedSteps, progressLoaded]);
 
   // Lock background scrolling completely on body and documentElement when modal is open
   useEffect(() => {
@@ -48,9 +79,10 @@ export function GettingStartedModal({
     {
       id: 1,
       title: "Connect owner wallet",
-      description:
-        "Owner account authenticated on NEAR Testnet (mofifoluwa.testnet).",
-      actionText: "Connected",
+      description: accountId
+        ? `Connected owner wallet: ${accountId}.`
+        : "Connect your NEAR wallet to identify the account that controls mandates and policy changes.",
+      actionText: accountId ? "Connected" : "Connect",
     },
     {
       id: 2,
@@ -111,9 +143,7 @@ export function GettingStartedModal({
 
   // Complete a step and advance sequentially
   const handleCompleteAndAdvance = (stepId: number) => {
-    if (!completedSteps.includes(stepId)) {
-      setCompletedSteps((prev) => [...prev, stepId]);
-    }
+    setCompletedSteps((prev) => (prev.includes(stepId) ? prev : [...prev, stepId]));
     const nextStep = stepId + 1;
     if (nextStep <= steps.length) {
       setActiveStepId(nextStep);
@@ -199,9 +229,9 @@ export function GettingStartedModal({
               return (
                 <div
                   key={step.id}
-                  className="flex items-start justify-between gap-3 pt-1"
+                  className="rounded-2xl border border-line dark:border-dark-border bg-paper/50 dark:bg-white/[0.03] p-3.5 sm:p-4 transition-all"
                 >
-                  <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                  <div className="flex items-start gap-3.5">
                     {/* Circle icon */}
                     <div
                       className={`flex h-5 w-5 flex-none items-center justify-center rounded-full text-xs font-semibold mt-0.5 ${
@@ -220,18 +250,29 @@ export function GettingStartedModal({
                       <p className="text-xs text-mute dark:text-dark-mute mt-1 leading-relaxed">
                         {step.description}
                       </p>
-                    </div>
-                  </div>
 
-                  {/* Action or Resume button */}
-                  <div className="flex-none pt-0.5 pl-2">
-                    <button
-                      type="button"
-                      onClick={() => handleSpotlightStep(step.id)}
-                      className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-transform hover:scale-105"
-                    >
-                      {step.actionText}
-                    </button>
+                      {/* Action buttons side by side */}
+                      <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSpotlightStep(step.id)}
+                          className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-3.5 py-1.5 text-xs font-semibold shadow-xs transition-transform hover:scale-102 flex items-center gap-1.5"
+                        >
+                          <span>{step.actionText}</span>
+                          <span className="text-[11px]">→</span>
+                        </button>
+                        {!isDone && (
+                          <button
+                            type="button"
+                            disabled={step.id === 1 && !accountId}
+                            onClick={() => handleCompleteAndAdvance(step.id)}
+                            className="rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card hover:bg-paper dark:hover:bg-dark-card-hover px-3 py-1.5 text-xs font-medium text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white disabled:cursor-not-allowed disabled:opacity-40 transition-colors shadow-2xs"
+                          >
+                            Mark complete
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );

@@ -308,8 +308,9 @@ function SpotlightOverlay() {
         router.push("/app");
       }
       setTimeout(() => {
-        const btn = document.getElementById("tour-stress-test-btn");
-        if (btn) btn.click();
+        const btn = document.getElementById("tour-stress-test-btn") as HTMLButtonElement | null;
+        if (!btn || btn.disabled) return;
+        btn.click();
       }, 300);
       endTour();
     }
