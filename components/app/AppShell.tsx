@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, type ReactNode } from "react";
 import { LogoMark, Wordmark } from "@/components/Logo";
 import { CONFIG } from "@/lib/config";
@@ -135,6 +135,7 @@ function WalletButton() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const path = usePathname();
+  const router = useRouter();
   const {
     isGuideModalOpen,
     openGuideModal,
@@ -151,7 +152,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         openGuideModal();
       }
     } catch {}
-  }, [openGuideModal]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isActive = (item: NavItem) =>
     item.exact ? path === item.href : path.startsWith(item.href);
@@ -321,7 +323,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  setIsGuideOpen(true);
+                  openGuideModal();
                 }}
                 className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-mute dark:text-dark-mute"
               >
@@ -392,11 +394,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Getting Started Guide Modal */}
       <GettingStartedModal
-        isOpen={isGuideOpen}
-        onClose={() => setIsGuideOpen(false)}
-        onOpenMandateBuilder={() => {}}
-        onOpenManualProposal={() => {}}
-        onRunStressTest={() => {}}
+        isOpen={isGuideModalOpen}
+        onClose={closeGuideModal}
+        onStartTour={(stepId) => startTour(stepId)}
+        onOpenMandateBuilder={() => router.push("/app/mandates/new")}
+        onOpenManualProposal={() => router.push("/app")}
+        onRunStressTest={() => {
+          router.push("/app");
+          setTimeout(() => {
+            const btn = document.getElementById("tour-stress-test-btn");
+            if (btn) btn.click();
+          }, 350);
+        }}
       />
     </div>
   );

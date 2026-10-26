@@ -117,7 +117,7 @@ export default function Dashboard() {
   const handleStressTest = () => {
     const attack = generateAdversarialProposal(DEFAULT_MANDATE);
     setLocalProposals((prev) => [attack, ...prev]);
-    showNotification("⚡ Defense verified: Prompt-injection attack blocked on-chain!");
+    showNotification("Defense verified: Prompt-injection attack blocked on-chain!");
   };
 
   // Filtered proposals with smooth counts
@@ -184,10 +184,9 @@ export default function Dashboard() {
             id="tour-stress-test-btn"
             type="button"
             onClick={handleStressTest}
-            className="inline-flex items-center gap-1.5 rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover shadow-2xs transition-all"
+            className="inline-flex items-center gap-1.5 rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3.5 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover shadow-2xs transition-all"
             title="Test defensive leash against prompt injection"
           >
-            <span>⚡</span>
             <span>Stress test defense</span>
           </button>
           <Link

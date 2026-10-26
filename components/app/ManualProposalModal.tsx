@@ -153,7 +153,7 @@ export function ManualProposalModal({
                     : "bg-bad-tint/60 dark:bg-bad-tint/10 text-bad border-bad/30 hover:bg-bad hover:text-white"
                 }`}
               >
-                ⚠️ Unknown address
+                Unknown address
               </button>
             </div>
           </div>

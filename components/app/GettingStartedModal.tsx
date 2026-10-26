@@ -50,28 +50,28 @@ export function GettingStartedModal({
       title: "Connect owner wallet",
       description:
         "Owner account authenticated on NEAR Testnet (mofifoluwa.testnet).",
-      actionText: "Focus wallet",
+      actionText: "Connected",
     },
     {
       id: 2,
       title: "Sign your agent's mandate",
       description:
         "Define caps, cooling thresholds, and allowlisted addresses. The agent never holds a private key.",
-      actionText: "Go to mandate",
+      actionText: "Go",
     },
     {
       id: 3,
-      title: "Test policy enforcement",
+      title: "Verify multi-chain derived accounts",
       description:
-        "Dispatch a payment or simulate a prompt-injection overspend to verify the contract leash.",
-      actionText: "Test defense",
+        "Inspect the agent's derived MPC addresses on Base Sepolia and Solana Devnet.",
+      actionText: "Inspect",
     },
     {
       id: 4,
-      title: "The Watcher Veto",
+      title: "Test policy enforcement",
       description:
-        "Every payment above the pause limit waits in a challenge window where you keep the veto.",
-      actionText: "Watch station",
+        "Dispatch a payment or simulate a prompt-injection overspend to verify the leash.",
+      actionText: "Test spend",
     },
   ];
 
@@ -133,10 +133,10 @@ export function GettingStartedModal({
       onOpenMandateBuilder();
     } else if (stepId === 3) {
       onClose();
-      onRunStressTest();
+      onOpenMandateBuilder();
     } else if (stepId === 4) {
       onClose();
-      onOpenMandateBuilder();
+      onRunStressTest();
     }
   };
 
@@ -175,33 +175,9 @@ export function GettingStartedModal({
             Getting started
           </h2>
           <p className="text-xs text-mute dark:text-dark-mute mt-1">
-            Tap any step to dim the screen and spotlight that exact button.
+            Follow the steps to configure and verify your agent's payment leash.
           </p>
         </div>
-
-        {/* Game Tutorial Mode Trigger Banner */}
-        <button
-          type="button"
-          onClick={() => handleSpotlightStep(activeStepId)}
-          className="mt-3.5 w-full flex items-center justify-between p-3 rounded-2xl border border-accent/30 bg-accent-tint/30 dark:bg-accent-tint/15 text-left hover:border-accent transition-all group shadow-2xs"
-        >
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-ink dark:bg-white text-white dark:text-ink font-bold text-xs shadow-sm">
-              🎯
-            </span>
-            <div>
-              <span className="block text-xs font-semibold text-ink dark:text-white">
-                Launch Spotlight Mode
-              </span>
-              <span className="block text-[11px] text-mute dark:text-dark-mute">
-                Dims screen and guides you to each button
-              </span>
-            </div>
-          </div>
-          <span className="text-xs font-semibold text-accent dark:text-[#46D9A4] group-hover:translate-x-0.5 transition-transform">
-            Start tour →
-          </span>
-        </button>
 
         {/* Progress Bar */}
         <div className="h-[2px] w-full bg-line dark:bg-white/10 rounded-full mt-4 overflow-hidden">
@@ -252,10 +228,9 @@ export function GettingStartedModal({
                     <button
                       type="button"
                       onClick={() => handleSpotlightStep(step.id)}
-                      className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-transform hover:scale-105 flex items-center gap-1"
+                      className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-transform hover:scale-105"
                     >
-                      <span>🎯</span>
-                      <span>{step.actionText}</span>
+                      {step.actionText}
                     </button>
                   </div>
                 </div>

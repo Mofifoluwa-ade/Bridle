@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useRef,
+  useCallback,
   type ReactNode,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -24,45 +25,45 @@ export type TourStep = {
 export const TOUR_STEPS: TourStep[] = [
   {
     id: 1,
-    questNumber: "QUEST 01",
+    questNumber: "STEP 1",
     targetId: "tour-wallet-btn",
     title: "Connect Owner Wallet",
     description:
       "Signing authority and mandate controls are bound to your NEAR account. Connect your wallet to begin steering your agent.",
-    actionText: "Click Wallet",
+    actionText: "Focus wallet",
     route: "/app",
   },
   {
     id: 2,
-    questNumber: "QUEST 02",
+    questNumber: "STEP 2",
     targetId: "tour-new-mandate-btn",
     fallbackTargetId: "tour-nav-new-mandate",
     title: "Sign Your Agent's Mandate",
     description:
       "Establish the contract leash: set daily caps, pause thresholds, and authorized destination addresses. The agent never holds private keys.",
-    actionText: "Open Mandate Builder",
+    actionText: "Open builder",
     route: "/app",
   },
   {
     id: 3,
-    questNumber: "QUEST 03",
-    targetId: "tour-stress-test-btn",
-    fallbackTargetId: "tour-nav-dashboard",
-    title: "Stress Test Policy Defense",
+    questNumber: "STEP 3",
+    targetId: "tour-nav-agent",
+    fallbackTargetId: "tour-nav-agent",
+    title: "Verify Multi-Chain Accounts",
     description:
-      "Simulate a prompt injection attack trying to steal funds or bypass caps. Watch the contract block it on-chain in real time.",
-    actionText: "Simulate Attack",
+      "Inspect the agent's derived MPC addresses on Base Sepolia and Solana Devnet. The agent never holds private keys.",
+    actionText: "Inspect agent",
     route: "/app",
   },
   {
     id: 4,
-    questNumber: "QUEST 04",
-    targetId: "tour-nav-watch",
-    fallbackTargetId: "tour-nav-watch",
-    title: "The Watcher Veto",
+    questNumber: "STEP 4",
+    targetId: "tour-stress-test-btn",
+    fallbackTargetId: "tour-nav-dashboard",
+    title: "Test Policy Enforcement",
     description:
-      "Payments above the cooling threshold wait in a challenge window. Watchers and owners can veto any suspicious payment before execution.",
-    actionText: "Open Watch Station",
+      "Dispatch a payment or simulate a prompt-injection overspend to verify the leash on-chain in real time.",
+    actionText: "Test spend",
     route: "/app",
   },
 ];
@@ -96,57 +97,66 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const startTour = (stepId?: number) => {
-    setIsGuideModalOpen(false);
-    const targetIdx = stepId
-      ? TOUR_STEPS.findIndex((s) => s.id === stepId)
-      : 0;
-    const resolvedIdx = targetIdx >= 0 ? targetIdx : 0;
-    setCurrentStepIndex(resolvedIdx);
-    setIsTourActive(true);
-
-    const step = TOUR_STEPS[resolvedIdx];
-    if (step && pathname !== step.route) {
-      router.push(step.route);
-    }
-  };
-
-  const nextStep = () => {
-    if (currentStepIndex < TOUR_STEPS.length - 1) {
-      const nextIdx = currentStepIndex + 1;
-      setCurrentStepIndex(nextIdx);
-      const step = TOUR_STEPS[nextIdx];
-      if (step && pathname !== step.route) {
-        router.push(step.route);
-      }
-    } else {
-      endTour();
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStepIndex > 0) {
-      const prevIdx = currentStepIndex - 1;
-      setCurrentStepIndex(prevIdx);
-      const step = TOUR_STEPS[prevIdx];
-      if (step && pathname !== step.route) {
-        router.push(step.route);
-      }
-    }
-  };
-
-  const endTour = () => {
+  const endTour = useCallback(() => {
     setIsTourActive(false);
-  };
+  }, []);
 
-  const openGuideModal = () => {
+  const openGuideModal = useCallback(() => {
     setIsTourActive(false);
     setIsGuideModalOpen(true);
-  };
+  }, []);
 
-  const closeGuideModal = () => {
+  const closeGuideModal = useCallback(() => {
     setIsGuideModalOpen(false);
-  };
+  }, []);
+
+  const startTour = useCallback(
+    (stepId?: number) => {
+      setIsGuideModalOpen(false);
+      const targetIdx = stepId
+        ? TOUR_STEPS.findIndex((s) => s.id === stepId)
+        : 0;
+      const resolvedIdx = targetIdx >= 0 ? targetIdx : 0;
+      setCurrentStepIndex(resolvedIdx);
+      setIsTourActive(true);
+
+      const step = TOUR_STEPS[resolvedIdx];
+      if (step && pathname !== step.route) {
+        router.push(step.route);
+      }
+    },
+    [pathname, router]
+  );
+
+  const nextStep = useCallback(() => {
+    setCurrentStepIndex((prevIdx) => {
+      if (prevIdx < TOUR_STEPS.length - 1) {
+        const nextIdx = prevIdx + 1;
+        const step = TOUR_STEPS[nextIdx];
+        if (step && pathname !== step.route) {
+          router.push(step.route);
+        }
+        return nextIdx;
+      } else {
+        setIsTourActive(false);
+        return prevIdx;
+      }
+    });
+  }, [pathname, router]);
+
+  const prevStep = useCallback(() => {
+    setCurrentStepIndex((prevIdx) => {
+      if (prevIdx > 0) {
+        const nextIdx = prevIdx - 1;
+        const step = TOUR_STEPS[nextIdx];
+        if (step && pathname !== step.route) {
+          router.push(step.route);
+        }
+        return nextIdx;
+      }
+      return prevIdx;
+    });
+  }, [pathname, router]);
 
   return (
     <TourContext.Provider
@@ -206,7 +216,7 @@ function SpotlightOverlay() {
         });
 
         const r = el.getBoundingClientRect();
-        // Add padding around target
+        // Add comfortable padding around target so glow borders look clean
         const pad = 6;
         const spotlightRect = {
           top: Math.max(0, r.top - pad),
@@ -216,10 +226,10 @@ function SpotlightOverlay() {
         };
         setRect(spotlightRect);
 
-        // Calculate card position
+        // Calculate HUD card position
         const cardW = 360;
-        const cardH = 210;
-        const spacing = 16;
+        const cardH = 220;
+        const spacing = 18;
 
         let top = spotlightRect.top + spotlightRect.height + spacing;
         // If near bottom of viewport, position above target
@@ -238,7 +248,6 @@ function SpotlightOverlay() {
       }
     };
 
-    // Initial check with brief delay for layout/render
     const timer = setTimeout(findAndMeasureTarget, 100);
     const interval = setInterval(findAndMeasureTarget, 600);
 
@@ -253,11 +262,38 @@ function SpotlightOverlay() {
     };
   }, [step]);
 
+  // When user clicks the illuminated element directly, automatically advance
+  useEffect(() => {
+    if (!step) return;
+    let el = document.getElementById(step.targetId);
+    if (!el && step.fallbackTargetId) {
+      el = document.getElementById(step.fallbackTargetId);
+    }
+    if (!el) return;
+
+    let armed = false;
+    const armTimer = setTimeout(() => {
+      armed = true;
+    }, 400);
+
+    const handleTargetClicked = () => {
+      if (!armed) return;
+      setTimeout(() => {
+        nextStep();
+      }, 300);
+    };
+
+    el.addEventListener("click", handleTargetClicked);
+    return () => {
+      clearTimeout(armTimer);
+      el?.removeEventListener("click", handleTargetClicked);
+    };
+  }, [step, nextStep]);
+
   if (!step) return null;
 
   const handleAction = () => {
     if (step.id === 1) {
-      // Connect wallet: trigger wallet button
       const btn = document.getElementById("tour-wallet-btn");
       if (btn) btn.click();
       nextStep();
@@ -265,51 +301,86 @@ function SpotlightOverlay() {
       router.push("/app/mandates/new");
       nextStep();
     } else if (step.id === 3) {
-      // Stress test: trigger stress test button
-      const btn = document.getElementById("tour-stress-test-btn");
-      if (btn) btn.click();
+      router.push("/app/agent");
       nextStep();
     } else if (step.id === 4) {
-      router.push("/app/watch");
+      if (window.location.pathname !== "/app") {
+        router.push("/app");
+      }
+      setTimeout(() => {
+        const btn = document.getElementById("tour-stress-test-btn");
+        if (btn) btn.click();
+      }, 300);
       endTour();
     }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 overflow-hidden pointer-events-auto"
-      role="dialog"
-      aria-label="Interactive Game Tutorial"
-    >
-      {/* 1. Global Dim Overlay with Cutout Glow */}
+    <>
+      {/* 1. Backdrop Quadrants: Dim everything EXCEPT the illuminated target cutout */}
       {rect ? (
-        <div
-          className="fixed rounded-2xl pointer-events-none transition-all duration-300 ease-out"
-          style={{
-            top: `${rect.top}px`,
-            left: `${rect.left}px`,
-            width: `${rect.width}px`,
-            height: `${rect.height}px`,
-            boxShadow:
-              "0 0 0 9999px rgba(5, 7, 10, 0.82), 0 0 35px rgba(70, 217, 164, 0.45)",
-          }}
-        >
-          {/* Animated Glowing Ring & Target Reticle */}
-          <div className="absolute inset-0 rounded-2xl border-2 border-[#46D9A4] ring-4 ring-[#46D9A4]/30 shadow-[0_0_25px_rgba(70,217,164,0.6)] animate-pulse" />
-          <div className="absolute -inset-1 rounded-[18px] border border-white/40 opacity-75" />
-        </div>
+        <>
+          {/* Top quadrant */}
+          <div
+            className="fixed z-40 bg-[#05070a]/80 backdrop-blur-xs pointer-events-auto transition-all duration-200"
+            style={{ top: 0, left: 0, right: 0, height: `${Math.max(0, rect.top)}px` }}
+          />
+          {/* Bottom quadrant */}
+          <div
+            className="fixed z-40 bg-[#05070a]/80 backdrop-blur-xs pointer-events-auto transition-all duration-200"
+            style={{
+              top: `${rect.top + rect.height}px`,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+          {/* Left quadrant */}
+          <div
+            className="fixed z-40 bg-[#05070a]/80 backdrop-blur-xs pointer-events-auto transition-all duration-200"
+            style={{
+              top: `${rect.top}px`,
+              left: 0,
+              width: `${Math.max(0, rect.left)}px`,
+              height: `${rect.height}px`,
+            }}
+          />
+          {/* Right quadrant */}
+          <div
+            className="fixed z-40 bg-[#05070a]/80 backdrop-blur-xs pointer-events-auto transition-all duration-200"
+            style={{
+              top: `${rect.top}px`,
+              left: `${rect.left + rect.width}px`,
+              right: 0,
+              height: `${rect.height}px`,
+            }}
+          />
+
+          {/* Illuminated Target Reticle Glow (pointer-events-none so clicks hit target) */}
+          <div
+            className="fixed z-40 pointer-events-none rounded-2xl border-2 border-[#46D9A4] ring-4 ring-[#46D9A4]/30 shadow-[0_0_35px_rgba(70,217,164,0.55)] animate-pulse transition-all duration-200"
+            style={{
+              top: `${rect.top}px`,
+              left: `${rect.left}px`,
+              width: `${rect.width}px`,
+              height: `${rect.height}px`,
+            }}
+          >
+            <div className="absolute -inset-1 rounded-[18px] border border-white/40 opacity-75" />
+          </div>
+        </>
       ) : (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs transition-opacity duration-300" />
+        <div className="fixed inset-0 z-40 bg-black/80 backdrop-blur-xs pointer-events-auto transition-opacity duration-300" />
       )}
 
-      {/* 2. Floating Game HUD Objective Card */}
+      {/* 2. Floating Game HUD Objective Card (High z-index, pointer-events-auto) */}
       <div
         ref={cardRef}
         style={{
           top: `${cardPosition.top}px`,
           left: `${cardPosition.left}px`,
         }}
-        className="fixed z-50 w-[350px] sm:w-[370px] animate-modal-in rounded-3xl border border-[#46D9A4]/35 bg-[#0F1116]/95 p-5 text-white shadow-[0_20px_60px_rgba(0,0,0,0.85)] backdrop-blur-md transition-all duration-200"
+        className="fixed z-50 w-[350px] sm:w-[370px] animate-modal-in rounded-3xl border border-[#46D9A4]/35 bg-[#0F1116]/95 p-5 text-white shadow-[0_20px_60px_rgba(0,0,0,0.85)] backdrop-blur-md transition-all duration-200 pointer-events-auto"
       >
         {/* Quest Badge & Header */}
         <div className="flex items-center justify-between pb-2 border-b border-white/10">
@@ -332,9 +403,8 @@ function SpotlightOverlay() {
 
         {/* Quest Title & Description */}
         <div className="mt-3">
-          <h3 className="text-[17px] font-semibold tracking-tight text-white flex items-center gap-1.5">
-            <span>🎯</span>
-            <span>{step.title}</span>
+          <h3 className="text-[17px] font-semibold tracking-tight text-white">
+            {step.title}
           </h3>
           <p className="mt-1.5 text-[12.5px] leading-relaxed text-gray-300">
             {step.description}
@@ -343,9 +413,9 @@ function SpotlightOverlay() {
 
         {/* Interactive Pointer Hint */}
         <div className="mt-3.5 flex items-center gap-2 rounded-xl bg-white/[0.06] border border-white/[0.08] px-3 py-2 text-[11.5px] text-[#46D9A4]">
-          <span className="text-sm">👆</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-[#46D9A4]" />
           <span className="font-medium text-gray-200 truncate">
-            Target illuminated on screen. Tap to interact!
+            Target illuminated on screen. Tap to interact.
           </span>
         </div>
 
@@ -381,6 +451,6 @@ function SpotlightOverlay() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
