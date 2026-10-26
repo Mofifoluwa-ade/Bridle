@@ -121,7 +121,12 @@ export default function Dashboard() {
 
   // Stress test handler (local simulation)
   const handleStressTest = () => {
-    if (!demoMode) return;
+    if (!demoMode) {
+      setDemoMode(true);
+      try {
+        localStorage.setItem("bridle:developer-demo-mode", "true");
+      } catch {}
+    }
     const attack = generateAdversarialProposal(DEFAULT_MANDATE);
     setLocalProposals((prev) => [attack, ...prev]);
     showNotification("Demo simulation: Prompt-injection attack blocked by policy engine!");
@@ -215,15 +220,10 @@ export default function Dashboard() {
             id="tour-stress-test-btn"
             type="button"
             onClick={handleStressTest}
-            disabled={!demoMode}
-            className="inline-flex items-center gap-1.5 rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3.5 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover shadow-2xs transition-all disabled:cursor-not-allowed disabled:opacity-40"
-            title={
-              demoMode
-                ? "Simulate prompt-injection defense locally"
-                : "Enable developer Demo Mode to run local stress test simulation"
-            }
+            className="inline-flex items-center gap-1.5 rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3.5 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover shadow-2xs transition-all"
+            title="Simulate prompt-injection defense locally"
           >
-            <span>Stress test {demoMode ? "(demo)" : "defense"}</span>
+            <span>Stress test defense</span>
           </button>
           <Link
             id="tour-new-mandate-btn"

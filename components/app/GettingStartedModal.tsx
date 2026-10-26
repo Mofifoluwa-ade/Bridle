@@ -132,12 +132,21 @@ export function GettingStartedModal({
     setActiveStepId(id);
   };
 
+  const handleRestart = () => {
+    setCompletedSteps([]);
+    setActiveStepId(1);
+    try {
+      localStorage.setItem("bridle_getting_started_progress", JSON.stringify([]));
+      localStorage.removeItem("bridle_hide_getting_started");
+    } catch {}
+  };
+
   // Trigger spotlight walkthrough on a specific step
   const handleSpotlightStep = (stepId: number) => {
     if (onStartTour) {
       onStartTour(stepId);
     } else {
-      handleAction(stepId);
+      handleDirectAction(stepId);
     }
   };
 
@@ -150,22 +159,23 @@ export function GettingStartedModal({
     }
   };
 
-  const handleAction = (stepId: number) => {
+  const handleDirectAction = (stepId: number) => {
     handleCompleteAndAdvance(stepId);
+    onClose();
 
-    if (onStartTour) {
-      onStartTour(stepId);
-      return;
-    }
-
-    if (stepId === 2) {
-      onClose();
+    if (stepId === 1) {
+      if (!accountId) {
+        const btn = document.getElementById("tour-wallet-btn");
+        if (btn) {
+          const clickable = btn.querySelector("button") || btn;
+          (clickable as HTMLElement).click();
+        }
+      }
+    } else if (stepId === 2) {
       onOpenMandateBuilder();
     } else if (stepId === 3) {
-      onClose();
-      onOpenMandateBuilder();
+      onOpenManualProposal();
     } else if (stepId === 4) {
-      onClose();
       onRunStressTest();
     }
   };
@@ -184,19 +194,42 @@ export function GettingStartedModal({
       aria-modal="true"
     >
       <div className="animate-modal-in relative w-full max-w-[420px] rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 shadow-2xl text-ink dark:text-dark-text transition-colors">
-        {/* Header: Progress Counter and Close Icon */}
+        {/* Header: Progress Counter, Restart Icon, and Close Icon */}
         <div className="flex items-center justify-between">
           <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium">
             {doneCount} OF {steps.length} DONE
           </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors p-1"
-            aria-label="Close modal"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleRestart}
+              className="rounded-lg p-1 text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white hover:bg-line/40 dark:hover:bg-white/10 transition-colors"
+              title="Restart getting started"
+              aria-label="Restart getting started"
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors p-1"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Title & Subtitle */}
@@ -255,7 +288,7 @@ export function GettingStartedModal({
                       <div className="mt-3.5 flex flex-wrap items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => handleSpotlightStep(step.id)}
+                          onClick={() => handleDirectAction(step.id)}
                           className="rounded-full bg-ink text-white hover:bg-night dark:bg-white dark:text-ink dark:hover:bg-gray-100 px-3.5 py-1.5 text-xs font-semibold shadow-xs transition-transform hover:scale-102 flex items-center gap-1.5"
                         >
                           <span>{step.actionText}</span>
