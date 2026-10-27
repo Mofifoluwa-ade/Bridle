@@ -176,18 +176,28 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* 1. Desktop Persistent Left Sidebar */}
       <aside className="hidden md:flex md:w-64 md:h-screen md:sticky md:top-0 flex-col justify-between border-r border-line dark:border-dark-border bg-white dark:bg-dark-card p-5 text-ink dark:text-dark-text select-none z-30 transition-colors">
         {/* Top: Brand Logo + Primary Nav */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between px-1">
-            <Link
-              href="/"
-              className="flex items-center gap-2.5 transition-opacity hover:opacity-85 text-ink dark:text-white"
-            >
-              <LogoMark size={24} className="text-ink dark:text-white" />
-              <Wordmark className="text-[18px]" />
-            </Link>
-            <span className="font-mono text-[10.5px] uppercase tracking-wider text-mute dark:text-dark-mute">
-              Protocol
-            </span>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <Link
+                href="/"
+                className="flex items-center gap-2.5 transition-opacity hover:opacity-85 text-ink dark:text-white"
+              >
+                <LogoMark size={24} className="text-ink dark:text-white" />
+                <Wordmark className="text-[18px]" />
+              </Link>
+              <span className="font-mono text-[10.5px] uppercase tracking-wider text-mute dark:text-dark-mute">
+                Protocol
+              </span>
+            </div>
+
+            {/* Testnet notice just below the logo */}
+            <div className="px-1 flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="font-mono text-[11px] text-mute dark:text-dark-mute">
+                testnet: not real money
+              </span>
+            </div>
           </div>
 
           {/* Navigation Links */}
@@ -277,14 +287,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               Appearance
             </span>
           </Link>
-
-          {/* Testnet notice in sidebar */}
-          <div className="pt-2 px-3 flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-            <span className="font-mono text-[11px] text-mute dark:text-dark-mute">
-              testnet: not real money
-            </span>
-          </div>
         </div>
       </aside>
 
@@ -297,22 +299,31 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
           <div className="relative w-72 max-w-[80vw] bg-white dark:bg-dark-card border-r border-line dark:border-dark-border p-5 flex flex-col justify-between z-10">
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <Link
-                  href="/"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2.5"
-                >
-                  <LogoMark size={24} className="text-ink dark:text-white" />
-                  <Wordmark className="text-[18px]" />
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-1 text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white"
-                >
-                  ✕
-                </button>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Link
+                    href="/"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2.5"
+                  >
+                    <LogoMark size={24} className="text-ink dark:text-white" />
+                    <Wordmark className="text-[18px]" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-1 text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="px-1 flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="font-mono text-[11px] text-mute dark:text-dark-mute">
+                    testnet: not real money
+                  </span>
+                </div>
               </div>
 
               <nav className="space-y-1">
@@ -361,12 +372,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span>Settings</span>
                 <span className="font-mono text-[10.5px]">Appearance</span>
               </Link>
-              <div className="pt-2 px-3 flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                <span className="font-mono text-[11px] text-mute dark:text-dark-mute">
-                  testnet: not real money
-                </span>
-              </div>
             </div>
           </div>
         </div>
