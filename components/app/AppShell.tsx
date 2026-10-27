@@ -277,6 +277,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               Appearance
             </span>
           </Link>
+
+          {/* Testnet notice in sidebar */}
+          <div className="pt-2 px-3 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span className="font-mono text-[11px] text-mute dark:text-dark-mute">
+              testnet: not real money
+            </span>
+          </div>
         </div>
       </aside>
 
@@ -353,6 +361,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span>Settings</span>
                 <span className="font-mono text-[10.5px]">Appearance</span>
               </Link>
+              <div className="pt-2 px-3 flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="font-mono text-[11px] text-mute dark:text-dark-mute">
+                  testnet: not real money
+                </span>
+              </div>
             </div>
           </div>
         </div>

@@ -62,6 +62,26 @@ export default function Settings() {
         lead="Appearance, network parameters, and live contract health."
       />
 
+      {/* Testnet Environment Banner */}
+      <div className="mb-6 rounded-2xl border border-line dark:border-dark-border bg-paper/60 dark:bg-dark-card/60 p-4 sm:p-5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-mute dark:text-dark-mute">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="flex-none inline-flex items-center gap-1.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 border border-accent/25 px-2.5 py-0.5 font-mono text-[10.5px] uppercase tracking-wider font-semibold text-accent dark:text-[#46D9A4]">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent dark:bg-[#46D9A4]" />
+            Testnet live
+          </span>
+          <span className="text-ink dark:text-white font-medium text-sm">
+            NEAR Testnet
+          </span>
+          <span className="hidden sm:inline text-dim dark:text-dark-dim">·</span>
+          <span className="text-amber-600 dark:text-amber-400 font-medium">
+            Test tokens only (no real funds)
+          </span>
+        </div>
+        <p className="text-[12px] text-mute dark:text-dark-mute sm:text-right max-w-lg leading-relaxed">
+          Mandates, proposals, and bonds run with simulated test assets on NEAR testnet.
+        </p>
+      </div>
+
       {msg && (
         <div className="mb-6 animate-fade-in">
           <Notice tone="ok" title="Saved">
