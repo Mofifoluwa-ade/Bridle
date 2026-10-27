@@ -7,7 +7,7 @@ import { Btn, Card, Field, Label, LinkBtn, Notice, PageHeader, Skeleton, monoInp
 import { useWallet } from "@/components/app/WalletProvider";
 import { useMyMandates } from "@/hooks/useMyData";
 import { CONFIG } from "@/lib/config";
-import { formatNear, parseUnits, usdc, validAddress } from "@/lib/format";
+import { formatNear, formatNearWithUsd, parseUnits, usdc, validAddress } from "@/lib/format";
 import type { Chain } from "@/lib/types";
 
 export default function Agent() {
@@ -104,7 +104,7 @@ function Body() {
 
           {need > BigInt(0) && (
             <Notice tone="warn" title="Post the bond first (testnet NEAR)">
-              <p>The mandate needs {formatNear(need)} more in testnet NEAR from you before it accepts proposals.</p>
+              <p>The mandate needs {formatNearWithUsd(need)} more in testnet NEAR from you before it accepts proposals.</p>
               <Btn className="mt-3" size="sm" busy={busy === "bond"} onClick={() => run("bond", () => call({ method: "post_bond", args: { mandate_id: m.id }, deposit: need.toString() }))}>
                 Post {formatNear(need)} (testnet NEAR)
               </Btn>

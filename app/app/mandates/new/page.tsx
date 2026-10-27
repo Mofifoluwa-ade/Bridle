@@ -6,7 +6,7 @@ import { NeedsContract, NeedsWallet } from "@/components/app/Gate";
 import { Btn, Card, Field, Label, Notice, PageHeader, inputCls, monoInputCls } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
 import { CHAINS } from "@/lib/config";
-import { duration, formatNear, parseNear, parseUnits, usdc, validAddress, validNearAccount } from "@/lib/format";
+import { duration, formatNear, formatNearWithUsd, parseNear, parseUnits, usdc, validAddress, validNearAccount } from "@/lib/format";
 import type { Chain } from "@/lib/types";
 
 type Row = { chain: Chain; address: string };
@@ -231,7 +231,7 @@ function Form() {
             <Field label="Challenge window (min)" hint="How long a large payment waits" error={show("window")}>
               <input className={monoInputCls} inputMode="numeric" value={windowMin} onChange={(e) => setWindowMin(e.target.value)} />
             </Field>
-            <Field label="Agent bond (NEAR)" hint="The agent stakes this; it is slashed if a flag is confirmed" error={show("bond")}>
+            <Field label="Agent bond (NEAR)" hint={v.b ? `Agent stakes ${formatNearWithUsd(v.b)}; slashed if a flag is confirmed` : "The agent stakes this; slashed if a flag is confirmed"} error={show("bond")}>
               <input className={monoInputCls} inputMode="decimal" value={bond} onChange={(e) => setBond(e.target.value)} />
             </Field>
             <Field label="Expires in (days)" hint="Up to 30" error={show("days")}>
@@ -262,7 +262,7 @@ function Form() {
               Anything above <span className="font-mono text-white">{v.t !== null ? usdc(v.t) : "—"}</span> waits{" "}
               <span className="font-mono text-white">{Number.isFinite(v.w) ? duration(v.w) : "—"}</span> for your veto.
             </li>
-            <li>The agent stakes <span className="font-mono text-white">{v.b ? formatNear(v.b) : "—"}</span> before it can propose.</li>
+            <li>The agent stakes <span className="font-mono text-white">{v.b ? formatNearWithUsd(v.b) : "—"}</span> before it can propose.</li>
             <li>Expires in <span className="font-mono text-white">{v.dy || "—"}</span> days. You can revoke any time, instantly.</li>
           </ul>
 

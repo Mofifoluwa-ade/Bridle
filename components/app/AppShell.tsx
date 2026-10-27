@@ -10,6 +10,7 @@ import { Btn, Notice } from "./ui";
 import { useWallet } from "./WalletProvider";
 import { GettingStartedModal } from "./GettingStartedModal";
 import { useTour } from "./SpotlightTour";
+import { useAccountBalance } from "@/hooks/useNearBalance";
 
 type NavItem = {
   href: string;
@@ -110,6 +111,8 @@ const NAV_ITEMS: NavItem[] = [
 
 function WalletButton() {
   const { ready, accountId, signIn, signOut } = useWallet();
+  const balance = useAccountBalance(accountId);
+
   if (!accountId)
     return (
       <div id="tour-wallet-btn">
@@ -120,12 +123,19 @@ function WalletButton() {
     );
   return (
     <div id="tour-wallet-btn" className="flex items-center gap-2">
-      <span
-        className="hidden rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3 py-1.5 font-mono text-[12.5px] text-ink dark:text-white sm:block shadow-2xs"
-        title={accountId}
+      <div
+        className="hidden rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3 py-1.5 font-mono text-[12px] text-ink dark:text-white sm:flex items-center gap-2 shadow-2xs"
+        title={`${accountId} · ${balance.near} NEAR ≈ ${balance.usd} (Market rate)`}
       >
-        {shortAddr(accountId, 10, 6)}
-      </span>
+        <span>{shortAddr(accountId, 8, 4)}</span>
+        <span className="text-dim dark:text-dark-dim">·</span>
+        <span className="font-semibold text-accent dark:text-[#46D9A4]">
+          {balance.loading ? "…" : `${balance.near} NEAR`}
+        </span>
+        <span className="text-mute dark:text-dark-mute text-[11px] font-sans">
+          ({balance.usd})
+        </span>
+      </div>
       <Btn size="sm" variant="outline" onClick={() => signOut()}>
         Disconnect
       </Btn>

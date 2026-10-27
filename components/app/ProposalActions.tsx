@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CONFIG } from "@/lib/config";
-import { formatNear } from "@/lib/format";
+import { formatNear, formatNearWithUsd } from "@/lib/format";
 import type { Mandate, Proposal } from "@/lib/types";
 import { Btn, Notice, inputCls } from "./ui";
 import { useWallet } from "./WalletProvider";
@@ -86,7 +86,7 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
           <p className="text-[15px] font-semibold text-ink dark:text-white">Why does this look wrong?</p>
           <input className={inputCls} maxLength={280} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="One sentence the owner can act on" />
           <p className="mt-2 text-[14px] text-mute dark:text-dark-mute">
-            You stake {formatNear(bondYocto)} in testnet NEAR (no real funds). If the owner confirms, you win 40% of the agent's bond. If the owner dismisses, your stake goes to the agent.
+            You stake {formatNearWithUsd(bondYocto)} in testnet NEAR (no real funds). If the owner confirms, you win 40% of the agent's bond. If the owner dismisses, your stake goes to the agent.
           </p>
           <div className="mt-4 flex gap-3">
             <Btn busy={busy === "flag"} disabled={!reason.trim()} onClick={() => run("flag", "flag", { proposal_id: p.id, reason: reason.trim() }, bondYocto)}>

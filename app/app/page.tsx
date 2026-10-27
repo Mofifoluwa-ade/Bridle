@@ -21,10 +21,12 @@ import { useNow } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
 import { timeAgo, usdc } from "@/lib/format";
 import { ProposalDetailModal } from "@/components/app/ProposalDetailModal";
+import { useAccountBalance } from "@/hooks/useNearBalance";
 import type { Proposal, Mandate } from "@/lib/types";
 
 export default function Dashboard() {
   const { accountId, signIn, ready } = useWallet();
+  const walletBalance = useAccountBalance();
   const now = useNow(5000);
   const liveMandates = useMyMandates();
   const liveProposals = useProposalsFor(liveMandates.data);
@@ -131,11 +133,14 @@ export default function Dashboard() {
             Testnet live
           </span>
           <span className="text-ink dark:text-white font-medium">
-            NEAR Testnet (<span className="font-mono text-accent dark:text-[#46D9A4]">{CONFIG.contractId || "bridle.testnet"}</span>)
+            NEAR Testnet (<span className="font-mono text-accent dark:text-[#46D9A4]">{walletBalance.account}</span>)
           </span>
           <span className="hidden md:inline text-dim dark:text-dark-dim">·</span>
+          <span className="font-mono text-ink dark:text-white font-semibold">
+            {walletBalance.loading ? "Loading balance…" : `${walletBalance.near} NEAR ≈ ${walletBalance.usd}`}
+          </span>
           <span className="text-amber-600 dark:text-amber-400 font-medium">
-            Test tokens only (no real funds)
+            (Market rate ${walletBalance.price.toFixed(2)}/NEAR)
           </span>
         </div>
         <p className="text-[11.5px] text-mute dark:text-dark-mute">
@@ -171,8 +176,25 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Top 3 Metric Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Top 4 Metric Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <Stat
+          label="Wallet balance"
+          value={walletBalance.loading ? "Loading…" : walletBalance.usd}
+          sub={
+            walletBalance.loading
+              ? "Fetching on-chain balance…"
+              : `${walletBalance.near} NEAR (testnet) · $${walletBalance.price.toFixed(2)}/NEAR`
+          }
+          badge={
+            <span
+              className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border truncate max-w-[100px]"
+              title={walletBalance.account}
+            >
+              {walletBalance.account}
+            </span>
+          }
+        />
         <Stat
           label="Active mandates"
           value={`${activeMandates.length} active`}

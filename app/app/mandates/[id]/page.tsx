@@ -10,7 +10,7 @@ import { Addr, Btn, Card, Empty, Field, Label, LinkBtn, NearAccountLink, Notice,
 import { useWallet } from "@/components/app/WalletProvider";
 import { useNow, usePoll } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
-import { countdown, duration, formatNear, nsToMs, parseUnits, usdc } from "@/lib/format";
+import { countdown, duration, formatNear, formatNearWithUsd, nsToMs, parseUnits, usdc } from "@/lib/format";
 import { api } from "@/lib/near";
 
 export default function MandatePage() {
@@ -72,7 +72,7 @@ function Body({ id }: { id: number }) {
       {isAgent && mandate.state === "Active" && BigInt(missing) > BigInt(0) && (
         <div className="mb-6">
           <Notice tone="warn" title="Post your bond to start proposing (testnet NEAR)">
-            <p>This mandate needs {formatNear(missing)} more in testnet NEAR from the agent before any payment is accepted (non-real funds).</p>
+            <p>This mandate needs {formatNearWithUsd(missing)} more in testnet NEAR from the agent before any payment is accepted (non-real funds).</p>
             <Btn className="mt-3" size="sm" busy={busy === "bond"} onClick={() => act("bond", "post_bond", { mandate_id: id }, missing)}>
               Post {formatNear(missing)} (testnet NEAR)
             </Btn>
@@ -91,7 +91,7 @@ function Body({ id }: { id: number }) {
               <Row k="Challenge window" v={duration(mandate.challenge_window_s)} />
               <Row k="Chains" v={mandate.chains.join(", ")} />
               <Row k="Assets" v={mandate.assets.join(", ")} />
-              <Row k="Agent bond" v={`${formatNear(mandate.bond_posted)} of ${formatNear(mandate.bond)}`} />
+              <Row k="Agent bond" v={`${formatNear(mandate.bond_posted)} of ${formatNearWithUsd(mandate.bond)}`} />
               <Row k={expired ? "Expired" : "Expires"} v={new Date(nsToMs(mandate.expires_at)).toLocaleString()} />
             </dl>
             <div className="mt-6 border-t border-line pt-6">

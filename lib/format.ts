@@ -35,6 +35,23 @@ export function formatNear(yocto: string | bigint): string {
   return `${whole}${f ? "." + f : ""} NEAR`;
 }
 
+export function yoctoToNearNumber(yocto: string | bigint): number {
+  const n = typeof yocto === "bigint" ? yocto : BigInt(yocto);
+  const whole = Number(n / YOCTO);
+  const frac = Number(n % YOCTO) / 1e24;
+  return +(whole + frac).toFixed(2);
+}
+
+export function formatNearWithUsd(yocto: string | bigint, nearPriceUsd = 4.48): string {
+  const nearStr = formatNear(yocto);
+  const nearNum = yoctoToNearNumber(yocto);
+  const usd = (nearNum * nearPriceUsd).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+  return `${nearStr} (≈ ${usd})`;
+}
+
 export const nsToMs = (ns: string | bigint) => Number(BigInt(ns) / BigInt(1_000_000));
 
 export function shortAddr(a: string, head = 6, tail = 4): string {
