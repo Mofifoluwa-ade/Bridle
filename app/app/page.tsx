@@ -20,7 +20,6 @@ import { useMyMandates, useProposalsFor } from "@/hooks/useMyData";
 import { useNow } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
 import { timeAgo, usdc } from "@/lib/format";
-import { ProposalDetailModal } from "@/components/app/ProposalDetailModal";
 import { useAccountBalance } from "@/hooks/useNearBalance";
 import type { Proposal, Mandate } from "@/lib/types";
 
@@ -32,7 +31,6 @@ export default function Dashboard() {
   const liveProposals = useProposalsFor(liveMandates.data);
 
   const [filter, setFilter] = useState<string>("All");
-  const [inspectProposal, setInspectProposal] = useState<any | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
   const showNotification = (msg: string) => {
@@ -396,13 +394,6 @@ export default function Dashboard() {
         </section>
       </div>
 
-      {/* Inspect Modal */}
-      {inspectProposal && (
-        <ProposalDetailModal
-          proposal={inspectProposal}
-          onClose={() => setInspectProposal(null)}
-        />
-      )}
     </div>
   );
 }
