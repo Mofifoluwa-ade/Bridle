@@ -37,8 +37,9 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
   const canExecute = (p.status === "Ready" || (p.status === "Waiting" && !windowOpen)) && m.state === "Active";
   const canFlag = p.status === "Waiting" && windowOpen && accountId !== m.owner && accountId !== m.agent;
   const canExpire = p.status === "Flagged" && !windowOpen;
+  const canTimeout = p.status === "Signing" && now >= execAt + 3600_000;
 
-  if (!canVeto && !canResolve && !canExecute && !canFlag && !canExpire) return null;
+  if (!canVeto && !canResolve && !canExecute && !canFlag && !canExpire && !canTimeout) return null;
   if (!accountId)
     return (
       <div className="flex items-center gap-3">
@@ -72,6 +73,11 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
         {canExpire && (
           <Btn variant="outline" busy={busy === "expire"} onClick={() => run("expire", "expire_flag", { proposal_id: p.id })}>
             Close expired report
+          </Btn>
+        )}
+        {canTimeout && (
+          <Btn variant="outline" busy={busy === "timeout"} onClick={() => run("timeout", "timeout_signing", { proposal_id: p.id })}>
+            Expire stuck signing
           </Btn>
         )}
         {canFlag && !flagging && (

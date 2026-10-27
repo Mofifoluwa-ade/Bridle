@@ -226,6 +226,33 @@ impl Bridle {
         let mut m = self.mandate(mandate_id);
         require!(env::predecessor_account_id() == m.owner, "only the owner can revoke");
         m.state = MandateState::Revoked;
+
+        // Cancel any in-flight proposals that have not yet been signed so the agent bond does not stay locked
+        let in_flight_ids: Vec<u64> = self
+            .proposals
+            .values()
+            .filter(|p| {
+                p.mandate_id == mandate_id
+                    && matches!(
+                        p.status,
+                        ProposalStatus::Waiting | ProposalStatus::Ready | ProposalStatus::Flagged
+                    )
+            })
+            .map(|p| p.id)
+            .collect();
+
+        for pid in in_flight_ids {
+            let mut p = self.proposal(pid);
+            let had_flag = p.status == ProposalStatus::Flagged;
+            self.refund_budget(&mut m, &p);
+            if had_flag {
+                self.refund_flagger(&mut p);
+            }
+            p.status = ProposalStatus::Cancelled;
+            p.reason = Some("Mandate revoked by owner".into());
+            self.proposals.insert(pid, p);
+        }
+
         self.mandates.insert(mandate_id, m);
         event("mandate_revoked", format!("{{\"id\":{}}}", mandate_id));
     }
@@ -381,7 +408,13 @@ impl Bridle {
         );
         require!(
             !self.proposals.values().any(|p| p.mandate_id == mandate_id
-                && matches!(p.status, ProposalStatus::Waiting | ProposalStatus::Flagged | ProposalStatus::Signing)),
+                && matches!(
+                    p.status,
+                    ProposalStatus::Waiting
+                        | ProposalStatus::Ready
+                        | ProposalStatus::Flagged
+                        | ProposalStatus::Signing
+                )),
             "proposals are still in flight"
         );
         let amt = m.bond_posted.0;
@@ -519,6 +552,39 @@ impl Bridle {
         p.tx_hash = Some(tx_hash);
         self.proposals.insert(proposal_id, p);
         event("executed", format!("{{\"id\":{}}}", proposal_id));
+    }
+
+    /// The registered executor reports that signing or broadcast failed.
+    pub fn report_failure(&mut self, proposal_id: u64, reason: String) {
+        require!(env::predecessor_account_id() == self.executor, "only the executor can report");
+        let mut p = self.proposal(proposal_id);
+        require!(p.status == ProposalStatus::Signing, "proposal is not being signed");
+        let mut m = self.mandate(p.mandate_id);
+        self.refund_budget(&mut m, &p);
+        p.status = ProposalStatus::Cancelled;
+        p.reason = Some(reason);
+        self.mandates.insert(p.mandate_id, m);
+        self.proposals.insert(proposal_id, p);
+        event("execution_failed", format!("{{\"id\":{}}}", proposal_id));
+    }
+
+    /// If a proposal has been stuck in Signing for over 1 hour, anyone can expire it
+    /// so the agent's bond does not remain stuck indefinitely.
+    pub fn timeout_signing(&mut self, proposal_id: u64) {
+        let mut p = self.proposal(proposal_id);
+        require!(p.status == ProposalStatus::Signing, "proposal is not in signing state");
+        let timeout_ns = 3600 * SEC_NS;
+        require!(
+            env::block_timestamp() >= p.executable_at.0 + timeout_ns,
+            "signing has not timed out yet"
+        );
+        let mut m = self.mandate(p.mandate_id);
+        self.refund_budget(&mut m, &p);
+        p.status = ProposalStatus::Expired;
+        p.reason = Some("Signing timed out without execution report".into());
+        self.mandates.insert(p.mandate_id, m);
+        self.proposals.insert(proposal_id, p);
+        event("signing_timed_out", format!("{{\"id\":{}}}", proposal_id));
     }
 
     // ───────────── views ─────────────
@@ -753,6 +819,25 @@ mod tests {
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| c.execute(p.id)));
         assert!(r.is_err());
         assert_eq!(propose(&mut c, id, 1_000_000, ADDR, T0).reason.as_deref(), Some("The mandate is revoked"));
+    }
+
+    #[test]
+    fn revoke_cancels_in_flight_proposals_and_allows_bond_withdrawal() {
+        let (mut c, id) = setup();
+        // Waiting proposal (above threshold)
+        let p = propose(&mut c, id, 24_000_000, ADDR, T0);
+        assert_eq!(p.status, ProposalStatus::Waiting);
+
+        ctx("owner.testnet", 0, T0 + 10 * SEC_NS);
+        c.revoke(id);
+
+        // Cancelled by revoke
+        assert_eq!(c.get_proposal(p.id).unwrap().status, ProposalStatus::Cancelled);
+
+        // Bond is unlocked and can be withdrawn by agent
+        ctx("agent.testnet", 0, T0 + 15 * SEC_NS);
+        c.withdraw_bond(id);
+        assert_eq!(c.get_mandate(id).unwrap().bond_posted.0, 0);
     }
 
     impl Bridle {

@@ -1013,6 +1013,16 @@ export default function DocsPage() {
                         <td className="p-3.5 text-mute dark:text-dark-mute">Anyone</td>
                         <td className="p-3.5 font-sans text-mute dark:text-dark-mute">Applies queued limit increases once their delay has passed.</td>
                       </tr>
+                      <tr>
+                        <td className="p-3.5 font-bold text-ink dark:text-white">timeout_signing(proposal_id)</td>
+                        <td className="p-3.5 text-mute dark:text-dark-mute">Anyone</td>
+                        <td className="p-3.5 font-sans text-mute dark:text-dark-mute">Expires any proposal stuck in Signing for over 1 hour to release agent bond.</td>
+                      </tr>
+                      <tr>
+                        <td className="p-3.5 font-bold text-ink dark:text-white">report_failure(proposal_id, reason)</td>
+                        <td className="p-3.5 text-mute dark:text-dark-mute">Executor</td>
+                        <td className="p-3.5 font-sans text-mute dark:text-dark-mute">Reports execution failure on destination chain, cancelling proposal and refunding budget.</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
