@@ -137,7 +137,7 @@ export function ProposalRow({
             </span>
             <span className="font-mono text-[11.5px] text-mute dark:text-dark-mute">
               #{p.id}
-              {showMandate && ` • mandate ${p.mandate_id}`}
+              {showMandate && ` • Rule #${p.mandate_id}`}
             </span>
             <span className="rounded-full bg-paper dark:bg-dark-bg border border-line dark:border-dark-border px-2 py-0.5 font-mono text-[10.5px] text-mute dark:text-dark-mute sm:hidden">
               {p.chain}

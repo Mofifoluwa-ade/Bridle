@@ -38,7 +38,7 @@ export function ProposalDetailModal({
         <div className="flex items-center justify-between gap-4 pb-4 border-b border-line dark:border-dark-border">
           <div>
             <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute">
-              Proposal detail
+              Payment details
             </span>
             <h3 className="text-xl font-semibold tracking-[-0.02em] text-ink dark:text-white mt-0.5">
               {proposal.recipientLabel || "Payment inspection"}
@@ -58,7 +58,7 @@ export function ProposalDetailModal({
         <div className="my-5 p-4 rounded-2xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border">
           <div className="flex items-center justify-between gap-2 mb-1.5">
             <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute">
-              Contract verdict
+              Spending rule check
             </span>
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -81,10 +81,10 @@ export function ProposalDetailModal({
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2">
             <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute">
-              Agent input schema (4 fields only)
+              What the agent requested (4 simple fields)
             </span>
             <span className="text-[10.5px] font-mono text-accent bg-accent-tint border border-accent/20 px-2 py-0.5 rounded-full">
-              Zero key custody
+              Agent has no private keys
             </span>
           </div>
           <pre className="rounded-2xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border p-4 font-mono text-xs text-ink dark:text-[#E3E6EB] overflow-x-auto leading-relaxed">
@@ -103,20 +103,19 @@ export function ProposalDetailModal({
 )}
           </pre>
           <p className="mt-2 text-xs text-mute dark:text-dark-mute">
-            The agent supplies only these four high-level declarative fields.
-            It cannot construct arbitrary calldata or touch destination private keys.
+            Your AI agent asks only for these 4 fields. It never sees private keys and cannot move funds on its own.
           </p>
         </div>
 
         {/* Surface 2: Contract-built calldata & MPC signature */}
         <div className="mb-5">
           <span className="block font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute mb-2">
-            Contract-built calldata & MPC derivation
+            Automatic blockchain transaction details
           </span>
           <div className="p-4 rounded-2xl border border-line dark:border-dark-border bg-paper dark:bg-dark-bg space-y-3 font-mono text-xs">
             <div>
               <span className="text-mute dark:text-dark-mute block text-[10.5px]">
-                Target token contract ({proposal.chain})
+                Token contract ({proposal.chain})
               </span>
               <span className="text-ink dark:text-white break-all font-medium">
                 {proposal.chain === "Base"
@@ -127,7 +126,7 @@ export function ProposalDetailModal({
 
             <div>
               <span className="text-mute dark:text-dark-mute block text-[10.5px]">
-                Derived signer account (NEAR Chain Signatures)
+                Secure signing address
               </span>
               <span className="text-ink dark:text-white break-all font-medium">
                 {proposal.calldataPreview?.derivedSigner ||
@@ -138,7 +137,7 @@ export function ProposalDetailModal({
             {proposal.calldataPreview?.payloadHex && (
               <div>
                 <span className="text-mute dark:text-dark-mute block text-[10.5px]">
-                  Raw payload constructed by adapter
+                  Raw blockchain payload
                 </span>
                 <span className="text-mute dark:text-dark-mute break-all text-[11px]">
                   {proposal.calldataPreview.payloadHex}
@@ -152,10 +151,10 @@ export function ProposalDetailModal({
         {proposal.agentBondLocked && (
           <div className="mb-5 p-3.5 rounded-2xl bg-warn-tint dark:bg-warn-tint/10 border border-warn/20 text-xs text-warn">
             <span className="font-semibold block mb-0.5">
-              Cooling threshold challenge active:
+              Paused for safety review:
             </span>
-            Proposal exceeds threshold. Agent locked {proposal.agentBondLocked}{" "}
-            NEAR bond. Watchers can flag for a 40% slash reward.
+            Payment is above the pause limit. Agent locked {proposal.agentBondLocked}{" "}
+            NEAR security deposit. Reviewers can flag bad payments to earn a reward.
           </div>
         )}
 

@@ -78,32 +78,32 @@ export function GettingStartedModal({
   const steps: Step[] = [
     {
       id: 1,
-      title: "Connect owner wallet",
+      title: "Connect your wallet",
       description: accountId
-        ? `Connected owner wallet: ${accountId}.`
-        : "Connect your NEAR wallet to identify the account that controls mandates and policy changes.",
-      actionText: accountId ? "Connected" : "Connect",
+        ? `Your wallet is connected: ${accountId}.`
+        : "Connect your NEAR wallet so you can create and manage spending rules.",
+      actionText: accountId ? "Connected" : "Connect wallet",
     },
     {
       id: 2,
-      title: "Sign your agent's mandate",
+      title: "Create spending rules",
       description:
-        "Define caps, cooling thresholds, and allowlisted addresses. The agent never holds a private key.",
-      actionText: "Go",
+        "Set daily limits, max payment amounts, and who your agent can pay. Your agent can never spend more than this.",
+      actionText: "New rule",
     },
     {
       id: 3,
-      title: "Verify multi-chain derived accounts",
+      title: "Check agent addresses",
       description:
-        "Inspect the agent's derived MPC addresses on Base Sepolia and Solana Devnet.",
-      actionText: "Inspect",
+        "See the multi-chain addresses your agent uses to send payments on Base and Solana without touching private keys.",
+      actionText: "View agent",
     },
     {
       id: 4,
-      title: "Test policy enforcement",
+      title: "Send a test payment",
       description:
-        "Dispatch a payment or simulate a prompt-injection overspend to verify the leash.",
-      actionText: "Test spend",
+        "Try sending a test payment to see how your rules automatically approve or block requests in real time.",
+      actionText: "Test now",
     },
   ];
 
@@ -238,7 +238,7 @@ export function GettingStartedModal({
             Getting started
           </h2>
           <p className="text-xs text-mute dark:text-dark-mute mt-1">
-            Follow the steps to configure and verify your agent's payment leash.
+            Follow these 4 simple steps to set up and protect your AI agent&apos;s spending.
           </p>
         </div>
 

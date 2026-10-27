@@ -14,9 +14,12 @@ type Row = { chain: Chain; address: string };
 export default function NewMandate() {
   return (
     <>
-      <PageHeader title="New mandate" lead="Write the rules once and sign them. The agent can only act inside them." />
+      <PageHeader
+        title="New spending rule"
+        lead="Set your rules once. Your AI agent can only spend within these limits."
+      />
       <NeedsContract>
-        <NeedsWallet why="You sign the mandate with the wallet that will own it.">
+        <NeedsWallet why="You will sign and activate this rule with your wallet.">
           <Form />
         </NeedsWallet>
       </NeedsContract>
@@ -48,9 +51,9 @@ function Form() {
     const p = parseUnits(perTx), d = parseUnits(daily), t = parseUnits(threshold);
     if (!p || p === BigInt(0)) e.perTx = "Enter an amount above zero";
     if (!d) e.daily = "Enter an amount";
-    else if (p && d < p) e.daily = "Daily cap must be at least the per-payment cap";
+    else if (p && d < p) e.daily = "Daily limit must be at least the single payment limit";
     if (t === null) e.threshold = "Enter an amount (0 pauses every payment)";
-    else if (p && t > p) e.threshold = "Cannot be higher than the per-payment cap";
+    else if (p && t > p) e.threshold = "Cannot be higher than the per-payment limit";
     const w = Number(windowMin) * 60;
     if (!Number.isFinite(w) || w < 60 || w > 86400) e.window = "Between 1 and 1,440 minutes";
     const b = parseNear(bond);
@@ -58,7 +61,7 @@ function Form() {
     const dy = Number(days);
     if (!Number.isInteger(dy) || dy < 1 || dy > 30) e.days = "Whole days, 1 to 30";
     const filled = rows.filter((r) => r.address.trim());
-    if (filled.length === 0) e.rows = "Add at least one recipient. With none, every payment is blocked.";
+    if (filled.length === 0) e.rows = "Add at least one recipient. Without this, all payments will be blocked.";
     filled.forEach((r, i) => {
       if (!chains.includes(r.chain)) e[`row${i}`] = `${r.chain} is not selected above`;
       else if (!validAddress(r.chain, r.address.trim())) e[`row${i}`] = r.chain === "Base" ? "Expected a 0x address with 40 hex characters" : "Expected a base58 Solana address";
@@ -102,16 +105,16 @@ function Form() {
     <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
       <div className="space-y-6">
         <Card className="space-y-6 p-8">
-          <Label>01 · Who</Label>
-          <Field label="Agent account" hint="The NEAR account your agent signs in with. It can propose payments and nothing else." error={show("agent")}>
+          <Label>01 · Agent account</Label>
+          <Field label="Agent NEAR address" hint="The NEAR account your AI agent uses. It can only request payments within your rules." error={show("agent")}>
             <input className={monoInputCls} value={agent} onChange={(e) => setAgent(e.target.value.trim())} placeholder="your-agent.testnet" autoCapitalize="none" spellCheck={false} />
           </Field>
         </Card>
 
         <Card className="space-y-6 p-8">
-          <Label>02 · Where it can pay</Label>
+          <Label>02 · Networks & approved recipients</Label>
           <fieldset>
-            <legend className="text-[15px] font-semibold">Chains</legend>
+            <legend className="text-[15px] font-semibold">Blockchains</legend>
             <div className="mt-2 flex gap-3">
               {CHAINS.map((c) => (
                 <label
@@ -145,9 +148,9 @@ function Form() {
           </fieldset>
 
           <div>
-            <p className="text-[15px] font-semibold text-ink dark:text-white">Allowed recipients</p>
+            <p className="text-[15px] font-semibold text-ink dark:text-white">Approved recipients</p>
             <p className="mt-1 text-[14px] text-mute dark:text-dark-mute">
-              The agent can only pay addresses on this list.
+              Your agent can only send money to addresses on this list. Any other address is automatically blocked.
             </p>
             <div className="mt-3 space-y-3">
               {rows.map((r, i) => (
@@ -204,81 +207,81 @@ function Form() {
             {show("rows") && <p className="mt-2 text-[14px] text-bad">{v.e.rows}</p>}
             {rows.length < 20 && (
               <Btn variant="outline" size="sm" type="button" className="mt-3" onClick={() => setRows([...rows, { chain: chains[0] ?? "Base", address: "" }])}>
-                Add recipient
+                + Add recipient
               </Btn>
             )}
           </div>
         </Card>
 
         <Card className="space-y-6 p-8">
-          <Label>03 · How much</Label>
+          <Label>03 · Spending limits</Label>
           <div className="grid gap-6 sm:grid-cols-3">
-            <Field label="Per payment (USDC)" error={show("perTx")}>
+            <Field label="Max per payment (USDC)" hint="The most it can send at once" error={show("perTx")}>
               <input className={monoInputCls} inputMode="decimal" value={perTx} onChange={(e) => setPerTx(e.target.value)} />
             </Field>
-            <Field label="Per day (USDC)" hint="UTC day" error={show("daily")}>
+            <Field label="Max per day (USDC)" hint="Resets every 24 hours" error={show("daily")}>
               <input className={monoInputCls} inputMode="decimal" value={daily} onChange={(e) => setDaily(e.target.value)} />
             </Field>
-            <Field label="Pause above (USDC)" hint="Held for your veto" error={show("threshold")}>
+            <Field label="Pause payments above (USDC)" hint="Larger payments pause for review" error={show("threshold")}>
               <input className={monoInputCls} inputMode="decimal" value={threshold} onChange={(e) => setThreshold(e.target.value)} />
             </Field>
           </div>
         </Card>
 
         <Card className="space-y-6 p-8">
-          <Label>04 · Safety</Label>
+          <Label>04 · Safety & Review time</Label>
           <div className="grid gap-6 sm:grid-cols-3">
-            <Field label="Challenge window (min)" hint="How long a large payment waits" error={show("window")}>
+            <Field label="Review pause time (minutes)" hint="How long large payments pause" error={show("window")}>
               <input className={monoInputCls} inputMode="numeric" value={windowMin} onChange={(e) => setWindowMin(e.target.value)} />
             </Field>
-            <Field label="Agent bond (NEAR)" hint={v.b ? `Agent stakes ${formatNearWithUsd(v.b)}; slashed if a flag is confirmed` : "The agent stakes this; slashed if a flag is confirmed"} error={show("bond")}>
+            <Field label="Security deposit (NEAR)" hint={v.b ? `Agent deposits ${formatNearWithUsd(v.b)} to ensure good behavior` : "Security deposit from the agent"} error={show("bond")}>
               <input className={monoInputCls} inputMode="decimal" value={bond} onChange={(e) => setBond(e.target.value)} />
             </Field>
-            <Field label="Expires in (days)" hint="Up to 30" error={show("days")}>
+            <Field label="Rule duration (days)" hint="How many days rules stay active (1-30)" error={show("days")}>
               <input className={monoInputCls} inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value)} />
             </Field>
           </div>
         </Card>
 
-        {err && <Notice tone="bad" title="The mandate was not created">{err}</Notice>}
+        {err && <Notice tone="bad" title="The rule was not created">{err}</Notice>}
       </div>
 
       <aside className="lg:sticky lg:top-40 lg:self-start">
         <Card dark className="p-8">
           <div className="flex items-center justify-between">
-            <p className="font-mono text-xs uppercase tracking-label text-dim">What you are signing</p>
+            <p className="font-mono text-xs uppercase tracking-label text-dim">Summary of your rule</p>
             <span className="font-mono text-[10px] uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
               Testnet
             </span>
           </div>
           <p className="mt-5 text-[19px] leading-[1.6] text-white">
             <b className="font-semibold">{agent || "Your agent"}</b> can pay{" "}
-            <b className="font-semibold">USDC</b> on <b className="font-semibold">{chains.join(" and ") || "no chain"}</b>, only to{" "}
-            <b className="font-semibold">{v.filled.length}</b> {v.filled.length === 1 ? "address" : "addresses"} you list.
+            <b className="font-semibold">USDC</b> on <b className="font-semibold">{chains.join(" and ") || "selected chains"}</b>, only to{" "}
+            <b className="font-semibold">{v.filled.length}</b> {v.filled.length === 1 ? "approved address" : "approved addresses"}.
           </p>
           <ul className="mt-6 space-y-3 border-t border-night pt-6 text-[15px] leading-relaxed text-dim">
-            <li>Up to <span className="font-mono text-white">{v.p ? usdc(v.p) : "—"}</span> per payment and <span className="font-mono text-white">{v.d ? usdc(v.d) : "—"}</span> per day.</li>
+            <li>Up to <span className="font-mono text-white">{v.p ? usdc(v.p) : "—"}</span> per payment and <span className="font-mono text-white">{v.d ? usdc(v.d) : "—"}</span> total per day.</li>
             <li>
-              Anything above <span className="font-mono text-white">{v.t !== null ? usdc(v.t) : "—"}</span> waits{" "}
-              <span className="font-mono text-white">{Number.isFinite(v.w) ? duration(v.w) : "—"}</span> for your veto.
+              Any payment over <span className="font-mono text-white">{v.t !== null ? usdc(v.t) : "—"}</span> pauses for{" "}
+              <span className="font-mono text-white">{Number.isFinite(v.w) ? duration(v.w) : "—"}</span> so you can review or cancel it.
             </li>
-            <li>The agent stakes <span className="font-mono text-white">{v.b ? formatNearWithUsd(v.b) : "—"}</span> before it can propose.</li>
-            <li>Expires in <span className="font-mono text-white">{v.dy || "—"}</span> days. You can revoke any time, instantly.</li>
+            <li>The agent deposits <span className="font-mono text-white">{v.b ? formatNearWithUsd(v.b) : "—"}</span> before it can request payments.</li>
+            <li>Expires in <span className="font-mono text-white">{v.dy || "—"}</span> days. You can stop or freeze this rule at any time.</li>
           </ul>
 
-          {/* Testnet Non-Real Funds Notice */}
+          {/* Testnet Notice */}
           <div className="mt-6 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200">
-            <div className="font-semibold text-amber-300">Testnet environment</div>
+            <div className="font-semibold text-amber-300">Testnet mode</div>
             <p className="mt-0.5 text-[11.5px] text-dim">
-              This mandate will be signed on NEAR Testnet. Caps, thresholds, and bonds use testnet assets with zero real monetary value.
+              This rule will be created on NEAR Testnet. All limits and deposits use free test tokens with zero real money.
             </p>
           </div>
 
           <Btn variant="accent" size="lg" className="mt-6 w-full" busy={busy} onClick={submit} disabled={touched && !ok}>
-            Sign mandate
+            Save and activate rule
           </Btn>
-          {touched && !ok && <p className="mt-3 text-[14px] text-dim">Fix the highlighted fields first.</p>}
-          <p className="mt-4 text-[13px] text-dim">Signed with {accountId} on NEAR testnet. No real funds are spent.</p>
+          {touched && !ok && <p className="mt-3 text-[14px] text-dim">Please fix the highlighted fields first.</p>}
+          <p className="mt-4 text-[13px] text-dim">Signed with {accountId} on NEAR testnet. No real money is spent.</p>
         </Card>
       </aside>
     </div>

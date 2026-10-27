@@ -6,10 +6,10 @@ import type { Mandate } from "@/lib/types";
 import { Card, Label, Pill } from "./ui";
 
 export function MandateStatePill({ m, now }: { m: Mandate; now: number }) {
-  if (m.state === "Revoked") return <Pill tone="bad">Revoked</Pill>;
+  if (m.state === "Revoked") return <Pill tone="bad">Stopped</Pill>;
   if (nsToMs(m.expires_at) <= now) return <Pill>Expired</Pill>;
   if (BigInt(m.bond_posted) < BigInt(m.bond))
-    return <Pill tone="warn">Needs bond</Pill>;
+    return <Pill tone="warn">Needs deposit</Pill>;
   return <Pill tone="ok">Active</Pill>;
 }
 
@@ -24,7 +24,7 @@ export function Budget({ m }: { m: Mandate }) {
       <div className="flex items-baseline justify-between text-ink dark:text-white">
         <span className="font-mono text-[15px] font-medium">{usdc(spent)}</span>
         <span className="text-[13px] text-mute dark:text-dark-mute">
-          of {usdc(cap)} today
+          of {usdc(cap)} allowed today
         </span>
       </div>
       <div
@@ -64,12 +64,12 @@ export function MandateCard({
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <Label>Mandate {m.id}</Label>
+            <Label>Rule #{m.id}</Label>
             <p className="mt-1 font-mono text-[14.5px] sm:text-[15px] font-semibold text-ink dark:text-white truncate max-w-[200px] sm:max-w-[280px]">
               {m.agent}
             </p>
             <p className="text-[12px] text-mute dark:text-dark-mute">
-              {viewer === m.owner ? "You own this" : "You are the agent"}
+              {viewer === m.owner ? "Your rule" : "Assigned to your agent"}
             </p>
           </div>
           <MandateStatePill m={m} now={now} />
@@ -85,7 +85,7 @@ export function MandateCard({
           } grid grid-cols-3 gap-2 border-t border-line dark:border-dark-border`}
         >
           <div>
-            <dt className="text-mute dark:text-dark-mute text-[11px]">Per payment</dt>
+            <dt className="text-mute dark:text-dark-mute text-[11px]">Max per payment</dt>
             <dd className="mt-0.5 font-mono font-medium text-ink dark:text-white">
               {usdc(m.per_tx_cap)}
             </dd>
@@ -97,7 +97,7 @@ export function MandateCard({
             </dd>
           </div>
           <div>
-            <dt className="text-mute dark:text-dark-mute text-[11px]">Window</dt>
+            <dt className="text-mute dark:text-dark-mute text-[11px]">Review delay</dt>
             <dd className="mt-0.5 font-mono font-medium text-ink dark:text-white">
               {duration(m.challenge_window_s)}
             </dd>
@@ -105,7 +105,7 @@ export function MandateCard({
         </dl>
 
         <p className={`${compact ? "mt-2.5 text-[11.5px]" : "mt-4 text-[12.5px]"} text-mute dark:text-dark-mute truncate`}>
-          Bond {formatNear(m.bond_posted)} of {formatNear(m.bond)} •{" "}
+          Deposit: {formatNear(m.bond_posted)} of {formatNear(m.bond)} •{" "}
           {m.chains.join(" + ")}
         </p>
       </Card>

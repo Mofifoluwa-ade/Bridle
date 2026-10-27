@@ -59,7 +59,7 @@ export default function Settings() {
     <>
       <PageHeader
         title="Settings"
-        lead="Appearance, network parameters, and live contract health."
+        lead="Customize your theme, check network details, and see system status."
       />
 
       {/* Testnet Environment Banner */}
@@ -74,11 +74,11 @@ export default function Settings() {
           </span>
           <span className="hidden sm:inline text-dim dark:text-dark-dim">·</span>
           <span className="text-amber-600 dark:text-amber-400 font-medium">
-            Test tokens only (no real funds)
+            Test tokens only (no real money)
           </span>
         </div>
         <p className="text-[12px] text-mute dark:text-dark-mute sm:text-right max-w-lg leading-relaxed">
-          Mandates, proposals, and bonds run with simulated test assets on NEAR testnet.
+          All spending rules, payments, and security deposits use free test tokens on NEAR testnet.
         </p>
       </div>
 
@@ -209,11 +209,11 @@ export default function Settings() {
 
         {/* Contract Health Card */}
         <Card className="p-7 sm:p-8 md:col-span-2">
-          <Label>Contract Health & Telemetry</Label>
+          <Label>System Status</Label>
           <div className="mt-5">
             {!CONFIG.contractId ? (
               <Notice tone="warn" title="Contract address not configured">
-                Deploy the Bridle contract to NEAR Testnet and set <code className="font-mono text-[13px]">NEXT_PUBLIC_BRIDLE_CONTRACT</code> in your environment to view live state.
+                Deploy the Bridle contract to NEAR Testnet and set <code className="font-mono text-[13px]">NEXT_PUBLIC_BRIDLE_CONTRACT</code> in your configuration to view live state.
               </Notice>
             ) : health.loading ? (
               <Skeleton className="h-28" />
@@ -225,7 +225,7 @@ export default function Settings() {
               <dl className="grid gap-4 sm:grid-cols-4 text-[14.5px]">
                 <div className="p-4 rounded-2xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border">
                   <dt className="text-xs text-mute dark:text-dark-mute">Status</dt>
-                  <dd className="mt-1 font-semibold text-accent dark:text-[#46D9A4]">Reachable</dd>
+                  <dd className="mt-1 font-semibold text-accent dark:text-[#46D9A4]">Online</dd>
                 </div>
                 <div className="p-4 rounded-2xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border">
                   <dt className="text-xs text-mute dark:text-dark-mute">Executor</dt>
@@ -234,13 +234,13 @@ export default function Settings() {
                   </dd>
                 </div>
                 <div className="p-4 rounded-2xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border">
-                  <dt className="text-xs text-mute dark:text-dark-mute">Total Mandates</dt>
+                  <dt className="text-xs text-mute dark:text-dark-mute">Total Spending Rules</dt>
                   <dd className="mt-1 font-mono text-xl font-semibold text-ink dark:text-white">
                     {String(health.data!.mandates)}
                   </dd>
                 </div>
                 <div className="p-4 rounded-2xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border">
-                  <dt className="text-xs text-mute dark:text-dark-mute">Total Proposals</dt>
+                  <dt className="text-xs text-mute dark:text-dark-mute">Total Payments Requested</dt>
                   <dd className="mt-1 font-mono text-xl font-semibold text-ink dark:text-white">
                     {String(health.data!.proposals)}
                   </dd>
@@ -252,8 +252,8 @@ export default function Settings() {
       </div>
 
       <div className="mt-6">
-        <Notice title="Testnet security assurance">
-          This environment operates exclusively on NEAR Testnet and test networks (Base Sepolia, Solana Devnet). Private keys are never stored, transmitted, or requested by this interface.
+        <Notice title="Testnet safety">
+          This app runs entirely on test networks with free test tokens. Real money is never at risk, and you never have to share private keys.
         </Notice>
       </div>
     </>

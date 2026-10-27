@@ -94,47 +94,47 @@ export const STATUS: Record<
   Rejected: {
     label: "Blocked",
     tone: "bad",
-    line: "Stopped by a rule in the mandate",
+    line: "Blocked by your spending rules",
   },
   Waiting: {
-    label: "Waiting",
+    label: "Paused",
     tone: "warn",
-    line: "In the challenge window. You can veto.",
+    line: "Paused for review. You can approve or cancel.",
   },
   Ready: {
     label: "Approved",
     tone: "ok",
-    line: "Within every rule. Ready to sign.",
+    line: "Passed all rules. Ready to send.",
   },
   Flagged: {
     label: "Flagged",
     tone: "warn",
-    line: "A watcher flagged it. It will not run unless you dismiss the flag.",
+    line: "Reported as suspicious. Paused until you review it.",
   },
   Cancelled: {
     label: "Cancelled",
     tone: "bad",
-    line: "Flag confirmed. The agent's bond was slashed.",
+    line: "Payment cancelled. Suspicious payment stopped.",
   },
   Vetoed: {
-    label: "Vetoed",
+    label: "Cancelled",
     tone: "neutral",
-    line: "The owner stopped it. Nothing moved.",
+    line: "You cancelled this payment. No money was sent.",
   },
   Expired: {
     label: "Expired",
     tone: "neutral",
-    line: "Flag went unanswered. Nothing moved.",
+    line: "Timed out without approval. No money was sent.",
   },
   Signing: {
-    label: "Signing",
+    label: "Sending",
     tone: "ok",
-    line: "Cleared. The executor is signing and sending.",
+    line: "Approved. Sending on the blockchain.",
   },
   Executed: {
-    label: "Executed",
+    label: "Sent",
     tone: "ok",
-    line: "Sent on-chain.",
+    line: "Payment sent successfully.",
   },
 };
 

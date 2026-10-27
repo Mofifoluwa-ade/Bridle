@@ -47,7 +47,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     href: "/app/mandates/new",
-    label: "New mandate",
+    label: "New rule",
     id: "tour-nav-new-mandate",
     icon: (
       <svg
@@ -88,7 +88,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     href: "/app/agent",
-    label: "Agent console",
+    label: "Test your agent",
     id: "tour-nav-agent",
     icon: (
       <svg
@@ -416,7 +416,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span>NEAR {CONFIG.network}</span>
               <span className="hidden sm:inline text-dim dark:text-dark-dim">·</span>
               <span className="hidden sm:inline text-[10px] text-amber-600 dark:text-amber-400 font-sans normal-case font-medium">
-                Non-real funds
+                Test tokens only
               </span>
             </div>
             <WalletButton />
@@ -450,9 +450,9 @@ function SetupNotice() {
   return (
     <div className="mb-3.5 flex items-center justify-between gap-3 rounded-xl border border-warn/30 bg-warn-tint/20 dark:bg-warn-tint/10 px-3.5 py-2 text-xs text-warn">
       <div className="flex items-center gap-2 min-w-0">
-        <span className="font-semibold flex-none">Protocol Notice:</span>
+        <span className="font-semibold flex-none">Notice:</span>
         <span className="truncate">
-          Contract not set in .env.local. Running in local testnet mode.
+          Contract address not set in configuration. Running in testnet mode.
         </span>
       </div>
       <button

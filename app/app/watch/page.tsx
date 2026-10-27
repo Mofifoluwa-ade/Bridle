@@ -14,8 +14,8 @@ export default function Watch() {
   return (
     <>
       <PageHeader
-        title="Watch"
-        lead="Anyone can watch. If you see a payment that looks wrong during its window, stake a testnet bond and flag it. If the owner agrees, you earn part of the agent's bond."
+        title="Community Watch"
+        lead="Anyone can help keep AI agents safe. If you spot a suspicious payment while it is paused, you can flag it. If the owner agrees with you, you earn a reward from the agent's deposit."
       />
       <Body />
     </>
@@ -50,21 +50,21 @@ function Body() {
           <span className="font-mono text-[10.5px] uppercase px-2 py-0.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4] border border-accent/25 font-semibold">
             Testnet Watcher
           </span>
-          <span className="text-ink dark:text-white font-medium">Non-real funds environment</span>
+          <span className="text-ink dark:text-white font-medium">Free testnet environment</span>
           <span className="text-dim dark:text-dark-dim">·</span>
           <span className="text-amber-600 dark:text-amber-400 font-medium">
-            Watcher dispute bonds and rewards are settled on NEAR testnet (no real funds).
+            Reviewer dispute deposits and rewards use test tokens only (no real money).
           </span>
         </div>
       </div>
 
       <Card className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-line dark:border-dark-border px-6 py-4">
-        <Label>In their challenge window</Label>
+        <Label>Payments paused for review</Label>
         <span className="font-mono text-[12px] text-mute dark:text-dark-mute">{rows.length} open</span>
       </div>
       {rows.length === 0 ? (
-        <Empty title="Nothing to watch right now">Payments above a mandate's pause threshold show up here while they wait for the owner's veto.</Empty>
+        <Empty title="No paused payments right now">Whenever an agent makes a payment above the pause limit, it pauses here so anyone can check it before it goes through.</Empty>
       ) : (
         rows.map(({ p, m }) => {
           const left = nsToMs(p.executable_at) - now;
@@ -74,14 +74,14 @@ function Body() {
                 <div className="flex items-center gap-3">
                   <StatusPill status={p.status} />
                   <Link href={`/app/proposals/${p.id}`} className="font-mono text-[14px] underline">#{p.id}</Link>
-                  <span className="font-mono text-[13px] text-mute">mandate {m.id} · agent {m.agent}</span>
+                  <span className="font-mono text-[13px] text-mute">Rule #{m.id} · Agent: {m.agent}</span>
                 </div>
                 <span className="font-mono text-[18px]">{usdc(p.amount)} <span className="text-[13px] text-mute">on {p.chain}</span></span>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-[14px] text-mute">
                 <span>to <Addr value={p.recipient} chars={10} /></span>
-                <span>{left > 0 ? `${countdown(left)} left` : "window closed"}</span>
-                {m.allowlist.some((r) => r.address === p.recipient) ? <span>Recipient is on the allowlist</span> : null}
+                <span>{left > 0 ? `${countdown(left)} left to review` : "Review delay ended"}</span>
+                {m.allowlist.some((r) => r.address === p.recipient) ? <span>Recipient is on the approved list</span> : null}
               </div>
               <div className="mt-4"><ProposalActions proposal={p} mandate={m} now={now} onDone={data.refresh} /></div>
             </div>

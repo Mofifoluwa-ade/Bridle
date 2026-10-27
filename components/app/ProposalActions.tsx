@@ -42,7 +42,7 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
   if (!accountId)
     return (
       <div className="flex items-center gap-3">
-        <Btn onClick={signIn}>Connect wallet to act</Btn>
+        <Btn onClick={signIn}>Connect wallet to take action</Btn>
       </div>
     );
 
@@ -52,45 +52,45 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
         {canResolve && (
           <>
             <Btn variant="dangerSolid" busy={busy === "confirm"} onClick={() => run("confirm", "resolve_flag", { proposal_id: p.id, confirm: true })}>
-              Confirm flag and slash bond
+              Confirm bad payment & reward reviewer
             </Btn>
             <Btn variant="outline" busy={busy === "dismiss"} onClick={() => run("dismiss", "resolve_flag", { proposal_id: p.id, confirm: false })}>
-              Dismiss flag
+              Dismiss report & allow payment
             </Btn>
           </>
         )}
         {canVeto && (
           <Btn variant="danger" busy={busy === "veto"} onClick={() => run("veto", "veto", { proposal_id: p.id })}>
-            Veto payment
+            Cancel payment
           </Btn>
         )}
         {canExecute && (
           <Btn variant="accent" busy={busy === "exec"} onClick={() => run("exec", "execute", { proposal_id: p.id })}>
-            Clear for signing
+            Approve & send payment
           </Btn>
         )}
         {canExpire && (
           <Btn variant="outline" busy={busy === "expire"} onClick={() => run("expire", "expire_flag", { proposal_id: p.id })}>
-            Close unanswered flag
+            Close expired report
           </Btn>
         )}
         {canFlag && !flagging && (
           <Btn variant="outline" onClick={() => setFlagging(true)}>
-            Flag this payment
+            Report suspicious payment
           </Btn>
         )}
       </div>
 
       {canFlag && flagging && (
         <div className="rounded-2xl border border-line dark:border-dark-border bg-paper dark:bg-dark-card p-5 transition-colors">
-          <p className="text-[15px] font-semibold text-ink dark:text-white">Why does this look wrong?</p>
-          <input className={inputCls} maxLength={280} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="One sentence the owner can act on" />
+          <p className="text-[15px] font-semibold text-ink dark:text-white">Why does this look suspicious?</p>
+          <input className={inputCls} maxLength={280} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="One sentence explaining what looks wrong..." />
           <p className="mt-2 text-[14px] text-mute dark:text-dark-mute">
-            You stake {formatNearWithUsd(bondYocto)} in testnet NEAR (no real funds). If the owner confirms, you win 40% of the agent's bond. If the owner dismisses, your stake goes to the agent.
+            You deposit {formatNearWithUsd(bondYocto)} in testnet tokens (not real money). If the owner agrees with you, you earn 40% of the agent's security deposit as a reward. If the owner dismisses your report, your deposit is given to the agent.
           </p>
           <div className="mt-4 flex gap-3">
             <Btn busy={busy === "flag"} disabled={!reason.trim()} onClick={() => run("flag", "flag", { proposal_id: p.id, reason: reason.trim() }, bondYocto)}>
-              Stake testnet bond and flag
+              Deposit test tokens & submit report
             </Btn>
             <Btn variant="outline" onClick={() => setFlagging(false)}>
               Cancel
@@ -99,7 +99,7 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
         </div>
       )}
       {err && <Notice tone="bad" title="That did not go through">{err}</Notice>}
-      <p className="text-[13px] text-mute dark:text-dark-mute">Signed with {accountId} on NEAR {CONFIG.network} (testnet · non-real funds).</p>
+      <p className="text-[13px] text-mute dark:text-dark-mute">Signed with {accountId} on NEAR testnet (no real money).</p>
     </div>
   );
 }

@@ -27,10 +27,10 @@ export const TOUR_STEPS: TourStep[] = [
     id: 1,
     questNumber: "STEP 1",
     targetId: "tour-wallet-btn",
-    title: "Connect Owner Wallet",
+    title: "Connect your wallet",
     description:
-      "Signing authority and mandate controls are bound to your NEAR account. Connect your wallet to begin steering your agent.",
-    actionText: "Focus wallet",
+      "Connect your NEAR wallet to manage your spending rules and approve payments for your AI agent.",
+    actionText: "Connect wallet",
     route: "/app",
   },
   {
@@ -38,10 +38,10 @@ export const TOUR_STEPS: TourStep[] = [
     questNumber: "STEP 2",
     targetId: "tour-new-mandate-btn",
     fallbackTargetId: "tour-nav-new-mandate",
-    title: "Sign Your Agent's Mandate",
+    title: "Create spending rules",
     description:
-      "Establish the contract leash: set daily caps, pause thresholds, and authorized destination addresses. The agent never holds private keys.",
-    actionText: "Open builder",
+      "Set daily limits, max payment amounts, and who your agent can pay. Your agent can never spend more than this.",
+    actionText: "New rule",
     route: "/app",
   },
   {
@@ -49,10 +49,10 @@ export const TOUR_STEPS: TourStep[] = [
     questNumber: "STEP 3",
     targetId: "tour-nav-agent",
     fallbackTargetId: "tour-nav-agent",
-    title: "Verify Multi-Chain Accounts",
+    title: "Check agent addresses",
     description:
-      "Inspect the agent's derived MPC addresses on Base Sepolia and Solana Devnet. The agent never holds private keys.",
-    actionText: "Inspect agent",
+      "See the multi-chain addresses your agent uses to send payments on Base and Solana without touching private keys.",
+    actionText: "View agent",
     route: "/app",
   },
   {
@@ -60,10 +60,10 @@ export const TOUR_STEPS: TourStep[] = [
     questNumber: "STEP 4",
     targetId: "tour-stress-test-btn",
     fallbackTargetId: "tour-nav-dashboard",
-    title: "Test Policy Enforcement",
+    title: "Send a test payment",
     description:
-      "Dispatch a testnet payment proposal or simulate an agent spending request to verify the leash on-chain in real time.",
-    actionText: "Open test console",
+      "Try sending a test payment to see how your rules automatically approve or block requests in real time.",
+    actionText: "Test payment",
     route: "/app",
   },
 ];
