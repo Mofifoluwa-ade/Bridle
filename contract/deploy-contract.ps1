@@ -30,9 +30,12 @@ if (!(Test-Path $credPath)) {
 }
 
 Write-Host ""
-Write-Host "==> Deploying $wasmPath to $ContractAccount and calling 'new'..."
-$initArgs = "{`"executor`":`"$ExecutorAccount`"}"
-npx -y near-cli deploy --accountId $ContractAccount --wasmFile $wasmPath --initFunction new --initArgs $initArgs
+Write-Host "==> Deploying $wasmPath to $ContractAccount..."
+npx -y near-cli deploy $ContractAccount $wasmPath --networkId testnet
+
+Write-Host "==> Initializing contract with 'new'..."
+$b64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("{`"executor`":`"$ExecutorAccount`"}"))
+npx -y near-cli call $ContractAccount new $b64 --base64 --accountId $ContractAccount --networkId testnet
 
 Write-Host ""
 Write-Host "SUCCESS: Contract deployed and initialized on NEAR Testnet!"
