@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import { NeedsContract } from "@/components/app/Gate";
 import { ProposalActions } from "@/components/app/ProposalActions";
@@ -16,7 +15,7 @@ export default function Watch() {
     <>
       <PageHeader
         title="Watch"
-        lead="Anyone can watch. If you see a payment that looks wrong during its window, stake a small bond and flag it. If the owner agrees, you earn part of the agent's bond."
+        lead="Anyone can watch. If you see a payment that looks wrong during its window, stake a testnet bond and flag it. If the owner agrees, you earn part of the agent's bond."
       />
       <Body />
     </>
@@ -27,55 +26,8 @@ function Body() {
   const now = useNow();
   const isConfigured = Boolean(CONFIG.contractId);
 
-  const fallbackRows: { p: Proposal; m: Mandate }[] = useMemo(
-    () => [
-      {
-        p: {
-          id: 7,
-          mandate_id: 1,
-          chain: "Base",
-          asset: "USDC",
-          amount: "35000000",
-          recipient: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-          status: "Waiting",
-          reason: "Amount ($35.00) exceeds cooling threshold ($20.00)",
-          created_at: String((Date.now() - 180000) * 1_000_000),
-          executable_at: String((Date.now() + 420000) * 1_000_000),
-          flagger: null,
-          flag_reason: null,
-          flag_bond: "100000000000000000000000",
-          tx_hash: null,
-        },
-        m: {
-          id: 1,
-          owner: "mofifoluwa.testnet",
-          agent: "claude-executor-01.near",
-          chains: ["Base", "Solana"],
-          assets: ["USDC"],
-          allowlist: [
-            { chain: "Base", address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e" },
-            { chain: "Solana", address: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU" },
-          ],
-          per_tx_cap: "50000000",
-          daily_cap: "100000000",
-          cooling_threshold: "20000000",
-          challenge_window_s: 600,
-          bond: "1000000000000000000000000",
-          bond_posted: "1000000000000000000000000",
-          expires_at: String((Date.now() + 86400000 * 14) * 1_000_000),
-          state: "Active",
-          day_index: 0,
-          spent_today: "35000000",
-          created_at: String((Date.now() - 3600000 * 24) * 1_000_000),
-          pending_limits: null,
-        },
-      },
-    ],
-    []
-  );
-
   const data = usePoll<{ p: Proposal; m: Mandate }[]>("watch", async () => {
-    if (!isConfigured) return fallbackRows;
+    if (!isConfigured) return [];
     const all = await api.proposals(null, 100);
     const open = all.filter((p) => p.status === "Waiting" || p.status === "Flagged");
     const ids = Array.from(new Set(open.map((p) => p.mandate_id)));
@@ -89,9 +41,24 @@ function Body() {
     return open.flatMap((p) => (ms.has(p.mandate_id) ? [{ p, m: ms.get(p.mandate_id)! }] : []));
   });
 
-  const rows = isConfigured ? (data.data ?? []) : fallbackRows;
+  const rows = data.data ?? [];
   return (
-    <Card className="overflow-hidden">
+    <>
+      {/* Testnet Watcher Notice */}
+      <div className="mb-4 rounded-xl border border-line dark:border-dark-border bg-paper/60 dark:bg-dark-card/60 p-3 sm:p-3.5 text-xs flex flex-wrap items-center justify-between gap-2.5 text-mute dark:text-dark-mute">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[10.5px] uppercase px-2 py-0.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4] border border-accent/25 font-semibold">
+            Testnet Watcher
+          </span>
+          <span className="text-ink dark:text-white font-medium">Non-real funds environment</span>
+          <span className="text-dim dark:text-dark-dim">·</span>
+          <span className="text-amber-600 dark:text-amber-400 font-medium">
+            Watcher dispute bonds and rewards are settled on NEAR testnet (no real funds).
+          </span>
+        </div>
+      </div>
+
+      <Card className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-line dark:border-dark-border px-6 py-4">
         <Label>In their challenge window</Label>
         <span className="font-mono text-[12px] text-mute dark:text-dark-mute">{rows.length} open</span>
@@ -121,6 +88,7 @@ function Body() {
           );
         })
       )}
-    </Card>
+      </Card>
+    </>
   );
 }

@@ -100,9 +100,14 @@ export function ManualProposalModal({
       <div className="animate-modal-in relative w-full max-w-lg rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 sm:p-7 shadow-2xl text-ink dark:text-dark-text transition-colors">
         <div className="flex items-center justify-between pb-4 border-b border-line dark:border-dark-border">
           <div>
-            <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute">
-              Payment dispatch
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute">
+                Payment dispatch
+              </span>
+              <span className="font-mono text-[10px] uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                Testnet · Non-real funds
+              </span>
+            </div>
             <h3 className="text-xl font-semibold tracking-[-0.02em] text-ink dark:text-white mt-0.5">
               Propose payment
             </h3>
@@ -232,8 +237,12 @@ export function ManualProposalModal({
             </p>
           </div>
 
+          <p className="text-[11.5px] text-mute dark:text-dark-mute">
+            NEAR Testnet environment: Proposals are evaluated against on-chain testnet policies. No real funds are moved.
+          </p>
+
           {/* Submit Actions */}
-          <div className="pt-2 flex items-center justify-end gap-3">
+          <div className="pt-1 flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}

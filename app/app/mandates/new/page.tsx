@@ -245,7 +245,12 @@ function Form() {
 
       <aside className="lg:sticky lg:top-40 lg:self-start">
         <Card dark className="p-8">
-          <p className="font-mono text-xs uppercase tracking-label text-dim">What you are signing</p>
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-xs uppercase tracking-label text-dim">What you are signing</p>
+            <span className="font-mono text-[10px] uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              Testnet
+            </span>
+          </div>
           <p className="mt-5 text-[19px] leading-[1.6] text-white">
             <b className="font-semibold">{agent || "Your agent"}</b> can pay{" "}
             <b className="font-semibold">USDC</b> on <b className="font-semibold">{chains.join(" and ") || "no chain"}</b>, only to{" "}
@@ -260,11 +265,20 @@ function Form() {
             <li>The agent stakes <span className="font-mono text-white">{v.b ? formatNear(v.b) : "—"}</span> before it can propose.</li>
             <li>Expires in <span className="font-mono text-white">{v.dy || "—"}</span> days. You can revoke any time, instantly.</li>
           </ul>
-          <Btn variant="accent" size="lg" className="mt-8 w-full" busy={busy} onClick={submit} disabled={touched && !ok}>
+
+          {/* Testnet Non-Real Funds Notice */}
+          <div className="mt-6 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200">
+            <div className="font-semibold text-amber-300">Testnet environment</div>
+            <p className="mt-0.5 text-[11.5px] text-dim">
+              This mandate will be signed on NEAR Testnet. Caps, thresholds, and bonds use testnet assets with zero real monetary value.
+            </p>
+          </div>
+
+          <Btn variant="accent" size="lg" className="mt-6 w-full" busy={busy} onClick={submit} disabled={touched && !ok}>
             Sign mandate
           </Btn>
           {touched && !ok && <p className="mt-3 text-[14px] text-dim">Fix the highlighted fields first.</p>}
-          <p className="mt-4 text-[13px] text-dim">Signed from {accountId} on testnet. Nothing is spent by signing.</p>
+          <p className="mt-4 text-[13px] text-dim">Signed with {accountId} on NEAR testnet. No real funds are spent.</p>
         </Card>
       </aside>
     </div>

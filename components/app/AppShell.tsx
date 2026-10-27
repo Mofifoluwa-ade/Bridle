@@ -377,11 +377,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
           </div>
 
-          {/* Right: "NEAR testnet" and "Connect wallet" */}
+          {/* Right: "NEAR testnet" badge + non-real funds notice and "Connect wallet" */}
           <div className="flex items-center gap-2.5">
-            <span className="inline-flex items-center rounded-full bg-paper dark:bg-dark-card border border-line dark:border-dark-border px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium">
-              NEAR {CONFIG.network}
-            </span>
+            <div
+              className="inline-flex items-center gap-1.5 rounded-full bg-paper dark:bg-dark-card border border-line dark:border-dark-border px-2.5 sm:px-3 py-1 font-mono text-[10.5px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium transition-colors"
+              title="NEAR Testnet: all tokens, caps, and bonds have zero real monetary value"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-accent dark:bg-[#46D9A4]" />
+              <span>NEAR {CONFIG.network}</span>
+              <span className="hidden sm:inline text-dim dark:text-dark-dim">·</span>
+              <span className="hidden sm:inline text-[10px] text-amber-600 dark:text-amber-400 font-sans normal-case font-medium">
+                Non-real funds
+              </span>
+            </div>
             <WalletButton />
           </div>
         </header>
@@ -401,13 +409,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         accountId={accountId}
         onOpenMandateBuilder={() => router.push("/app/mandates/new")}
         onOpenManualProposal={() => router.push("/app/agent")}
-        onRunStressTest={() => {
-          router.push("/app");
-          setTimeout(() => {
-            const btn = document.getElementById("tour-stress-test-btn");
-            if (btn) btn.click();
-          }, 350);
-        }}
+        onRunStressTest={() => router.push("/app/agent")}
       />
     </div>
   );

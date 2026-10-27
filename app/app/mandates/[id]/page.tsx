@@ -71,10 +71,10 @@ function Body({ id }: { id: number }) {
 
       {isAgent && mandate.state === "Active" && BigInt(missing) > BigInt(0) && (
         <div className="mb-6">
-          <Notice tone="warn" title="Post your bond to start proposing">
-            <p>This mandate needs {formatNear(missing)} more from the agent before any payment is accepted.</p>
+          <Notice tone="warn" title="Post your bond to start proposing (testnet NEAR)">
+            <p>This mandate needs {formatNear(missing)} more in testnet NEAR from the agent before any payment is accepted (non-real funds).</p>
             <Btn className="mt-3" size="sm" busy={busy === "bond"} onClick={() => act("bond", "post_bond", { mandate_id: id }, missing)}>
-              Post {formatNear(missing)}
+              Post {formatNear(missing)} (testnet NEAR)
             </Btn>
           </Notice>
         </div>

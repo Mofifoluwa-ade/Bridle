@@ -62,8 +62,8 @@ export const TOUR_STEPS: TourStep[] = [
     fallbackTargetId: "tour-nav-dashboard",
     title: "Test Policy Enforcement",
     description:
-      "Dispatch a payment or simulate a prompt-injection overspend to verify the leash on-chain in real time.",
-    actionText: "Run test spend",
+      "Dispatch a testnet payment proposal or simulate an agent spending request to verify the leash on-chain in real time.",
+    actionText: "Open test console",
     route: "/app",
   },
 ];
@@ -381,14 +381,7 @@ function SpotlightOverlay() {
       router.push("/app/agent");
       nextStep();
     } else if (step.id === 4) {
-      if (window.location.pathname !== "/app") {
-        router.push("/app");
-      }
-      setTimeout(() => {
-        const btn = document.getElementById("tour-stress-test-btn") as HTMLButtonElement | null;
-        if (!btn || btn.disabled) return;
-        btn.click();
-      }, 300);
+      router.push("/app/agent");
       endTour();
     }
   };

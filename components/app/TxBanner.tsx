@@ -16,7 +16,7 @@ function Inner({ what }: { what: string }) {
         <a className="font-mono text-[14px] underline" href={`${CONFIG.explorer}/txns/${h}`} target="_blank" rel="noreferrer">
           {h.slice(0, 10)}…
         </a>{" "}
-        is on {CONFIG.network}. The page below reads the contract directly.
+        confirmed on NEAR {CONFIG.network} (testnet tokens · no real funds). The page below reads the contract directly.
       </Notice>
     </div>
   );
