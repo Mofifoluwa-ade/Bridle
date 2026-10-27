@@ -51,10 +51,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       modal.current = setupModal(s, { contractId: CONFIG.contractId || "bridle.testnet" });
       setSelector(s);
-      const first = s.store.getState().accounts.find((a) => a.active);
-      setAccountId(first?.accountId ?? null);
+      const accounts = s.store.getState().accounts;
+      const initialAccount = accounts.find((a) => a.active)?.accountId || accounts[0]?.accountId || null;
+      setAccountId(initialAccount);
       sub = s.store.observable.subscribe((st: any) => {
-        setAccountId(st.accounts.find((a: any) => a.active)?.accountId ?? null);
+        const nextAccount = st.accounts.find((a: any) => a.active)?.accountId || st.accounts[0]?.accountId || null;
+        setAccountId(nextAccount);
       });
     })().catch(() => {
       /* wallet modules failed to load; the UI shows a signed-out state */
