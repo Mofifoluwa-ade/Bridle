@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Container } from "./Container";
 import { LogoMark, Wordmark } from "./Logo";
 
@@ -8,6 +9,22 @@ export function Footer() {
         <div className="flex items-center gap-2.5">
           <LogoMark size={22} />
           <Wordmark className="text-[17px]" />
+        </div>
+        <div className="flex items-center gap-6 text-[13px] text-mute dark:text-dark-mute">
+          <Link href="/docs" className="hover:text-ink dark:hover:text-white transition-colors">
+            Documentation
+          </Link>
+          <Link href="/app" className="hover:text-ink dark:hover:text-white transition-colors">
+            Launch App
+          </Link>
+          <a
+            href="https://testnet.nearblocks.io/address/bridle.testnet"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-ink dark:hover:text-white transition-colors"
+          >
+            Contract
+          </a>
         </div>
         <span className="text-[13.5px] text-mute dark:text-dark-mute">
           Built for the NEAR Build Beyond Boundaries hackathon, 2026

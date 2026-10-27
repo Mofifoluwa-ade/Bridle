@@ -257,6 +257,34 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
           </button>
 
+          {/* Documentation Trigger */}
+          <Link
+            href="/docs"
+            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white hover:bg-paper dark:hover:bg-dark-card-hover transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+                <path d="M6 6h10" />
+                <path d="M6 10h10" />
+              </svg>
+              <span>Documentation</span>
+            </div>
+            <span className="font-mono text-[10.5px] text-mute dark:text-dark-mute">
+              Docs
+            </span>
+          </Link>
+
           {/* Settings Tab Button (Positioned at the bottom where settings belongs) */}
           <Link
             href="/app/settings"
@@ -360,6 +388,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span>Getting started</span>
                 <span className="font-mono text-[10.5px] text-accent">Guide</span>
               </button>
+              <Link
+                href="/docs"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-mute dark:text-dark-mute"
+              >
+                <span>Documentation</span>
+                <span className="font-mono text-[10.5px]">Docs</span>
+              </Link>
               <Link
                 href="/app/settings"
                 onClick={() => setMobileMenuOpen(false)}
