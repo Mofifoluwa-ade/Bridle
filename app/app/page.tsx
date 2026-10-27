@@ -133,15 +133,24 @@ export default function Dashboard() {
             Testnet live
           </span>
           <span className="text-ink dark:text-white font-medium">
-            NEAR Testnet (<span className="font-mono text-accent dark:text-[#46D9A4]">{walletBalance.account}</span>)
+            NEAR Testnet
           </span>
           <span className="hidden md:inline text-dim dark:text-dark-dim">·</span>
-          <span className="font-mono text-ink dark:text-white font-semibold">
-            {walletBalance.loading ? "Loading balance…" : `${walletBalance.near} NEAR ≈ ${walletBalance.usd}`}
-          </span>
           <span className="text-amber-600 dark:text-amber-400 font-medium">
-            (Market rate ${walletBalance.price.toFixed(2)}/NEAR)
+            Test tokens only (no real funds)
           </span>
+          {walletBalance.isConnected && walletBalance.account && (
+            <>
+              <span className="hidden md:inline text-dim dark:text-dark-dim">·</span>
+              <span className="font-mono text-accent dark:text-[#46D9A4] font-medium">
+                {walletBalance.account}
+              </span>
+              <span className="hidden md:inline text-dim dark:text-dark-dim">·</span>
+              <span className="font-mono text-ink dark:text-white font-semibold">
+                {walletBalance.loading ? "Loading balance…" : `${walletBalance.near} NEAR ≈ ${walletBalance.usd}`}
+              </span>
+            </>
+          )}
         </div>
         <p className="text-[11.5px] text-mute dark:text-dark-mute">
           Mandates, proposals, and bonds run with simulated test assets on NEAR testnet.
@@ -176,29 +185,54 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Top 4 Metric Stat Cards */}
+      {/* Metric Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat
-          label="Wallet balance"
-          value={walletBalance.loading ? "Loading…" : walletBalance.usd}
-          sub={
-            walletBalance.loading
-              ? "Fetching on-chain balance…"
-              : `${walletBalance.near} NEAR (testnet) · $${walletBalance.price.toFixed(2)}/NEAR`
-          }
-          badge={
-            <span
-              className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border truncate max-w-[100px]"
-              title={walletBalance.account}
-            >
-              {walletBalance.account}
-            </span>
-          }
-        />
+        {walletBalance.isConnected ? (
+          <Stat
+            label="Wallet balance"
+            value={walletBalance.loading ? "Loading…" : walletBalance.usd}
+            sub={
+              walletBalance.loading
+                ? "Fetching on-chain balance…"
+                : walletBalance.near === 0
+                ? "0.00 NEAR · Fund from testnet faucet"
+                : `${walletBalance.near} NEAR (testnet) · $${walletBalance.price.toFixed(2)}/NEAR`
+            }
+            badge={
+              <span
+                className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border truncate max-w-[100px]"
+                title={walletBalance.account ?? ""}
+              >
+                {walletBalance.account}
+              </span>
+            }
+          />
+        ) : (
+          <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute">
+                  Wallet balance
+                </span>
+                <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border">
+                  Disconnected
+                </span>
+              </div>
+              <div className="mt-1.5 text-xs text-mute dark:text-dark-mute">
+                Connect your NEAR wallet to view balance and manage mandates.
+              </div>
+            </div>
+            <div className="mt-3">
+              <Btn size="sm" onClick={signIn} disabled={!ready} className="w-full">
+                {ready ? "Connect wallet" : "Loading wallet…"}
+              </Btn>
+            </div>
+          </div>
+        )}
         <Stat
           label="Active mandates"
           value={`${activeMandates.length} active`}
-          sub={`${displayMandates.length} registered on-chain`}
+          sub={walletBalance.isConnected ? `${displayMandates.length} registered on-chain` : "Connect wallet to view"}
           badge={
             <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4] border border-accent/20">
               Enforced
@@ -282,17 +316,28 @@ export default function Dashboard() {
             <div className="mt-3.5 space-y-3">
               {displayMandates.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-line dark:border-dark-border p-6 text-center text-xs text-mute dark:text-dark-mute">
-                  {liveMandates.loading
-                    ? "Loading mandates…"
-                    : liveMandates.error
-                    ? "Mandates could not be loaded. See the error above."
-                    : "No mandates found for this wallet yet."}
-                  {!liveMandates.loading && !liveMandates.error && isContractConfigured && (
-                    <div className="mt-3">
-                      <Link className="font-semibold text-accent dark:text-[#46D9A4] hover:underline" href="/app/mandates/new">
-                        Create your first mandate →
-                      </Link>
+                  {!accountId ? (
+                    <div className="space-y-3">
+                      <p>Connect your NEAR wallet to view and enforce your mandates.</p>
+                      <Btn size="sm" onClick={signIn} disabled={!ready}>
+                        {ready ? "Connect wallet" : "Loading wallet…"}
+                      </Btn>
                     </div>
+                  ) : liveMandates.loading ? (
+                    "Loading mandates…"
+                  ) : liveMandates.error ? (
+                    "Mandates could not be loaded. See the error above."
+                  ) : (
+                    <>
+                      <p>No mandates found for {accountId} yet.</p>
+                      {isContractConfigured && (
+                        <div className="mt-3">
+                          <Link className="font-semibold text-accent dark:text-[#46D9A4] hover:underline" href="/app/mandates/new">
+                            Create your first mandate →
+                          </Link>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ) : (
@@ -359,7 +404,9 @@ export default function Dashboard() {
             <div className="max-h-[390px] overflow-y-auto divide-y divide-line dark:divide-dark-border -mx-4 sm:-mx-5 px-4 sm:px-5 scrollbar-thin">
               {filteredProposals.length === 0 ? (
                 <div className="py-12 text-center text-xs text-mute dark:text-dark-mute">
-                  {liveProposals.loading
+                  {!accountId
+                    ? "Connect your wallet to stream real-time proposals for your mandates."
+                    : liveProposals.loading
                     ? "Loading proposals…"
                     : liveProposals.error
                     ? "Proposals could not be loaded. See the error above."

@@ -5,7 +5,8 @@ import { CONFIG } from "@/lib/config";
 import { useWallet } from "@/components/app/WalletProvider";
 
 type BalanceState = {
-  account: string;
+  account: string | null;
+  isConnected: boolean;
   yocto: string;
   near: number;
   totalNear: number;
@@ -93,16 +94,24 @@ export function useNearPrice(): { price: number; loading: boolean } {
 
 export function useAccountBalance(customAccount?: string | null): BalanceState {
   const { accountId } = useWallet();
-  const targetAccount = customAccount || accountId || CONFIG.contractId || "bridle.testnet";
+  // Strictly use connected accountId, or customAccount if passed explicitly. Never fallback to contract or dummy accounts!
+  const targetAccount = customAccount !== undefined ? customAccount : accountId;
   const { price } = useNearPrice();
 
   const [yocto, setYocto] = useState<string>("0");
   const [near, setNear] = useState<number>(0);
   const [totalNear, setTotalNear] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(Boolean(targetAccount));
 
   const fetchBalance = useCallback(async () => {
-    if (!targetAccount) return;
+    if (!targetAccount) {
+      setYocto("0");
+      setNear(0);
+      setTotalNear(0);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       const res = await fetch(CONFIG.rpc, {
         method: "POST",
@@ -140,14 +149,20 @@ export function useAccountBalance(customAccount?: string | null): BalanceState {
       setNear(calcNear);
       setTotalNear(calcTotal);
     } catch {
-      // Default to 0 on failure
+      // Keep previous or 0 on failure
     } finally {
       setLoading(false);
     }
   }, [targetAccount]);
 
   useEffect(() => {
-    setLoading(true);
+    if (!targetAccount) {
+      setYocto("0");
+      setNear(0);
+      setTotalNear(0);
+      setLoading(false);
+      return;
+    }
     fetchBalance();
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") {
@@ -155,7 +170,7 @@ export function useAccountBalance(customAccount?: string | null): BalanceState {
       }
     }, 15000);
     return () => clearInterval(interval);
-  }, [fetchBalance]);
+  }, [fetchBalance, targetAccount]);
 
   const usdValue = +(near * price).toFixed(2);
   const usdFormatted = new Intl.NumberFormat("en-US", {
@@ -164,7 +179,8 @@ export function useAccountBalance(customAccount?: string | null): BalanceState {
   }).format(usdValue);
 
   return {
-    account: targetAccount,
+    account: targetAccount ?? null,
+    isConnected: Boolean(targetAccount),
     yocto,
     near,
     totalNear,
