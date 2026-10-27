@@ -17,9 +17,33 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bridle: steer your agents, don't trust them",
+  metadataBase: new URL("https://bridle-agent.vercel.app"),
+  title: "Bridle — Steer your agents. Don't trust them.",
   description:
-    "Bridle lets an AI agent spend across chains without ever holding a key. You set the limits once, and a contract enforces them.",
+    "Bridle lets AI agents make payments within strict spending limits, without ever holding a private key.",
+  openGraph: {
+    title: "Bridle — Steer your agents. Don't trust them.",
+    description:
+      "Policy-bound payments for AI agents. Set the limits. Let the contract enforce them.",
+    url: "https://bridle-agent.vercel.app/",
+    siteName: "Bridle",
+    type: "website",
+    images: [
+      {
+        url: "/bridle-og.png",
+        width: 1200,
+        height: 630,
+        alt: "Bridle — Steer your agents. Don't trust them.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bridle — Steer your agents. Don't trust them.",
+    description:
+      "Policy-bound payments for AI agents. Set the limits. Let the contract enforce them.",
+    images: ["/bridle-og.png"],
+  },
 };
 
 export default function RootLayout({
