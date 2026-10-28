@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 type GettingStartedModalProps = {
   accountId?: string | null;
@@ -31,6 +31,14 @@ export function GettingStartedModal({
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [activeStepId, setActiveStepId] = useState<number>(1);
   const [progressLoaded, setProgressLoaded] = useState(false);
+
+  const handleDismiss = useCallback(() => {
+    try {
+      localStorage.setItem("bridle_hide_getting_started", "true");
+      sessionStorage.setItem("bridle_guide_dismissed_session", "true");
+    } catch {}
+    onClose();
+  }, [onClose]);
 
   // Keep checklist progress between visits; do not imply completion by default
   useEffect(() => {
@@ -73,7 +81,15 @@ export function GettingStartedModal({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  // Close and persist on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleDismiss();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, handleDismiss]);
 
   const steps: Step[] = [
     {
@@ -180,23 +196,7 @@ export function GettingStartedModal({
     }
   };
 
-  const handleDismiss = () => {
-    try {
-      localStorage.setItem("bridle_hide_getting_started", "true");
-      sessionStorage.setItem("bridle_guide_dismissed_session", "true");
-    } catch {}
-    onClose();
-  };
-
-  // Close and persist on Escape key
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") handleDismiss();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [isOpen]);
+  if (!isOpen) return null;
 
   return (
     <div
