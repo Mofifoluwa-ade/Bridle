@@ -217,7 +217,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen w-full flex bg-paper dark:bg-dark-bg text-ink dark:text-dark-text transition-colors overflow-x-clip">
       {/* 1. Desktop Persistent Left Sidebar */}
-      <aside className="hidden md:flex md:w-64 md:h-screen md:fixed md:inset-y-0 md:left-0 flex-col justify-between border-r border-line dark:border-dark-border bg-white dark:bg-dark-card p-5 text-ink dark:text-dark-text select-none z-30 transition-colors overflow-y-auto">
+      <aside className="hidden md:flex md:w-64 md:h-screen md:fixed md:inset-y-0 md:left-0 flex-col justify-between border-r border-line dark:border-dark-border bg-white dark:bg-dark-card p-5 text-ink dark:text-dark-text select-none z-30 transition-colors overflow-hidden overscroll-none">
         {/* Top: Brand Logo + Primary Nav */}
         <div className="space-y-4">
           <div className="space-y-2">

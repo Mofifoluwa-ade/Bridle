@@ -18,12 +18,36 @@ const STEPS = [
 ];
 
 export default function NewMandate() {
+  const { accountId } = useWallet();
   return (
     <>
       <PageHeader
-        title="Define spending authority"
-        lead="Give your agent narrow permissions. Review the policy before you activate it."
+        title="New spending rule"
+        lead="Set your rules once. Your AI agent can only spend within these limits."
       />
+
+      {/* Testnet Environment Banner */}
+      <div className="mb-6 rounded-2xl border border-line dark:border-dark-border bg-paper/60 dark:bg-dark-card/60 p-4 sm:p-5 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-mute dark:text-dark-mute">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="flex-none inline-flex items-center gap-1.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 border border-accent/25 px-2.5 py-0.5 font-mono text-[10.5px] uppercase tracking-wider font-semibold text-accent dark:text-[#46D9A4]">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent dark:bg-[#46D9A4]" />
+            Testnet live
+          </span>
+          <span className="text-ink dark:text-white font-medium text-sm">
+            NEAR Testnet
+          </span>
+          <span className="hidden sm:inline text-dim dark:text-dark-dim">·</span>
+          <span className="text-amber-600 dark:text-amber-400 font-medium">
+            Test tokens only (no real money)
+          </span>
+        </div>
+        <p className="text-[12px] text-mute dark:text-dark-mute sm:text-right max-w-lg leading-relaxed">
+          {accountId
+            ? "Your spending rule will be deployed to NEAR testnet. Spending limits and deposits are enforced entirely on test tokens."
+            : "Preview and configure rule parameters freely. Connect your NEAR testnet wallet when you are ready to activate it."}
+        </p>
+      </div>
+
       {!CONFIG.contractId && (
         <Notice tone="warn" title="Preview only · contract not configured">
           You can configure and test a draft below. On-chain creation is unavailable until NEXT_PUBLIC_BRIDLE_CONTRACT is configured.
@@ -145,6 +169,22 @@ function Form() {
   return (
     <div className="grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="min-w-0 space-y-5">
+        {!accountId && (
+          <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div>
+              <p className="font-semibold text-ink dark:text-white">
+                Preview mode
+              </p>
+              <p className="text-mute dark:text-dark-mute mt-0.5">
+                Configure your rule limits, whitelist, and safety parameters below. Connect a NEAR testnet wallet when you are ready to sign and activate this rule on-chain.
+              </p>
+            </div>
+            <Btn size="sm" onClick={signIn} disabled={!ready} className="shrink-0">
+              {ready ? "Connect wallet" : "Loading wallet…"}
+            </Btn>
+          </div>
+        )}
+
         <Card className="p-4 sm:p-5">
           <div className="grid grid-cols-3 gap-2">
             {STEPS.map((item, i) => (
@@ -161,8 +201,8 @@ function Form() {
         {step === 0 && (
           <>
             <Card className="space-y-5 p-5 sm:p-7">
-              <Label>Agent identity</Label>
-              <Field label="Agent NEAR account" hint="The account that requests payments under this policy." error={show("agent")}>
+              <Label>01 · Agent account</Label>
+              <Field label="Agent NEAR address" hint="The NEAR account your AI agent uses. It can only request payments within your rules." error={show("agent")}>
                 <input className={monoInputCls} value={agent} onChange={(e) => setAgent(e.target.value.trim())} placeholder="research-agent.testnet" autoCapitalize="none" spellCheck={false} />
               </Field>
               <fieldset>
@@ -181,8 +221,8 @@ function Form() {
             </Card>
             <Card className="space-y-4 p-5 sm:p-7">
               <div>
-                <Label>Recipient allowlist</Label>
-                <p className="mt-2 text-sm text-mute dark:text-dark-mute">Only these exact addresses are eligible recipients. Keep this list narrow.</p>
+                <Label>02 · Approved recipients</Label>
+                <p className="mt-2 text-sm text-mute dark:text-dark-mute">Your agent can only send money to addresses on this list. Any other address is automatically blocked.</p>
               </div>
               {rows.map((r, i) => (
                 <div key={i} className="space-y-1.5">
@@ -205,30 +245,30 @@ function Form() {
         {step === 1 && (
           <>
             <Card className="space-y-5 p-5 sm:p-7">
-              <Label>Hard spending limits</Label>
+              <Label>03 · Spending limits</Label>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Maximum per payment (USDC)" hint="A payment above this cap is blocked." error={show("perTx")}>
+                <Field label="Max per payment (USDC)" hint="The most it can send at once" error={show("perTx")}>
                   <input className={monoInputCls} inputMode="decimal" value={perTx} onChange={(e) => setPerTx(e.target.value)} />
                 </Field>
-                <Field label="Maximum per day (USDC)" hint="Total allowed in a 24-hour period." error={show("daily")}>
+                <Field label="Max per day (USDC)" hint="Resets every 24 hours" error={show("daily")}>
                   <input className={monoInputCls} inputMode="decimal" value={daily} onChange={(e) => setDaily(e.target.value)} />
                 </Field>
               </div>
               <Notice title="How the caps work">The per-payment cap applies to one request. The daily cap limits cumulative spending. Both must permit a payment for it to proceed.</Notice>
             </Card>
             <Card className="space-y-5 p-5 sm:p-7">
-              <Label>Human review & expiry</Label>
-              <Field label="Review threshold (USDC)" hint="Payments above this amount enter the configured review flow. Set to 0 to review every payment." error={show("threshold")}>
+              <Label>04 · Safety & Review time</Label>
+              <Field label="Pause payments above (USDC)" hint="Larger payments pause for review. Set to 0 to review every payment." error={show("threshold")}>
                 <input className={monoInputCls} inputMode="decimal" value={threshold} onChange={(e) => setThreshold(e.target.value)} />
               </Field>
-              <Field label="Review window (minutes)" hint="The configured challenge window for review." error={show("window")}>
+              <Field label="Review pause time (minutes)" hint="How long large payments pause for review before processing." error={show("window")}>
                 <input className={monoInputCls} inputMode="numeric" value={windowMin} onChange={(e) => setWindowMin(e.target.value)} />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Agent deposit (NEAR)" hint={v.b ? `Configured deposit: ${formatNearWithUsd(v.b)}` : "Deposit amount supplied with the mandate."} error={show("bond")}>
+                <Field label="Security deposit (NEAR)" hint={v.b ? `Agent deposits ${formatNearWithUsd(v.b)} to ensure good behavior` : "Security deposit from the agent"} error={show("bond")}>
                   <input className={monoInputCls} inputMode="decimal" value={bond} onChange={(e) => setBond(e.target.value)} />
                 </Field>
-                <Field label="Rule duration (days)" hint="How long this rule remains valid (1–30)." error={show("days")}>
+                <Field label="Rule duration (days)" hint="How many days rules stay active (1–30)" error={show("days")}>
                   <input className={monoInputCls} inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value)} />
                 </Field>
               </div>
@@ -264,12 +304,12 @@ function Form() {
                 <ReviewRow label="Agent" value={agent || "Not set"} />
                 <ReviewRow label="Networks" value={chains.join(", ") || "None selected"} />
                 <ReviewRow label="Approved recipients" value={`${v.filled.length} configured`} />
-                <ReviewRow label="Per payment" value={v.p !== null ? usdc(v.p) : "Invalid"} />
-                <ReviewRow label="Daily cap" value={v.d !== null ? usdc(v.d) : "Invalid"} />
-                <ReviewRow label="Review threshold" value={v.t !== null ? usdc(v.t) : "Invalid"} />
-                <ReviewRow label="Review window" value={Number.isFinite(v.w) ? duration(v.w) : "Invalid"} />
-                <ReviewRow label="Deposit" value={v.b ? formatNearWithUsd(v.b) : "Invalid"} />
-                <ReviewRow label="Expiry" value={v.dy ? `${v.dy} days` : "Invalid"} />
+                <ReviewRow label="Max per payment" value={v.p !== null ? usdc(v.p) : "Invalid"} />
+                <ReviewRow label="Max per day" value={v.d !== null ? usdc(v.d) : "Invalid"} />
+                <ReviewRow label="Pause payments above" value={v.t !== null ? usdc(v.t) : "Invalid"} />
+                <ReviewRow label="Review pause time" value={Number.isFinite(v.w) ? duration(v.w) : "Invalid"} />
+                <ReviewRow label="Security deposit" value={v.b ? formatNearWithUsd(v.b) : "Invalid"} />
+                <ReviewRow label="Rule duration" value={v.dy ? `${v.dy} days` : "Invalid"} />
               </div>
             </Card>
           </>
@@ -284,36 +324,74 @@ function Form() {
               Continue to {step === 0 ? "spending limits" : "review"} →
             </Btn>
           ) : accountId && CONFIG.contractId ? (
-            <Btn variant="accent" busy={busy} onClick={submit} disabled={!ok}>Review and sign</Btn>
+            <Btn variant="accent" busy={busy} onClick={submit} disabled={!ok}>Save and activate rule</Btn>
           ) : (
             <Btn variant="accent" onClick={() => { if (!CONFIG.contractId) return; signIn(); }} disabled={!CONFIG.contractId || !ready || !ok}>
-              {!CONFIG.contractId ? "Contract not configured" : !ready ? "Loading wallet…" : "Connect wallet to sign"}
+              {!CONFIG.contractId ? "Contract not configured" : !ready ? "Loading wallet…" : "Connect wallet to create rule"}
             </Btn>
           )}
         </div>
         {step === 2 && !accountId && CONFIG.contractId && <p className="text-right text-xs text-mute dark:text-dark-mute">Your draft stays local. Connect a NEAR testnet wallet only when you are ready to submit it.</p>}
       </div>
 
-      <aside className="min-w-0 lg:sticky lg:top-28 lg:self-start">
+      <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
         <Card dark className="p-5 sm:p-6">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-mono text-xs uppercase tracking-wider text-dim">Policy snapshot</p>
-            <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] uppercase text-amber-300">Draft · Testnet</span>
+            <p className="font-mono text-xs uppercase tracking-wider text-dim">Summary of your rule</p>
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] uppercase text-amber-300">Testnet mode</span>
           </div>
-          <p className="mt-4 text-lg leading-relaxed text-white"><b>{agent || "Your agent"}</b> may request USDC payments on <b>{chains.join(" and ") || "no network selected"}</b> to <b>{v.filled.length}</b> approved {v.filled.length === 1 ? "recipient" : "recipients"}.</p>
+          <p className="mt-4 text-lg leading-relaxed text-white"><b>{agent || "Your agent"}</b> can pay <b>USDC</b> on <b>{chains.join(" and ") || "selected chains"}</b>, only to <b>{v.filled.length}</b> approved {v.filled.length === 1 ? "address" : "addresses"}.</p>
           <div className="mt-5 space-y-3 border-t border-night pt-5 text-sm leading-relaxed text-dim">
-            <SummaryLine label="Per payment" value={v.p !== null ? usdc(v.p) : "—"} />
-            <SummaryLine label="Daily cap" value={v.d !== null ? usdc(v.d) : "—"} />
-            <SummaryLine label="Review above" value={v.t !== null ? usdc(v.t) : "—"} />
-            <SummaryLine label="Review window" value={Number.isFinite(v.w) ? duration(v.w) : "—"} />
-            <SummaryLine label="Deposit" value={v.b ? formatNearWithUsd(v.b) : "—"} />
-            <SummaryLine label="Expires" value={v.dy ? `${v.dy} days` : "—"} />
+            <SummaryLine label="Max per payment" value={v.p !== null ? usdc(v.p) : "—"} />
+            <SummaryLine label="Max per day" value={v.d !== null ? usdc(v.d) : "—"} />
+            <SummaryLine label="Pause above" value={v.t !== null ? usdc(v.t) : "—"} />
+            <SummaryLine label="Review pause time" value={Number.isFinite(v.w) ? duration(v.w) : "—"} />
+            <SummaryLine label="Security deposit" value={v.b ? formatNearWithUsd(v.b) : "—"} />
+            <SummaryLine label="Rule duration" value={v.dy ? `${v.dy} days` : "—"} />
           </div>
           <div className="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200">
-            <b className="text-amber-300">Testnet environment</b>
+            <b className="text-amber-300">Testnet mode</b>
             <p className="mt-1">Values here are a draft. Nothing is submitted until you connect a wallet and sign a transaction.</p>
           </div>
-          {touched && !ok && <p className="mt-4 text-xs text-dim">Some fields need attention before this draft can be submitted.</p>}
+
+          {step < 2 ? (
+            <Btn
+              variant="accent"
+              size="lg"
+              className="mt-6 w-full"
+              onClick={() => {
+                setTouched(true);
+                if (canContinue) setStep((s) => (s + 1) as Step);
+              }}
+              disabled={!canContinue}
+            >
+              Continue to {step === 0 ? "spending limits" : "review"} →
+            </Btn>
+          ) : accountId && CONFIG.contractId ? (
+            <Btn variant="accent" size="lg" className="mt-6 w-full" busy={busy} onClick={submit} disabled={touched && !ok}>
+              Save and activate rule
+            </Btn>
+          ) : (
+            <Btn
+              variant="accent"
+              size="lg"
+              className="mt-6 w-full"
+              onClick={() => {
+                if (!CONFIG.contractId) return;
+                signIn();
+              }}
+              disabled={!CONFIG.contractId || !ready || !ok}
+            >
+              {!CONFIG.contractId ? "Contract not configured" : !ready ? "Loading wallet…" : "Connect wallet to create rule"}
+            </Btn>
+          )}
+
+          {touched && !ok && <p className="mt-3 text-xs text-dim text-center">Please fix the highlighted fields first.</p>}
+          <p className="mt-3 text-xs text-dim text-center">
+            {accountId
+              ? `Signed with ${accountId} on NEAR testnet. No real money is spent.`
+              : "Connect your NEAR testnet wallet to sign and submit this rule on-chain."}
+          </p>
         </Card>
       </aside>
     </div>
