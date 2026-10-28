@@ -266,7 +266,47 @@ export default function DocsPage() {
       if (el) observer.observe(el);
     });
 
-    return () => observer.disconnect();
+  }, []);
+
+  // Prevent background scrolling when mobile menu is open
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    const preventTouch = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.("[data-mobile-menu-scrollable]")) {
+        return;
+      }
+      e.preventDefault();
+    };
+
+    window.addEventListener("touchmove", preventTouch, { passive: false });
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.touchAction = originalTouchAction;
+      window.removeEventListener("touchmove", preventTouch);
+    };
+  }, [mobileMenuOpen]);
+
+  // Close mobile navigation on desktop resize
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 1024) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   const filteredSections = useMemo(() => {
@@ -373,7 +413,8 @@ export default function DocsPage() {
           
           {/* Left Sticky Sidebar Nav */}
           <aside
-            className={`lg:col-span-3 lg:sticky lg:top-24 max-h-[calc(100vh-7rem)] overflow-y-auto space-y-6 pr-2 ${
+            data-mobile-menu-scrollable="true"
+            className={`lg:col-span-3 lg:sticky lg:top-24 max-h-[calc(100vh-7rem)] overflow-y-auto space-y-6 pr-2 overscroll-contain ${
               mobileMenuOpen
                 ? "fixed inset-0 top-16 z-30 bg-white dark:bg-dark-card p-6 overflow-y-auto block"
                 : "hidden lg:block"

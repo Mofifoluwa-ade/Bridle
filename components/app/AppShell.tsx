@@ -155,15 +155,45 @@ export function AppShell({ children }: { children: ReactNode }) {
   } = useTour();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Auto open Getting Started on first visit if not explicitly dismissed
+  // Prevent background scrolling when mobile navigation drawer is open
   useEffect(() => {
-    try {
-      const hidden = localStorage.getItem("bridle_hide_getting_started");
-      if (!hidden) {
-        openGuideModal();
+    if (!mobileMenuOpen) return;
+
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    const preventTouch = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.("[data-mobile-menu-scrollable]")) {
+        return;
       }
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      e.preventDefault();
+    };
+
+    window.addEventListener("touchmove", preventTouch, { passive: false });
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.touchAction = originalTouchAction;
+      window.removeEventListener("touchmove", preventTouch);
+    };
+  }, [mobileMenuOpen]);
+
+  // Close mobile navigation on desktop resize
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   const isActive = (item: NavItem) =>
@@ -322,10 +352,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden" role="dialog" aria-modal="true">
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs touch-none overscroll-contain"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="relative w-72 max-w-[80vw] bg-white dark:bg-dark-card border-r border-line dark:border-dark-border p-5 flex flex-col justify-between z-10">
+          <div
+            data-mobile-menu-scrollable="true"
+            className="relative w-72 max-w-[80vw] bg-white dark:bg-dark-card border-r border-line dark:border-dark-border p-5 flex flex-col justify-between z-10 overflow-y-auto overscroll-contain"
+          >
             <div className="space-y-6">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">

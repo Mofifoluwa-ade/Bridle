@@ -46,6 +46,47 @@ export function Nav() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Prevent background scrolling when mobile navigation is open
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    const preventTouch = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.("[data-mobile-menu-scrollable]")) {
+        return;
+      }
+      e.preventDefault();
+    };
+
+    window.addEventListener("touchmove", preventTouch, { passive: false });
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.touchAction = originalTouchAction;
+      window.removeEventListener("touchmove", preventTouch);
+    };
+  }, [mobileMenuOpen]);
+
+  // Close mobile navigation on desktop resize
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   return (
     <div className="relative w-full z-40">
       <Container>
@@ -217,12 +258,16 @@ export function Nav() {
         <>
           {/* Backdrop overlay to close on outside click */}
           <div
-            className="fixed inset-0 z-40 bg-black/30 dark:bg-black/50 backdrop-blur-xs md:hidden"
+            className="fixed inset-0 z-40 bg-black/40 dark:bg-black/60 backdrop-blur-xs md:hidden touch-none overscroll-contain"
             onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
           />
 
           {/* Menu Card */}
-          <div className="md:hidden absolute top-full left-4 right-4 z-50 animate-fade-in">
+          <div
+            data-mobile-menu-scrollable="true"
+            className="md:hidden fixed top-[76px] left-4 right-4 z-50 animate-fade-in overscroll-contain max-h-[calc(100dvh-92px)] overflow-y-auto"
+          >
             <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-5 shadow-2xl space-y-4 text-ink dark:text-white transition-colors">
               <div className="flex flex-col space-y-1">
                 {links.map((l) => (
