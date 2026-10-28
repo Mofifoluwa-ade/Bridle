@@ -215,7 +215,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isSettingsActive = path.startsWith("/app/settings");
 
   return (
-    <div className="min-h-screen w-full flex bg-paper dark:bg-dark-bg text-ink dark:text-dark-text transition-colors overflow-x-clip">
+    <div className="min-h-screen w-full bg-paper dark:bg-dark-bg text-ink dark:text-dark-text transition-colors">
       {/* 1. Desktop Persistent Left Sidebar */}
       <aside className="hidden md:flex md:w-64 md:h-screen md:fixed md:inset-y-0 md:left-0 flex-col justify-between border-r border-line dark:border-dark-border bg-white dark:bg-dark-card p-5 text-ink dark:text-dark-text select-none z-30 transition-colors overflow-hidden overscroll-none">
         {/* Top: Brand Logo + Primary Nav */}
@@ -460,7 +460,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       {/* 3. Main Workspace Area: Top Nav Bar + Content */}
-      <div className="flex-1 md:pl-64 flex flex-col min-w-0 max-w-full">
+      <div className="md:ml-64 flex flex-col min-h-screen min-w-0">
         {/* Top Nav Header: Only "NEAR testnet" together with "Connect wallet" (+ mobile menu trigger) */}
         <header className="sticky top-0 z-20 flex h-14 w-full items-center justify-between border-b border-line dark:border-dark-border bg-paper/90 dark:bg-dark-bg/90 px-3.5 sm:px-7 backdrop-blur transition-colors">
           {/* Left: Mobile hamburger trigger */}
