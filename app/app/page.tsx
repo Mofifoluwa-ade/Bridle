@@ -198,11 +198,23 @@ export default function Dashboard() {
         <Stat
           label="Active rules"
           value={`${activeMandates.length} active`}
-          sub={accountId ? `${displayMandates.length} rules created` : "Connect wallet to view"}
+          sub={
+            !accountId
+              ? "Connect wallet to view rules"
+              : activeMandates.length > 0
+              ? `${displayMandates.length} rules created`
+              : "No active rules created yet"
+          }
           badge={
-            <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4] border border-accent/20">
-              Active
-            </span>
+            activeMandates.length > 0 ? (
+              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4] border border-accent/20">
+                Active
+              </span>
+            ) : (
+              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border">
+                {accountId ? "None active" : "Disconnected"}
+              </span>
+            )
           }
         />
         <Stat
@@ -210,7 +222,9 @@ export default function Dashboard() {
           value={mineToDecide.length}
           tone={mineToDecide.length > 0 ? "warn" : undefined}
           sub={
-            mineToDecide.length > 0
+            !accountId
+              ? "Connect wallet to review"
+              : mineToDecide.length > 0
               ? `${mineToDecide.length} waiting for your review`
               : "No payments waiting for review"
           }
@@ -229,7 +243,13 @@ export default function Dashboard() {
         <Stat
           label="Spent today"
           value={usdc(spent)}
-          sub={`of ${usdc(cap)} allowed per day`}
+          sub={
+            !accountId
+              ? "Connect wallet to view daily limit"
+              : cap > BigInt(0)
+              ? `of ${usdc(cap)} allowed per day`
+              : "No daily limit active"
+          }
           badge={
             <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border">
               Daily limit
@@ -283,11 +303,21 @@ export default function Dashboard() {
               {displayMandates.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-line dark:border-dark-border p-6 text-center text-xs text-mute dark:text-dark-mute">
                   {!accountId ? (
-                    <div className="space-y-3">
-                      <p>Connect your NEAR wallet to view and manage your spending rules.</p>
-                      <Btn size="sm" onClick={signIn} disabled={!ready}>
-                        {ready ? "Connect wallet" : "Loading wallet…"}
-                      </Btn>
+                    <div className="space-y-2 py-3 max-w-xs mx-auto">
+                      <p className="font-semibold text-ink dark:text-white text-[13px]">
+                        Spending rules
+                      </p>
+                      <p className="text-mute dark:text-dark-mute text-xs leading-relaxed">
+                        Connect your NEAR testnet account to view active rules, daily limits, and approved recipients for your agents.
+                      </p>
+                      <div className="pt-2">
+                        <Link
+                          href="/app/mandates/new"
+                          className="inline-flex items-center gap-1 font-semibold text-accent dark:text-[#46D9A4] hover:underline text-xs"
+                        >
+                          Preview rule builder →
+                        </Link>
+                      </div>
                     </div>
                   ) : liveMandates.loading ? (
                     "Loading spending rules…"
@@ -369,14 +399,23 @@ export default function Dashboard() {
             {/* Proposals Scrollable List */}
             <div className="max-h-[390px] overflow-y-auto divide-y divide-line dark:divide-dark-border -mx-4 sm:-mx-5 px-4 sm:px-5 scrollbar-thin">
               {filteredProposals.length === 0 ? (
-                <div className="py-12 text-center text-xs text-mute dark:text-dark-mute">
-                  {!accountId
-                    ? "Connect your wallet to see payments made by your AI agents."
-                    : liveProposals.loading
-                    ? "Loading payments…"
-                    : liveProposals.error
-                    ? "Payments could not be loaded. See the error above."
-                    : "No payments requested yet."}
+                <div className="py-14 text-center text-xs text-mute dark:text-dark-mute max-w-sm mx-auto px-4">
+                  {!accountId ? (
+                    <div className="space-y-1.5">
+                      <p className="font-semibold text-ink dark:text-white text-[13px]">
+                        Live payment feed
+                      </p>
+                      <p className="leading-relaxed">
+                        When your AI agents propose transactions to the contract, they stream here in real time with policy status badges and review actions.
+                      </p>
+                    </div>
+                  ) : liveProposals.loading ? (
+                    "Loading payments…"
+                  ) : liveProposals.error ? (
+                    "Payments could not be loaded. See the error above."
+                  ) : (
+                    "No payments requested yet."
+                  )}
                 </div>
               ) : (
                 filteredProposals.map((p, index) => (

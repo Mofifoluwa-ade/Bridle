@@ -18,12 +18,20 @@ export function Footer() {
             Launch App
           </Link>
           <a
+            href="https://github.com/Mofifoluwa-ade/Bridle"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-ink dark:hover:text-white transition-colors"
+          >
+            GitHub
+          </a>
+          <a
             href="https://testnet.nearblocks.io/address/bridle.testnet"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-ink dark:hover:text-white transition-colors"
           >
-            Contract
+            Contract (NEAR testnet · v0.1)
           </a>
         </div>
         <span className="text-[12.5px] sm:text-[13.5px] text-mute dark:text-dark-mute">

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { NeedsContract, NeedsWallet } from "@/components/app/Gate";
+import { NeedsContract } from "@/components/app/Gate";
 import { Btn, Card, Field, Label, Notice, PageHeader, inputCls, monoInputCls } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
 import { CHAINS } from "@/lib/config";
@@ -19,16 +19,14 @@ export default function NewMandate() {
         lead="Set your rules once. Your AI agent can only spend within these limits."
       />
       <NeedsContract>
-        <NeedsWallet why="You will sign and activate this rule with your wallet.">
-          <Form />
-        </NeedsWallet>
+        <Form />
       </NeedsContract>
     </>
   );
 }
 
 function Form() {
-  const { accountId, call } = useWallet();
+  const { accountId, call, signIn, ready } = useWallet();
   const router = useRouter();
   const [agent, setAgent] = useState("");
   const [chains, setChains] = useState<Chain[]>(["Base"]);
@@ -104,6 +102,22 @@ function Form() {
   return (
     <div className="grid gap-6 lg:gap-8 lg:grid-cols-[1fr_380px]">
       <div className="space-y-6 min-w-0">
+        {!accountId && (
+          <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div>
+              <p className="font-semibold text-ink dark:text-white">
+                Preview mode
+              </p>
+              <p className="text-mute dark:text-dark-mute mt-0.5">
+                Configure your rule limits, whitelist, and safety parameters below. Connect a NEAR testnet wallet when you are ready to sign and activate this rule on-chain.
+              </p>
+            </div>
+            <Btn size="sm" onClick={signIn} disabled={!ready} className="shrink-0">
+              {ready ? "Connect wallet" : "Loading wallet…"}
+            </Btn>
+          </div>
+        )}
+
         <Card className="space-y-6 p-5 sm:p-7 md:p-8">
           <Label>01 · Agent account</Label>
           <Field label="Agent NEAR address" hint="The NEAR account your AI agent uses. It can only request payments within your rules." error={show("agent")}>
@@ -280,11 +294,21 @@ function Form() {
             </p>
           </div>
 
-          <Btn variant="accent" size="lg" className="mt-6 w-full" busy={busy} onClick={submit} disabled={touched && !ok}>
-            Save and activate rule
-          </Btn>
-          {touched && !ok && <p className="mt-3 text-[14px] text-dim">Please fix the highlighted fields first.</p>}
-          <p className="mt-4 text-[13px] text-dim">Signed with {accountId} on NEAR testnet. No real money is spent.</p>
+          {accountId ? (
+            <Btn variant="accent" size="lg" className="mt-6 w-full" busy={busy} onClick={submit} disabled={touched && !ok}>
+              Save and activate rule
+            </Btn>
+          ) : (
+            <Btn variant="accent" size="lg" className="mt-6 w-full" onClick={signIn} disabled={!ready}>
+              {ready ? "Connect wallet to create rule" : "Loading wallet…"}
+            </Btn>
+          )}
+          {touched && !ok && accountId && <p className="mt-3 text-[14px] text-dim">Please fix the highlighted fields first.</p>}
+          <p className="mt-4 text-[13px] text-dim">
+            {accountId
+              ? `Signed with ${accountId} on NEAR testnet. No real money is spent.`
+              : "Connect your NEAR testnet wallet to sign and submit this rule on-chain."}
+          </p>
         </Card>
       </aside>
     </div>

@@ -180,20 +180,35 @@ export function GettingStartedModal({
     }
   };
 
-  const handleDontShowAgain = () => {
+  const handleDismiss = () => {
     try {
       localStorage.setItem("bridle_hide_getting_started", "true");
+      sessionStorage.setItem("bridle_guide_dismissed_session", "true");
     } catch {}
     onClose();
   };
+
+  // Close and persist on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleDismiss();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen]);
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
+      onClick={handleDismiss}
     >
-      <div className="animate-modal-in relative w-full max-w-[420px] rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 shadow-2xl text-ink dark:text-dark-text transition-colors">
+      <div
+        className="animate-modal-in relative w-full max-w-[420px] rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-6 shadow-2xl text-ink dark:text-dark-text transition-colors"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header: Progress Counter, Restart Icon, and Close Icon */}
         <div className="flex items-center justify-between">
           <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium">
@@ -223,7 +238,7 @@ export function GettingStartedModal({
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleDismiss}
               className="text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors p-1"
               aria-label="Close modal"
             >
@@ -377,14 +392,14 @@ export function GettingStartedModal({
         <div className="mt-7 flex items-center justify-between">
           <button
             type="button"
-            onClick={handleDontShowAgain}
+            onClick={handleDismiss}
             className="text-xs text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors"
           >
             Don&apos;t show again
           </button>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleDismiss}
             className="rounded-full bg-paper dark:bg-white/10 hover:bg-line dark:hover:bg-white/20 text-ink dark:text-white px-4 py-1.5 text-xs font-semibold transition-colors"
           >
             Close

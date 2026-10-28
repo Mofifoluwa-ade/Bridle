@@ -7,8 +7,11 @@ import { usePoll } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
 import { api, view } from "@/lib/near";
 
+import { useTour } from "@/components/app/SpotlightTour";
+
 export default function Settings() {
   const { accountId } = useWallet();
+  const { openGuideModal } = useTour();
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -37,8 +40,9 @@ export default function Settings() {
   const handleResetGuide = () => {
     try {
       localStorage.removeItem("bridle_hide_getting_started");
+      sessionStorage.removeItem("bridle_guide_dismissed_session");
     } catch {}
-    setMsg("Getting started guide reset. It will appear on your next navigation.");
+    setMsg("Getting started guide reset. It will appear on your next navigation, or you can open it now.");
     setTimeout(() => setMsg(null), 4000);
   };
 
@@ -159,24 +163,38 @@ export default function Settings() {
               </button>
             </div>
 
-            <div className="pt-4 border-t border-line dark:border-dark-border flex items-center justify-between">
-              <span className="text-xs text-mute dark:text-dark-mute">Need a refresher?</span>
-              <button
-                type="button"
-                onClick={handleResetGuide}
-                className="text-xs font-medium text-ink dark:text-white hover:text-accent dark:hover:text-[#46D9A4] underline transition-colors"
-              >
-                Reset Getting Started Guide
-              </button>
+            <div className="pt-4 border-t border-line dark:border-dark-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="text-xs font-medium text-ink dark:text-white">Getting started guide</div>
+                <div className="text-[12px] text-mute dark:text-dark-mute">Walkthrough and 4-step onboarding checklist.</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={openGuideModal}
+                  className="text-xs font-semibold text-accent dark:text-[#46D9A4] hover:underline transition-colors"
+                >
+                  Open guide now
+                </button>
+                <span className="text-dim dark:text-dark-dim text-xs">·</span>
+                <button
+                  type="button"
+                  onClick={handleResetGuide}
+                  className="text-xs font-medium text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors"
+                >
+                  Reset guide
+                </button>
+              </div>
             </div>
           </div>
         </Card>
 
         {/* Connection Setting Card */}
         <Card className="p-7 sm:p-8">
-          <Label>Connection</Label>
+          <Label>Connection & Source</Label>
           <dl className="mt-5 space-y-4 text-[14.5px]">
             <Item k="Network" v={CONFIG.network} />
+            <Item k="Release" v={<span className="font-mono text-[13px]">NEAR testnet · v0.1</span>} />
             <Item
               k="Contract"
               v={
@@ -201,9 +219,22 @@ export default function Settings() {
                 )
               }
             />
+            <Item
+              k="Source code"
+              v={
+                <a
+                  href="https://github.com/Mofifoluwa-ade/Bridle"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent dark:text-[#46D9A4] hover:underline"
+                >
+                  GitHub repository
+                </a>
+              }
+            />
           </dl>
           <p className="mt-6 text-[12.5px] text-mute dark:text-dark-mute leading-relaxed">
-            These endpoints are loaded from <code className="font-mono text-ink dark:text-white">.env.local</code>.
+            These endpoints are loaded from <code className="font-mono text-ink dark:text-white">.env.local</code>. Source code is published openly under MIT.
           </p>
         </Card>
 
