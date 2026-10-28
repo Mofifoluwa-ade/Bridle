@@ -17,14 +17,7 @@ export function Footer() {
           <Link href="/app" className="hover:text-ink dark:hover:text-white transition-colors">
             Launch App
           </Link>
-          <a
-            href="https://github.com/Mofifoluwa-ade/Bridle"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-ink dark:hover:text-white transition-colors"
-          >
-            GitHub
-          </a>
+
           <a
             href="https://testnet.nearblocks.io/address/bridle.testnet"
             target="_blank"

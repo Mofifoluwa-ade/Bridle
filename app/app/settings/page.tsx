@@ -191,7 +191,7 @@ export default function Settings() {
 
         {/* Connection Setting Card */}
         <Card className="p-7 sm:p-8">
-          <Label>Connection & Source</Label>
+          <Label>Connection</Label>
           <dl className="mt-5 space-y-4 text-[14.5px]">
             <Item k="Network" v={CONFIG.network} />
             <Item k="Release" v={<span className="font-mono text-[13px]">NEAR testnet · v0.1</span>} />
@@ -219,22 +219,9 @@ export default function Settings() {
                 )
               }
             />
-            <Item
-              k="Source code"
-              v={
-                <a
-                  href="https://github.com/Mofifoluwa-ade/Bridle"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent dark:text-[#46D9A4] hover:underline"
-                >
-                  GitHub repository
-                </a>
-              }
-            />
           </dl>
           <p className="mt-6 text-[12.5px] text-mute dark:text-dark-mute leading-relaxed">
-            These endpoints are loaded from <code className="font-mono text-ink dark:text-white">.env.local</code>. Source code is published openly under MIT.
+            These endpoints are loaded from <code className="font-mono text-ink dark:text-white">.env.local</code>. View smart contracts and source references in the <a href="/docs" className="text-accent dark:text-[#46D9A4] hover:underline">Documentation</a>.
           </p>
         </Card>
 
