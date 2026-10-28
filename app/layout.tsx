@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/bridle-og.png",
+        url: "/bridle-og-final.png",
         width: 1200,
         height: 630,
         alt: "Bridle — Steer your agents. Don't trust them.",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     title: "Bridle — Steer your agents. Don't trust them.",
     description:
       "Policy-bound payments for AI agents. Set the limits. Let the contract enforce them.",
-    images: ["/bridle-og.png"],
+    images: ["/bridle-og-final.png"],
   },
 };
 
