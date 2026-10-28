@@ -102,7 +102,7 @@ export default function Dashboard() {
             Set spending rules for your AI agents and watch every payment in real time
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             id="tour-stress-test-btn"
             href="/app/agent"
@@ -260,8 +260,8 @@ export default function Dashboard() {
       {/* Side-by-Side 2-Column Split: Mandates (Left) & Payment Feed (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left Column: Mandates */}
-        <section className="lg:col-span-5 flex flex-col gap-3">
-          <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 text-ink dark:text-dark-text shadow-sm flex flex-col">
+        <section className="lg:col-span-5 flex flex-col gap-3 min-w-0">
+          <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 text-ink dark:text-dark-text shadow-sm flex flex-col min-w-0">
             <div className="flex items-center justify-between pb-3 border-b border-line dark:border-dark-border">
               <div>
                 <h2 className="text-base sm:text-[17px] font-semibold text-ink dark:text-white">
@@ -322,8 +322,8 @@ export default function Dashboard() {
         </section>
 
         {/* Right Column: Live Stream Agent Payment Feed */}
-        <section className="lg:col-span-7 flex flex-col">
-          <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 text-ink dark:text-dark-text shadow-sm flex flex-col">
+        <section className="lg:col-span-7 flex flex-col min-w-0">
+          <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 text-ink dark:text-dark-text shadow-sm flex flex-col min-w-0">
             {/* Feed Header with Filter Tabs */}
             <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3.5 border-b border-line dark:border-dark-border">
               <div>
@@ -336,7 +336,7 @@ export default function Dashboard() {
               </div>
 
               {/* Filter Pills with Count Badges */}
-              <div className="flex items-center gap-1 p-0.5 rounded-full bg-paper dark:bg-dark-bg border border-line dark:border-dark-border text-xs">
+              <div className="flex items-center gap-1 p-0.5 rounded-full bg-paper dark:bg-dark-bg border border-line dark:border-dark-border text-xs overflow-x-auto max-w-full">
                 {(["All", "Approved", "Paused", "Blocked"] as const).map((tab) => {
                   const isActive = filter === tab;
                   return (

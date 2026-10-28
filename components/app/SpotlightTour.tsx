@@ -300,7 +300,7 @@ function SpotlightOverlay() {
         });
 
         // Calculate HUD card position
-        const cardW = 360;
+        const cardW = Math.min(360, Math.max(260, window.innerWidth - 32));
         const cardH = 220;
         const spacing = 18;
 
@@ -449,7 +449,7 @@ function SpotlightOverlay() {
           top: `${cardPosition.top}px`,
           left: `${cardPosition.left}px`,
         }}
-        className="fixed z-50 w-[350px] sm:w-[370px] animate-modal-in rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-5 text-ink dark:text-dark-text shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.85)] transition-all duration-200 pointer-events-auto"
+        className="fixed z-50 w-[calc(100vw-32px)] max-w-[370px] animate-modal-in rounded-3xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 text-ink dark:text-dark-text shadow-xl dark:shadow-[0_20px_60px_rgba(0,0,0,0.85)] transition-all duration-200 pointer-events-auto"
       >
         {/* Quest Badge & Header */}
         <div className="flex items-center justify-between pb-2.5 border-b border-line dark:border-dark-border">

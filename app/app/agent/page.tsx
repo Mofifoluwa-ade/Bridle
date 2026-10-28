@@ -94,9 +94,9 @@ function Body() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {mine.length > 1 && (
-            <Card className="p-6">
+            <Card className="p-5 sm:p-6">
               <Field label="Active spending rule">
                 <select className={`${monoInputCls}`} value={m.id} onChange={(e) => setMid(Number(e.target.value))}>
                   {mine.map((x) => <option key={x.id} value={x.id}>Rule #{x.id} · Owner: {x.owner}</option>)}
@@ -114,9 +114,9 @@ function Body() {
             </Notice>
           )}
 
-          <Card className="space-y-6 p-8">
+          <Card className="space-y-6 p-5 sm:p-7 md:p-8">
             <Label>Send a test payment</Label>
-            <div className="grid gap-6 sm:grid-cols-[160px_1fr]">
+            <div className="grid gap-4 sm:gap-6 sm:grid-cols-[160px_1fr]">
               <Field label="Blockchain">
                 <select className={monoInputCls} value={chain} onChange={(e) => setChain(e.target.value as Chain)}>
                   {m.chains.map((c) => <option key={c}>{c}</option>)}
@@ -131,25 +131,25 @@ function Body() {
               <input className={monoInputCls} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </Field>
             {err && <Notice tone="bad" title="That did not go through">{err}</Notice>}
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <Btn size="lg" disabled={!canSend} busy={busy === "send"} onClick={() => run("send", () => call({ method: "propose_payment", args: { mandate_id: m.id, chain, asset: "USDC", amount: amt!.toString(), recipient } }))}>
                 Send test payment
               </Btn>
               <LinkBtn href={`/app/mandates/${m.id}`} variant="outline" size="lg">View rule details</LinkBtn>
             </div>
-            <p className="text-[14px] text-mute">If a payment breaks a rule, it is stopped instantly on-chain. The app records it and displays which rule blocked it.</p>
+            <p className="text-xs sm:text-[14px] text-mute">If a payment breaks a rule, it is stopped instantly on-chain. The app records it and displays which rule blocked it.</p>
           </Card>
         </div>
 
-        <aside className="space-y-6">
-          <Card dark className="p-6">
+        <aside className="space-y-6 min-w-0">
+          <Card dark className="p-5 sm:p-6">
             <p className="font-mono text-xs uppercase tracking-label text-dim">How your AI agent calls this in code</p>
-            <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-all font-mono text-[12.5px] leading-relaxed text-white">{snippet}</pre>
+            <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-all font-mono text-xs sm:text-[12.5px] leading-relaxed text-white max-w-full">{snippet}</pre>
           </Card>
-          <Card className="p-6">
+          <Card className="p-5 sm:p-6">
             <Label>Tool for AI models</Label>
-            <p className="mt-2 text-[14px] leading-relaxed text-mute">Give your AI agent this simple tool. Bridle handles the security and limits automatically, so your agent never has access to private keys or direct funds.</p>
-            <pre className="mt-3 overflow-x-auto font-mono text-[12px] leading-relaxed text-ink dark:text-white p-3.5 rounded-xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border">{`propose_payment(
+            <p className="mt-2 text-xs sm:text-[14px] leading-relaxed text-mute">Give your AI agent this simple tool. Bridle handles the security and limits automatically, so your agent never has access to private keys or direct funds.</p>
+            <pre className="mt-3 overflow-x-auto font-mono text-[11.5px] sm:text-[12px] leading-relaxed text-ink dark:text-white p-3.5 rounded-xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border max-w-full">{`propose_payment(
   chain: "Base" | "Solana",
   asset: "USDC",
   amount: string,   // testnet amount

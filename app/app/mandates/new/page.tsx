@@ -102,24 +102,24 @@ function Form() {
   const show = (k: string) => (touched ? v.e[k] : undefined);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
-      <div className="space-y-6">
-        <Card className="space-y-6 p-8">
+    <div className="grid gap-6 lg:gap-8 lg:grid-cols-[1fr_380px]">
+      <div className="space-y-6 min-w-0">
+        <Card className="space-y-6 p-5 sm:p-7 md:p-8">
           <Label>01 · Agent account</Label>
           <Field label="Agent NEAR address" hint="The NEAR account your AI agent uses. It can only request payments within your rules." error={show("agent")}>
             <input className={monoInputCls} value={agent} onChange={(e) => setAgent(e.target.value.trim())} placeholder="your-agent.testnet" autoCapitalize="none" spellCheck={false} />
           </Field>
         </Card>
 
-        <Card className="space-y-6 p-8">
+        <Card className="space-y-6 p-5 sm:p-7 md:p-8">
           <Label>02 · Networks & approved recipients</Label>
           <fieldset>
             <legend className="text-[15px] font-semibold">Blockchains</legend>
-            <div className="mt-2 flex gap-3">
+            <div className="mt-2 flex flex-wrap gap-2.5 sm:gap-3">
               {CHAINS.map((c) => (
                 <label
                   key={c}
-                  className={`cursor-pointer rounded-full border px-5 py-2.5 text-[15px] font-semibold transition-all ${
+                  className={`cursor-pointer rounded-full border px-4 sm:px-5 py-2 sm:py-2.5 text-sm sm:text-[15px] font-semibold transition-all ${
                     chains.includes(c)
                       ? "border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink shadow-sm"
                       : "border-rule dark:border-dark-border bg-white dark:bg-dark-card text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white"
@@ -138,7 +138,7 @@ function Form() {
                   {c}
                 </label>
               ))}
-              <span className="self-center font-mono text-[13px] text-mute dark:text-dark-mute">
+              <span className="self-center font-mono text-xs sm:text-[13px] text-mute dark:text-dark-mute">
                 USDC only
               </span>
             </div>
@@ -149,51 +149,54 @@ function Form() {
 
           <div>
             <p className="text-[15px] font-semibold text-ink dark:text-white">Approved recipients</p>
-            <p className="mt-1 text-[14px] text-mute dark:text-dark-mute">
+            <p className="mt-1 text-xs sm:text-[14px] text-mute dark:text-dark-mute">
               Your agent can only send money to addresses on this list. Any other address is automatically blocked.
             </p>
             <div className="mt-3 space-y-3">
               {rows.map((r, i) => (
                 <div key={i}>
-                  <div className="flex gap-2">
-                    <select
-                      aria-label="Chain"
-                      className="mt-0 rounded-xl border border-rule dark:border-dark-border bg-white dark:bg-dark-card text-ink dark:text-white px-3 py-3 text-[15px] focus:outline-none"
-                      value={r.chain}
-                      onChange={(e) =>
-                        setRows(
-                          rows.map((x, j) =>
-                            j === i ? { ...x, chain: e.target.value as Chain } : x
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex gap-2 flex-1 min-w-0">
+                      <select
+                        aria-label="Chain"
+                        className="mt-0 rounded-xl border border-rule dark:border-dark-border bg-white dark:bg-dark-card text-ink dark:text-white px-3 py-2.5 sm:py-3 text-sm sm:text-[15px] focus:outline-none shrink-0"
+                        value={r.chain}
+                        onChange={(e) =>
+                          setRows(
+                            rows.map((x, j) =>
+                              j === i ? { ...x, chain: e.target.value as Chain } : x
+                            )
                           )
-                        )
-                      }
-                    >
-                      {CHAINS.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      aria-label="Recipient address"
-                      className={`${monoInputCls} mt-0`}
-                      value={r.address}
-                      placeholder={r.chain === "Base" ? "0x…" : "Solana address"}
-                      onChange={(e) =>
-                        setRows(
-                          rows.map((x, j) =>
-                            j === i ? { ...x, address: e.target.value.trim() } : x
+                        }
+                      >
+                        {CHAINS.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        aria-label="Recipient address"
+                        className={`${monoInputCls} mt-0 min-w-0 flex-1`}
+                        value={r.address}
+                        placeholder={r.chain === "Base" ? "0x…" : "Solana address"}
+                        onChange={(e) =>
+                          setRows(
+                            rows.map((x, j) =>
+                              j === i ? { ...x, address: e.target.value.trim() } : x
+                            )
                           )
-                        )
-                      }
-                      spellCheck={false}
-                    />
+                        }
+                        spellCheck={false}
+                      />
+                    </div>
                     {rows.length > 1 && (
                       <Btn
                         variant="outline"
                         size="sm"
                         type="button"
                         aria-label="Remove recipient"
+                        className="shrink-0 self-end sm:self-auto"
                         onClick={() => setRows(rows.filter((_, j) => j !== i))}
                       >
                         Remove
@@ -213,9 +216,9 @@ function Form() {
           </div>
         </Card>
 
-        <Card className="space-y-6 p-8">
+        <Card className="space-y-6 p-5 sm:p-7 md:p-8">
           <Label>03 · Spending limits</Label>
-          <div className="grid gap-6 sm:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 sm:grid-cols-3">
             <Field label="Max per payment (USDC)" hint="The most it can send at once" error={show("perTx")}>
               <input className={monoInputCls} inputMode="decimal" value={perTx} onChange={(e) => setPerTx(e.target.value)} />
             </Field>
@@ -228,9 +231,9 @@ function Form() {
           </div>
         </Card>
 
-        <Card className="space-y-6 p-8">
+        <Card className="space-y-6 p-5 sm:p-7 md:p-8">
           <Label>04 · Safety & Review time</Label>
-          <div className="grid gap-6 sm:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 sm:grid-cols-3">
             <Field label="Review pause time (minutes)" hint="How long large payments pause" error={show("window")}>
               <input className={monoInputCls} inputMode="numeric" value={windowMin} onChange={(e) => setWindowMin(e.target.value)} />
             </Field>
@@ -246,8 +249,8 @@ function Form() {
         {err && <Notice tone="bad" title="The rule was not created">{err}</Notice>}
       </div>
 
-      <aside className="lg:sticky lg:top-40 lg:self-start">
-        <Card dark className="p-8">
+      <aside className="lg:sticky lg:top-40 lg:self-start min-w-0">
+        <Card dark className="p-5 sm:p-7 md:p-8">
           <div className="flex items-center justify-between">
             <p className="font-mono text-xs uppercase tracking-label text-dim">Summary of your rule</p>
             <span className="font-mono text-[10px] uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">

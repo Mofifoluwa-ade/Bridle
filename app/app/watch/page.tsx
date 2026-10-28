@@ -58,8 +58,8 @@ function Body() {
         </div>
       </div>
 
-      <Card className="overflow-hidden">
-      <div className="flex items-center justify-between border-b border-line dark:border-dark-border px-6 py-4">
+      <Card className="overflow-hidden min-w-0">
+      <div className="flex items-center justify-between border-b border-line dark:border-dark-border px-4 sm:px-6 py-4">
         <Label>Payments paused for review</Label>
         <span className="font-mono text-[12px] text-mute dark:text-dark-mute">{rows.length} open</span>
       </div>
@@ -69,16 +69,16 @@ function Body() {
         rows.map(({ p, m }) => {
           const left = nsToMs(p.executable_at) - now;
           return (
-            <div key={p.id} className="border-b border-line dark:border-dark-border px-6 py-5 last:border-b-0">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+            <div key={p.id} className="border-b border-line dark:border-dark-border px-4 sm:px-6 py-4 sm:py-5 last:border-b-0 min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
                   <StatusPill status={p.status} />
                   <Link href={`/app/proposals/${p.id}`} className="font-mono text-[14px] underline">#{p.id}</Link>
-                  <span className="font-mono text-[13px] text-mute">Rule #{m.id} · Agent: {m.agent}</span>
+                  <span className="font-mono text-xs sm:text-[13px] text-mute truncate max-w-[200px] sm:max-w-none">Rule #{m.id} · Agent: {m.agent}</span>
                 </div>
-                <span className="font-mono text-[18px]">{usdc(p.amount)} <span className="text-[13px] text-mute">on {p.chain}</span></span>
+                <span className="font-mono text-base sm:text-[18px] flex-none">{usdc(p.amount)} <span className="text-xs sm:text-[13px] text-mute">on {p.chain}</span></span>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-[14px] text-mute">
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-1 text-xs sm:text-[14px] text-mute">
                 <span>to <Addr value={p.recipient} chars={10} /></span>
                 <span>{left > 0 ? `${countdown(left)} left to review` : "Review delay ended"}</span>
                 {m.allowlist.some((r) => r.address === p.recipient) ? <span>Recipient is on the approved list</span> : null}

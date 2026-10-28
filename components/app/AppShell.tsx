@@ -172,7 +172,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isSettingsActive = path.startsWith("/app/settings");
 
   return (
-    <div className="min-h-screen flex bg-paper dark:bg-dark-bg text-ink dark:text-dark-text transition-colors">
+    <div className="min-h-screen w-full flex bg-paper dark:bg-dark-bg text-ink dark:text-dark-text transition-colors overflow-x-hidden">
       {/* 1. Desktop Persistent Left Sidebar */}
       <aside className="hidden md:flex md:w-64 md:h-screen md:sticky md:top-0 flex-col justify-between border-r border-line dark:border-dark-border bg-white dark:bg-dark-card p-5 text-ink dark:text-dark-text select-none z-30 transition-colors">
         {/* Top: Brand Logo + Primary Nav */}
@@ -414,11 +414,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       {/* 3. Main Workspace Area: Top Nav Bar + Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 max-w-full">
         {/* Top Nav Header: Only "NEAR testnet" together with "Connect wallet" (+ mobile menu trigger) */}
-        <header className="sticky top-0 z-20 flex h-14 w-full items-center justify-between border-b border-line dark:border-dark-border bg-paper/90 dark:bg-dark-bg/90 px-5 sm:px-7 backdrop-blur transition-colors">
+        <header className="sticky top-0 z-20 flex h-14 w-full items-center justify-between border-b border-line dark:border-dark-border bg-paper/90 dark:bg-dark-bg/90 px-3.5 sm:px-7 backdrop-blur transition-colors">
           {/* Left: Mobile hamburger trigger */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
@@ -443,13 +443,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           {/* Right: "NEAR testnet" badge + non-real funds notice and "Connect wallet" */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <div
-              className="inline-flex items-center gap-1.5 rounded-full bg-paper dark:bg-dark-card border border-line dark:border-dark-border px-2.5 sm:px-3 py-1 font-mono text-[10.5px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full bg-paper dark:bg-dark-card border border-line dark:border-dark-border px-2 sm:px-3 py-1 font-mono text-[10px] sm:text-[10.5px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium transition-colors"
               title="NEAR Testnet: all tokens, caps, and bonds have zero real monetary value"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-accent dark:bg-[#46D9A4]" />
-              <span>NEAR {CONFIG.network}</span>
+              <span className="hidden xs:inline">NEAR {CONFIG.network}</span>
+              <span className="xs:hidden">Testnet</span>
               <span className="hidden sm:inline text-dim dark:text-dark-dim">·</span>
               <span className="hidden sm:inline text-[10px] text-amber-600 dark:text-amber-400 font-sans normal-case font-medium">
                 Test tokens only
@@ -460,7 +461,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         {/* Content Body */}
-        <main className="flex-1 w-full max-w-page mx-auto px-5 sm:px-7 py-4 sm:py-5 animate-fade-in">
+        <main className="flex-1 w-full max-w-page mx-auto px-3.5 sm:px-7 py-4 sm:py-5 animate-fade-in min-w-0">
           {!CONFIG.contractId && <SetupNotice />}
           {children}
         </main>

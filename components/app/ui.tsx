@@ -17,7 +17,7 @@ export function Card({
 }) {
   return (
     <section
-      className={`rounded-3xl border transition-colors ${
+      className={`rounded-3xl border transition-colors min-w-0 ${
         dark
           ? "border-night dark:border-dark-border bg-ink dark:bg-dark-card text-white shadow-sm"
           : "border-line dark:border-dark-border bg-white dark:bg-dark-card text-ink dark:text-dark-text shadow-sm"
@@ -386,5 +386,5 @@ export function Field({
 }
 
 export const inputCls =
-  "mt-2 block w-full rounded-xl border border-rule dark:border-dark-border bg-white dark:bg-dark-card px-4 py-3 text-[15.5px] text-ink dark:text-white placeholder:text-dim dark:placeholder:text-dark-dim focus:border-ink dark:focus:border-white focus:outline-none transition-colors shadow-2xs";
+  "mt-2 block w-full min-w-0 rounded-xl border border-rule dark:border-dark-border bg-white dark:bg-dark-card px-4 py-3 text-[15.5px] text-ink dark:text-white placeholder:text-dim dark:placeholder:text-dark-dim focus:border-ink dark:focus:border-white focus:outline-none transition-colors shadow-2xs";
 export const monoInputCls = `${inputCls} font-mono text-[14.5px]`;

@@ -47,49 +47,49 @@ function Body({ id }: { id: number }) {
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-6">
-          <Card className="p-8">
-            <p className="font-mono text-[44px] font-medium leading-none">{usdc(p.amount)}</p>
-            <p className="mt-3 text-[15px] text-mute">on {p.chain} to <Addr value={p.recipient} chars={12} /></p>
+        <div className="space-y-6 min-w-0">
+          <Card className="p-5 sm:p-7 md:p-8">
+            <p className="font-mono text-[30px] sm:text-[44px] font-medium leading-tight break-all">{usdc(p.amount)}</p>
+            <p className="mt-2.5 sm:mt-3 text-sm sm:text-[15px] text-mute flex flex-wrap items-center gap-1.5">on {p.chain} to <Addr value={p.recipient} chars={12} /></p>
 
             {(p.status === "Waiting" || p.status === "Flagged") && (
-              <div className={`mt-6 rounded-2xl px-5 py-4 ${p.status === "Flagged" ? "bg-warn-tint" : "bg-paper"}`}>
+              <div className={`mt-6 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 ${p.status === "Flagged" ? "bg-warn-tint" : "bg-paper"}`}>
                 <Label>{p.status === "Flagged" ? "Owner review deadline" : "Paused for review: resumes in"}</Label>
-                <p className="mt-2 font-mono text-[30px]">{remaining > 0 ? countdown(remaining) : "review time ended"}</p>
+                <p className="mt-1.5 font-mono text-2xl sm:text-[30px]">{remaining > 0 ? countdown(remaining) : "review time ended"}</p>
               </div>
             )}
 
             {p.flagger && (
-              <div className="mt-6 rounded-2xl border border-warn/30 bg-warn-tint px-5 py-4">
+              <div className="mt-6 rounded-2xl border border-warn/30 bg-warn-tint px-4 sm:px-5 py-3.5 sm:py-4">
                 <Label>Reported by reviewer {p.flagger}</Label>
-                <p className="mt-2 text-[16px]">&ldquo;{p.flag_reason}&rdquo;</p>
+                <p className="mt-2 text-sm sm:text-[16px]">&ldquo;{p.flag_reason}&rdquo;</p>
               </div>
             )}
 
-            <div className="mt-8"><ProposalActions proposal={p} mandate={m} now={now} onDone={data.refresh} /></div>
+            <div className="mt-6 sm:mt-8"><ProposalActions proposal={p} mandate={m} now={now} onDone={data.refresh} /></div>
           </Card>
 
-          <Card className="p-8">
+          <Card className="p-5 sm:p-7 md:p-8">
             <Label>Payment status history</Label>
             <Timeline p={p} m={m} />
           </Card>
         </div>
 
-        <aside className="space-y-6">
+        <aside className="space-y-6 min-w-0">
           {p.tx_hash && (
-            <Card className="p-6">
+            <Card className="p-5 sm:p-6">
               <Label>Blockchain transaction</Label>
-              <a className="mt-3 block break-all font-mono text-[14px] underline" target="_blank" rel="noreferrer" href={CHAIN_EXPLORER[p.chain](p.tx_hash)}>{p.tx_hash}</a>
+              <a className="mt-3 block break-all font-mono text-xs sm:text-[14px] underline" target="_blank" rel="noreferrer" href={CHAIN_EXPLORER[p.chain](p.tx_hash)}>{p.tx_hash}</a>
             </Card>
           )}
-          <Card className="p-6">
+          <Card className="p-5 sm:p-6">
             <Label>Spending rule</Label>
-            <p className="mt-3 text-[15px]"><Link className="font-semibold underline" href={`/app/mandates/${m.id}`}>Rule #{m.id}</Link></p>
-            <p className="mt-1 font-mono text-[13px] text-mute">Owner: {m.owner}<br />Agent: {m.agent}</p>
+            <p className="mt-3 text-sm sm:text-[15px]"><Link className="font-semibold underline" href={`/app/mandates/${m.id}`}>Rule #{m.id}</Link></p>
+            <p className="mt-1 font-mono text-xs sm:text-[13px] text-mute">Owner: {m.owner}<br />Agent: {m.agent}</p>
           </Card>
-          <Card className="p-6">
+          <Card className="p-5 sm:p-6">
             <Label>Requested on</Label>
-            <p className="mt-3 text-[15px]">{new Date(nsToMs(p.created_at)).toLocaleString()}</p>
+            <p className="mt-3 text-sm sm:text-[15px]">{new Date(nsToMs(p.created_at)).toLocaleString()}</p>
           </Card>
         </aside>
       </div>

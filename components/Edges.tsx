@@ -17,25 +17,25 @@ const edges = [
 
 export function Edges() {
   return (
-    <Container className="pb-10 pt-[104px]">
+    <Container className="pb-10 pt-16 sm:pt-[104px]">
       <section id="edges" aria-labelledby="edges-title">
         <Eyebrow>Honest edges</Eyebrow>
         <h2
           id="edges-title"
-          className="max-w-[720px] text-[clamp(30px,4.2vw,46px)] font-semibold leading-[1.08] tracking-heading text-ink dark:text-white"
+          className="max-w-[720px] text-[clamp(28px,4.2vw,46px)] font-semibold leading-[1.08] tracking-heading text-ink dark:text-white"
         >
           Clear about what version one doesn&apos;t do.
         </h2>
-        <div className="mt-14 grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-6">
+        <div className="mt-10 sm:mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
           {edges.map((e) => (
             <div
               key={e.title}
-              className="rounded-[20px] border border-line dark:border-dark-border bg-white dark:bg-dark-card p-7 shadow-sm transition-colors"
+              className="rounded-[20px] border border-line dark:border-dark-border bg-white dark:bg-dark-card p-5 sm:p-7 shadow-sm transition-colors min-w-0"
             >
-              <h3 className="mb-2.5 text-xl font-semibold tracking-[-0.02em] text-ink dark:text-white">
+              <h3 className="mb-2 text-lg sm:text-xl font-semibold tracking-[-0.02em] text-ink dark:text-white">
                 {e.title}
               </h3>
-              <p className="text-base leading-[1.65] text-mute dark:text-dark-mute">{e.body}</p>
+              <p className="text-[14.5px] sm:text-base leading-[1.65] text-mute dark:text-dark-mute">{e.body}</p>
             </div>
           ))}
         </div>

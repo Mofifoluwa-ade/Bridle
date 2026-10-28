@@ -281,10 +281,10 @@ export default function DocsPage() {
   }, [searchQuery]);
 
   return (
-    <div className="min-h-screen bg-paper dark:bg-dark-bg text-ink dark:text-dark-text transition-colors">
+    <div className="min-h-screen w-full bg-paper dark:bg-dark-bg text-ink dark:text-dark-text transition-colors overflow-x-hidden max-w-full">
       {/* 1. Header Bar */}
       <header className="sticky top-0 z-40 w-full border-b border-line dark:border-dark-border bg-white/90 dark:bg-dark-card/90 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2.5 sm:gap-4 min-w-0">
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -355,9 +355,10 @@ export default function DocsPage() {
 
             <Link
               href="/app"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-ink text-white dark:bg-white dark:text-ink hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs font-semibold bg-ink text-white dark:bg-white dark:text-ink hover:opacity-90 transition-opacity shrink-0"
             >
-              Launch App
+              <span className="hidden xs:inline">Launch </span>
+              <span>App</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
@@ -367,8 +368,8 @@ export default function DocsPage() {
       </header>
 
       {/* 2. Main Content Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 min-w-0 max-w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start min-w-0">
           
           {/* Left Sticky Sidebar Nav */}
           <aside
@@ -435,7 +436,7 @@ export default function DocsPage() {
           </aside>
 
           {/* Center Main Documentation */}
-          <main className="lg:col-span-9 space-y-16">
+          <main className="lg:col-span-9 min-w-0 max-w-full space-y-12 sm:space-y-16">
             
             {/* HERO / OVERVIEW */}
             <section id="overview" className="scroll-mt-24 space-y-4">
@@ -651,9 +652,9 @@ export default function DocsPage() {
               </p>
 
               {/* Code Tab Switcher */}
-              <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card overflow-hidden">
-                <div className="flex items-center justify-between border-b border-line dark:border-dark-border px-4 py-2.5 bg-paper dark:bg-dark-bg">
-                  <div className="flex flex-wrap items-center gap-2">
+              <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card overflow-hidden min-w-0 max-w-full">
+                <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-line dark:border-dark-border px-3 sm:px-4 py-2.5 bg-paper dark:bg-dark-bg">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     {(
                       [
                         ["schema", "JSON Schema"],
@@ -667,7 +668,7 @@ export default function DocsPage() {
                         key={k}
                         type="button"
                         onClick={() => setActiveCodeTab(k)}
-                        className={`px-3 py-1.5 rounded-lg font-mono text-xs transition-colors ${
+                        className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-mono text-xs transition-colors shrink-0 ${
                           activeCodeTab === k
                             ? "bg-ink text-white dark:bg-white dark:text-ink font-semibold"
                             : "text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white"
@@ -681,7 +682,7 @@ export default function DocsPage() {
                   <button
                     type="button"
                     onClick={() => copyToClipboard(CODE_SNIPPETS[activeCodeTab], activeCodeTab)}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white border border-line dark:border-dark-border bg-white dark:bg-dark-card transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white border border-line dark:border-dark-border bg-white dark:bg-dark-card transition-colors shrink-0"
                   >
                     {copiedKey === activeCodeTab ? (
                       <span className="text-accent dark:text-[#46D9A4]">Copied</span>
@@ -697,8 +698,8 @@ export default function DocsPage() {
                   </button>
                 </div>
 
-                <div className="p-5 overflow-x-auto bg-[#0E1116] text-[#E5E7EB]">
-                  <pre className="font-mono text-xs leading-relaxed whitespace-pre">
+                <div className="p-3.5 sm:p-5 overflow-x-auto bg-[#0E1116] text-[#E5E7EB] max-w-full">
+                  <pre className="font-mono text-xs leading-relaxed whitespace-pre max-w-full">
                     {CODE_SNIPPETS[activeCodeTab]}
                   </pre>
                 </div>

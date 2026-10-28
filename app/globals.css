@@ -4,11 +4,18 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
 }
 
 body {
   @apply bg-paper font-sans text-ink antialiased dark:bg-dark-bg dark:text-dark-text;
   line-height: 1.5;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+  position: relative;
 }
 
 /* Smooth transitions for theme and interaction */

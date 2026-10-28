@@ -81,8 +81,8 @@ function Body({ id }: { id: number }) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div className="space-y-6">
-          <Card className="p-8">
+        <div className="space-y-6 min-w-0">
+          <Card className="p-5 sm:p-7 md:p-8">
             <Label>Spending rules</Label>
             <dl className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2">
               <Row k="Max per payment" v={usdc(mandate.per_tx_cap)} />
@@ -101,7 +101,7 @@ function Body({ id }: { id: number }) {
               ) : (
                 <ul className="space-y-2">
                   {mandate.allowlist.map((r, i) => (
-                    <li key={i} className="flex items-center gap-3 text-[15px]">
+                    <li key={i} className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm sm:text-[15px]">
                       <span className="w-16 rounded-full border border-line px-3 py-0.5 text-center font-mono text-[12px] text-mute">{r.chain}</span>
                       <Addr value={r.address} chars={10} />
                     </li>
@@ -126,11 +126,11 @@ function Body({ id }: { id: number }) {
           )}
 
           {isOwner && mandate.state === "Active" && (
-            <Card className="p-8">
+            <Card className="p-5 sm:p-7 md:p-8">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <Label>Change limits</Label>
-                  <p className="mt-2 text-[15px] text-mute">Lowering limits applies immediately. Raising limits waits for the safety delay to protect your funds.</p>
+                  <p className="mt-2 text-xs sm:text-[15px] text-mute">Lowering limits applies immediately. Raising limits waits for the safety delay to protect your funds.</p>
                 </div>
                 {!edit && <Btn variant="outline" size="sm" onClick={() => setEdit(true)}>Change limits</Btn>}
               </div>
@@ -139,7 +139,7 @@ function Body({ id }: { id: number }) {
           )}
 
           <Card className="overflow-hidden">
-            <div className="border-b border-line px-6 py-4"><Label>Payments requested by agent</Label></div>
+            <div className="border-b border-line px-4 sm:px-6 py-4"><Label>Payments requested by agent</Label></div>
             {props.loading ? <div className="p-6"><Skeleton className="h-14" /></div> : (props.data ?? []).length === 0 ? (
               <Empty title="No payments yet">Your agent has not requested any payments under this rule yet.</Empty>
             ) : (
@@ -148,15 +148,15 @@ function Body({ id }: { id: number }) {
           </Card>
         </div>
 
-        <aside className="space-y-6">
-          <Card className="p-6">
+        <aside className="space-y-6 min-w-0">
+          <Card className="p-5 sm:p-6">
             <Label>Daily budget</Label>
             <div className="mt-4"><Budget m={mandate} /></div>
           </Card>
           {isOwner && mandate.state === "Active" && (
-            <Card className="p-6">
+            <Card className="p-5 sm:p-6">
               <Label>Emergency freeze</Label>
-              <p className="mt-2 text-[15px] leading-relaxed text-mute">Stopping this rule immediately blocks your agent from making any more payments. This cannot be undone.</p>
+              <p className="mt-2 text-xs sm:text-[15px] leading-relaxed text-mute">Stopping this rule immediately blocks your agent from making any more payments. This cannot be undone.</p>
               <Btn variant="danger" className="mt-4 w-full" busy={busy === "revoke"} onClick={() => { if (window.confirm("Stop this rule? This cannot be undone.")) act("revoke", "revoke", { mandate_id: id }); }}>
                 Stop and freeze rule
               </Btn>

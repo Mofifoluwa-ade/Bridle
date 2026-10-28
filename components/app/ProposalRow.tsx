@@ -44,7 +44,7 @@ export function ProposalRow({
     return (
       <Link
         href={`/app/proposals/${p.id}`}
-        className="group flex items-center justify-between gap-3 border-b border-line dark:border-dark-border px-4 py-3 last:border-b-0 hover:bg-paper/80 dark:hover:bg-dark-card-hover/50 transition-colors"
+        className="group flex items-center justify-between gap-2.5 sm:gap-3 border-b border-line dark:border-dark-border px-3 sm:px-4 py-3 last:border-b-0 hover:bg-paper/80 dark:hover:bg-dark-card-hover/50 transition-colors min-w-0"
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* Compact circular status badge */}
@@ -107,7 +107,7 @@ export function ProposalRow({
   return (
     <Link
       href={`/app/proposals/${p.id}`}
-      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line dark:border-dark-border px-5 py-4 sm:py-4.5 last:border-b-0 hover:bg-paper/70 dark:hover:bg-dark-card-hover/40 transition-all duration-200"
+      className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-line dark:border-dark-border px-3.5 sm:px-5 py-3.5 sm:py-4.5 last:border-b-0 hover:bg-paper/70 dark:hover:bg-dark-card-hover/40 transition-all duration-200 min-w-0"
     >
       <div className="flex items-start gap-3.5 min-w-0 flex-1">
         {/* Soft, spacious circular status badge */}
