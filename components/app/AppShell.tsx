@@ -12,12 +12,20 @@ import { GettingStartedModal } from "./GettingStartedModal";
 import { useTour } from "./SpotlightTour";
 import { useAccountBalance } from "@/hooks/useNearBalance";
 
+type SubNavItem = {
+  href: string;
+  label: string;
+  id?: string;
+  exact?: boolean;
+};
+
 type NavItem = {
   href: string;
   label: string;
   id: string;
   exact?: boolean;
   icon: ReactNode;
+  children?: SubNavItem[];
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -46,9 +54,9 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    href: "/app/mandates/new",
-    label: "New rule",
-    id: "tour-nav-new-mandate",
+    href: "/app/mandates",
+    label: "Spending rules",
+    id: "tour-nav-mandates",
     icon: (
       <svg
         width="18"
@@ -64,6 +72,14 @@ const NAV_ITEMS: NavItem[] = [
         <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg>
     ),
+    children: [
+      {
+        href: "/app/mandates/new",
+        label: "Create new rule",
+        id: "tour-nav-new-mandate",
+        exact: true,
+      },
+    ],
   },
   {
     href: "/app/watch",
@@ -209,8 +225,17 @@ export function AppShell({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isActive = (item: NavItem) =>
-    item.exact ? path === item.href : path.startsWith(item.href);
+  const isSubActive = (sub: SubNavItem) =>
+    sub.exact ? path === sub.href : path.startsWith(sub.href);
+
+  const isNavActive = (item: NavItem) => {
+    if (item.children?.some(isSubActive)) return false;
+    return item.exact ? path === item.href : path.startsWith(item.href);
+  };
+
+  const isNavParentActive = (item: NavItem) => {
+    return Boolean(item.children?.some(isSubActive));
+  };
 
   const isSettingsActive = path.startsWith("/app/settings");
 
@@ -246,23 +271,78 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Navigation Links */}
           <nav className="space-y-1" aria-label="Sidebar Navigation">
             {NAV_ITEMS.map((item) => {
-              const active = isActive(item);
+              const active = isNavActive(item);
+              const parentActive = isNavParentActive(item);
               return (
-                <Link
-                  key={item.href}
-                  id={item.id}
-                  href={item.href}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 ${
-                    active
-                      ? "bg-ink text-white dark:bg-white dark:text-ink font-semibold shadow-sm"
-                      : "text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white hover:bg-paper dark:hover:bg-dark-card-hover"
-                  }`}
-                >
-                  <span className={active ? "text-white dark:text-ink" : "text-mute dark:text-dark-mute"}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                </Link>
+                <div key={item.href} className="space-y-1">
+                  <Link
+                    id={item.id}
+                    href={item.href}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 ${
+                      active
+                        ? "bg-ink text-white dark:bg-white dark:text-ink font-semibold shadow-sm"
+                        : parentActive
+                        ? "text-ink dark:text-white font-semibold bg-paper/60 dark:bg-dark-card-hover/50"
+                        : "text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white hover:bg-paper dark:hover:bg-dark-card-hover"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={active ? "text-white dark:text-ink" : parentActive ? "text-accent dark:text-[#46D9A4]" : "text-mute dark:text-dark-mute"}>
+                        {item.icon}
+                      </span>
+                      <span>{item.label}</span>
+                    </div>
+                  </Link>
+
+                  {/* Sub-division */}
+                  {item.children && (
+                    <div className="ml-5 pl-3 border-l-2 border-line/80 dark:border-dark-border/80 my-1 space-y-1">
+                      {item.children.map((sub) => {
+                        const subActive = isSubActive(sub);
+                        return (
+                          <Link
+                            key={sub.href}
+                            id={sub.id}
+                            href={sub.href}
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all duration-150 ${
+                              subActive
+                                ? "bg-ink text-white dark:bg-white dark:text-ink font-semibold shadow-xs"
+                                : "text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white hover:bg-paper dark:hover:bg-dark-card-hover"
+                            }`}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={subActive ? "text-white dark:text-ink" : "text-accent dark:text-[#46D9A4]"}
+                                aria-hidden="true"
+                              >
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                              </svg>
+                              <span>{sub.label}</span>
+                            </span>
+                            <span
+                              className={`font-mono text-[9.5px] px-1.5 py-0.5 rounded font-medium ${
+                                subActive
+                                  ? "bg-white/20 dark:bg-ink/15 text-white dark:text-ink"
+                                  : "bg-paper dark:bg-dark-border/60 text-accent dark:text-[#46D9A4]"
+                              }`}
+                            >
+                              New
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
@@ -402,21 +482,79 @@ export function AppShell({ children }: { children: ReactNode }) {
 
               <nav className="space-y-1">
                 {NAV_ITEMS.map((item) => {
-                  const active = isActive(item);
+                  const active = isNavActive(item);
+                  const parentActive = isNavParentActive(item);
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                        active
-                          ? "bg-ink text-white dark:bg-white dark:text-ink font-semibold"
-                          : "text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white hover:bg-paper dark:hover:bg-dark-card-hover"
-                      }`}
-                    >
-                      <span>{item.icon}</span>
-                      <span>{item.label}</span>
-                    </Link>
+                    <div key={item.href} className="space-y-1">
+                      <Link
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                          active
+                            ? "bg-ink text-white dark:bg-white dark:text-ink font-semibold"
+                            : parentActive
+                            ? "text-ink dark:text-white font-semibold bg-paper/60 dark:bg-dark-card-hover/50"
+                            : "text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white hover:bg-paper dark:hover:bg-dark-card-hover"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={active ? "text-white dark:text-ink" : parentActive ? "text-accent dark:text-[#46D9A4]" : "text-mute dark:text-dark-mute"}>
+                            {item.icon}
+                          </span>
+                          <span>{item.label}</span>
+                        </div>
+                      </Link>
+
+                      {/* Sub-division */}
+                      {item.children && (
+                        <div className="ml-5 pl-3 border-l-2 border-line/80 dark:border-dark-border/80 my-1 space-y-1">
+                          {item.children.map((sub) => {
+                            const subActive = isSubActive(sub);
+                            return (
+                              <Link
+                                key={sub.href}
+                                id={sub.id ? `${sub.id}-mobile` : undefined}
+                                href={sub.href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all ${
+                                  subActive
+                                    ? "bg-ink text-white dark:bg-white dark:text-ink font-semibold"
+                                    : "text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white hover:bg-paper dark:hover:bg-dark-card-hover"
+                                }`}
+                              >
+                                <span className="flex items-center gap-1.5">
+                                  <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.4"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className={subActive ? "text-white dark:text-ink" : "text-accent dark:text-[#46D9A4]"}
+                                    aria-hidden="true"
+                                  >
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                  </svg>
+                                  <span>{sub.label}</span>
+                                </span>
+                                <span
+                                  className={`font-mono text-[9.5px] px-1.5 py-0.5 rounded font-medium ${
+                                    subActive
+                                      ? "bg-white/20 dark:bg-ink/15 text-white dark:text-ink"
+                                      : "bg-paper dark:bg-dark-border/60 text-accent dark:text-[#46D9A4]"
+                                  }`}
+                                >
+                                  New
+                                </span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </nav>

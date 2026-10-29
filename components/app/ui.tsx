@@ -198,14 +198,16 @@ export function LinkBtn({
   variant = "outline",
   size = "md",
   children,
+  className = "",
 }: {
   href: string;
   variant?: keyof typeof VARIANTS;
   size?: keyof typeof SIZES;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <Link href={href} className={`${BTN} ${SIZES[size]} ${VARIANTS[variant]}`}>
+    <Link href={href} className={`${BTN} ${SIZES[size]} ${VARIANTS[variant]} ${className}`}>
       {children}
     </Link>
   );

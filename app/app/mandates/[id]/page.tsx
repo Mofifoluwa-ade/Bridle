@@ -3,8 +3,8 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { NeedsContract } from "@/components/app/Gate";
-import { Budget, MandateStatePill } from "@/components/app/MandateCard";
-import { ProposalRow } from "@/components/app/ProposalRow";
+import { Budget, MandateStatePill } from "../../../../components/app/MandateCard";
+import { ProposalRow } from "../../../../components/app/ProposalRow";
 import { TxBanner } from "@/components/app/TxBanner";
 import { Addr, Btn, Card, Empty, Field, Label, LinkBtn, NearAccountLink, Notice, PageHeader, Skeleton, monoInputCls } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
@@ -14,7 +14,7 @@ import { countdown, duration, formatNear, formatNearWithUsd, nsToMs, parseUnits,
 import { api } from "@/lib/near";
 
 export default function MandatePage() {
-  const id = Number(useParams<{ id: string }>().id);
+  const id = Number(useParams<{ id: string }>()?.id);
   return (
     <NeedsContract>
       <Body id={id} />
@@ -26,7 +26,7 @@ function Body({ id }: { id: number }) {
   const { accountId, call, signIn } = useWallet();
   const now = useNow();
   const m = usePoll(Number.isInteger(id) ? `m${id}` : null, () => api.mandate(id));
-  const props = usePoll(`mp${id}`, () => api.proposals(id, 50));
+  const props = usePoll(Number.isInteger(id) ? `mp${id}` : null, () => api.proposals(id, 50));
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [edit, setEdit] = useState(false);
@@ -69,14 +69,36 @@ function Body({ id }: { id: number }) {
 
       {!accountId && <div className="mb-6"><Notice title="You are viewing this rule in view-only mode"><button className="font-semibold text-ink underline" onClick={signIn}>Connect your wallet</button> to make changes.</Notice></div>}
 
-      {isAgent && mandate.state === "Active" && BigInt(missing) > BigInt(0) && (
+      {mandate.state === "Active" && BigInt(missing) > BigInt(0) && (
         <div className="mb-6">
-          <Notice tone="warn" title="Deposit security funds to start making payments (testnet NEAR)">
-            <p>This rule requires {formatNearWithUsd(missing)} more in testnet NEAR from the agent before any payments can be made (test tokens only).</p>
-            <Btn className="mt-3" size="sm" busy={busy === "bond"} onClick={() => act("bond", "post_bond", { mandate_id: id }, missing)}>
-              Deposit {formatNear(missing)} (testnet NEAR)
-            </Btn>
-          </Notice>
+          {isAgent ? (
+            <Notice tone="warn" title="Deposit security funds to start making payments (testnet NEAR)">
+              <p>This rule requires {formatNearWithUsd(missing)} more in testnet NEAR from your agent account before any payments can be made (test tokens only).</p>
+              <Btn className="mt-3" size="sm" busy={busy === "bond"} onClick={() => act("bond", "post_bond", { mandate_id: id }, missing)}>
+                Deposit {formatNear(missing)} (testnet NEAR)
+              </Btn>
+            </Notice>
+          ) : (
+            <Notice tone="warn" title={`Awaiting security deposit from agent (${mandate.agent})`}>
+              <p>
+                This rule requires <strong>{formatNearWithUsd(missing)}</strong> in testnet NEAR collateral before the agent can execute payments.
+              </p>
+              <div className="mt-2.5 text-xs text-mute dark:text-dark-mute flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-line/60 dark:border-dark-border/60">
+                <span>
+                  {accountId ? (
+                    <>
+                      You are signed in as <strong className="font-mono text-ink dark:text-white">{accountId}</strong> ({isOwner ? "Rule Owner" : "Viewer"}). The smart contract requires the deposit to be posted by the agent (<strong className="font-mono text-ink dark:text-white">{mandate.agent}</strong>). To deposit this bond, switch your wallet to <strong className="font-mono text-ink dark:text-white">{mandate.agent}</strong>.
+                    </>
+                  ) : (
+                    <>Sign in with the agent account (<strong className="font-mono">{mandate.agent}</strong>) to deposit this bond.</>
+                  )}
+                </span>
+                <span className="font-mono text-[11px] text-amber-600 dark:text-amber-400 font-medium shrink-0">
+                  Awaiting {formatNear(missing)}
+                </span>
+              </div>
+            </Notice>
+          )}
         </div>
       )}
 

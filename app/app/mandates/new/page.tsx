@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Btn, Card, Field, HelpButton, HelpDropdown, HelpGuideMenu, Label, Notice, PageHeader, monoInputCls } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
@@ -102,6 +103,16 @@ export default function NewMandate() {
   const { accountId } = useWallet();
   return (
     <>
+      <div className="mb-3">
+        <Link
+          href="/app/mandates"
+          className="inline-flex items-center gap-1.5 text-xs text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors"
+        >
+          <span>←</span>
+          <span>Back to spending rules</span>
+        </Link>
+      </div>
+
       <PageHeader
         title="New spending rule"
         lead="Set your rules once. Your AI agent can only spend within these limits."
@@ -150,7 +161,7 @@ function Form() {
   const [daily, setDaily] = useState("50");
   const [threshold, setThreshold] = useState("20");
   const [windowMin, setWindowMin] = useState("10");
-  const [bond, setBond] = useState("1");
+  const [bond, setBond] = useState("0");
   const [days, setDays] = useState("7");
   const [testAmount, setTestAmount] = useState("10");
   const [testChain, setTestChain] = useState<Chain>("Base");
@@ -173,7 +184,7 @@ function Form() {
     const w = Number(windowMin) * 60;
     if (!Number.isFinite(w) || w < 60 || w > 86400) e.window = "Choose between 1 and 1,440 minutes.";
     const b = parseNear(bond);
-    if (b === null || b === BigInt(0)) e.bond = "Enter a deposit greater than zero NEAR.";
+    if (b === null) e.bond = "Enter a valid deposit (0 or more NEAR).";
     const dy = Number(days);
     if (!Number.isInteger(dy) || dy < 1 || dy > 30) e.days = "Choose a whole number from 1 to 30 days.";
 
@@ -265,7 +276,7 @@ function Form() {
           expiry_days: v.dy,
         },
       });
-      router.push(hash ? "/app?transactionHashes=" + hash : "/app");
+      router.push(hash ? "/app/mandates?transactionHashes=" + hash : "/app/mandates");
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -552,7 +563,7 @@ function Form() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
                   label="Security deposit (NEAR)"
-                  help={v.b ? `Agent deposits ${formatNearWithUsd(v.b)} as collateral to guarantee good behavior.` : "Security deposit collateral required from the agent."}
+                  help={v.b !== null ? (v.b === BigInt(0) ? "0 NEAR: No deposit required. Rule activates immediately upon creation." : `Agent deposits ${formatNearWithUsd(v.b)} as collateral before payments can execute.`) : "Security deposit collateral required from the agent (enter 0 for none)."}
                   error={show("bond")}
                 >
                   <input className={monoInputCls} inputMode="decimal" value={bond} onChange={(e) => setBond(e.target.value)} />
@@ -567,7 +578,7 @@ function Form() {
               </div>
               <HelpDropdown title="Understand security deposits & review pauses">
                 <p>
-                  <strong>Security deposit:</strong> Uses NEAR testnet tokens. The agent must lock collateral which can be slashed upon malicious behavior.
+                  <strong>Security deposit:</strong> Staked by the agent in testnet NEAR. If set to <strong>0 NEAR</strong>, the rule activates immediately and the agent can propose payments without locking collateral. If &gt; 0, the agent must deposit the bond before any payment can execute.
                 </p>
                 <p className="mt-1">
                   <strong>Review pause:</strong> Payments above your pause threshold enter a challenge window where you can inspect and veto them directly from Bridle Watch.
@@ -618,7 +629,7 @@ function Form() {
                 <ReviewRow label="Max per day" value={v.d !== null ? usdc(v.d) : "Invalid"} />
                 <ReviewRow label="Pause payments above" value={v.t !== null ? usdc(v.t) : "Invalid"} />
                 <ReviewRow label="Review pause time" value={Number.isFinite(v.w) ? duration(v.w) : "Invalid"} />
-                <ReviewRow label="Security deposit" value={v.b ? formatNearWithUsd(v.b) : "Invalid"} />
+                <ReviewRow label="Security deposit" value={v.b !== null ? (v.b === BigInt(0) ? "0 NEAR (No deposit required)" : formatNearWithUsd(v.b)) : "Invalid"} />
                 <ReviewRow label="Rule duration" value={v.dy ? `${v.dy} days` : "Invalid"} />
               </div>
             </Card>

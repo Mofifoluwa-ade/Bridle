@@ -69,6 +69,12 @@ export default function Dashboard() {
   };
 
   const activeMandates = displayMandates.filter((m) => m.state === "Active");
+  const needsDepositMandates = activeMandates.filter(
+    (m) => BigInt(m.bond_posted) < BigInt(m.bond)
+  );
+  const readyMandates = activeMandates.filter(
+    (m) => BigInt(m.bond_posted) >= BigInt(m.bond)
+  );
   const mineToDecide = displayProposals.filter(
     (p) => p.status === "Waiting" || p.status === "Flagged"
   );
@@ -201,12 +207,18 @@ export default function Dashboard() {
           sub={
             !accountId
               ? "Connect wallet to view rules"
+              : needsDepositMandates.length > 0
+              ? `${needsDepositMandates.length} rule${needsDepositMandates.length === 1 ? "" : "s"} waiting for agent deposit`
               : activeMandates.length > 0
-              ? `${displayMandates.length} rules created`
+              ? `${displayMandates.length} rule${displayMandates.length === 1 ? "" : "s"} created`
               : "No active rules created yet"
           }
           badge={
-            activeMandates.length > 0 ? (
+            needsDepositMandates.length > 0 ? (
+              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-warn-tint dark:bg-warn-tint/15 text-warn border border-warn/20 font-semibold">
+                Needs deposit
+              </span>
+            ) : activeMandates.length > 0 ? (
               <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4] border border-accent/20">
                 Active
               </span>
@@ -291,12 +303,20 @@ export default function Dashboard() {
                   Limits and controls for your AI agents
                 </p>
               </div>
-              <Link
-                href="/app/mandates/new"
-                className="text-xs font-semibold text-accent dark:text-[#46D9A4] hover:underline"
-              >
-                + Add rule
-              </Link>
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/app/mandates"
+                  className="text-xs text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white transition-colors"
+                >
+                  View all →
+                </Link>
+                <Link
+                  href="/app/mandates/new"
+                  className="text-xs font-semibold text-accent dark:text-[#46D9A4] hover:underline"
+                >
+                  + Add rule
+                </Link>
+              </div>
             </div>
 
             <div className="mt-3.5 space-y-3">
