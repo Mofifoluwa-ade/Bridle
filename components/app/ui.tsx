@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { CONFIG } from "@/lib/config";
 import { shortAddr } from "@/lib/format";
 import type { ProposalStatus } from "@/lib/types";
@@ -357,31 +357,307 @@ export function NearAccountLink({ id }: { id: string }) {
   );
 }
 
+export function HelpButton({
+  content,
+  title,
+  label = "More information",
+  align = "left",
+}: {
+  content: ReactNode;
+  title?: string;
+  label?: string;
+  align?: "left" | "right";
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative inline-flex items-center">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
+        aria-label={label}
+        aria-expanded={open}
+        title={open ? "Close help" : "Click for explanation"}
+        className={`inline-flex items-center justify-center h-4 w-4 rounded-full text-[10px] font-mono transition-all ${
+          open
+            ? "bg-ink text-white dark:bg-white dark:text-ink font-bold shadow-xs scale-105"
+            : "border border-rule dark:border-dark-border text-mute hover:text-ink hover:border-ink hover:bg-paper dark:text-dark-mute dark:hover:text-white dark:hover:border-white dark:hover:bg-dark-card-hover"
+        }`}
+      >
+        ?
+      </button>
+
+      {open && (
+        <div
+          className={`absolute ${
+            align === "right" ? "right-0" : "left-0"
+          } top-full mt-2 z-50 w-72 sm:w-80 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3.5 text-xs leading-relaxed text-ink dark:text-dark-text shadow-xl animate-fade-in`}
+        >
+          <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-line/60 dark:border-dark-border/60">
+            <div className="flex items-center gap-1.5 font-semibold text-ink dark:text-white text-[12px]">
+              <span className="inline-flex items-center justify-center h-3.5 w-3.5 rounded-full bg-accent/20 text-accent dark:text-[#46D9A4] text-[9px] font-mono font-bold">
+                ?
+              </span>
+              <span>{title || "Help guide"}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-mute hover:text-ink dark:hover:text-white p-0.5 rounded text-xs transition-colors"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="text-mute dark:text-dark-mute text-[12px] leading-relaxed">
+            {content}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function HelpDropdown({
+  title,
+  children,
+  defaultOpen = false,
+  badge = "Guide",
+}: {
+  title: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+  badge?: string;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="rounded-2xl border border-line dark:border-dark-border bg-paper/50 dark:bg-dark-card/50 overflow-hidden transition-all">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="w-full flex items-center justify-between p-3.5 sm:p-4 text-left text-xs sm:text-sm font-medium text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover transition-colors"
+        aria-expanded={open}
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex items-center justify-center h-4 w-4 rounded-full border border-rule dark:border-dark-border bg-white dark:bg-dark-card text-[10px] font-mono font-bold text-accent dark:text-[#46D9A4]">
+            ?
+          </span>
+          <span className="font-semibold text-ink dark:text-white">{title}</span>
+          {badge && (
+            <span className="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-wider text-accent dark:text-[#46D9A4] font-semibold">
+              {badge}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 text-mute dark:text-dark-mute text-xs">
+          <span>{open ? "Hide" : "Learn more"}</span>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </button>
+      {open && (
+        <div className="px-4 pb-4 pt-2 text-xs sm:text-[13px] leading-relaxed border-t border-line/60 dark:border-dark-border/60 text-mute dark:text-dark-mute space-y-2 animate-fade-in">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function HelpGuideMenu({
+  guides,
+  buttonLabel = "Help Guide",
+}: {
+  guides: { title: string; description: ReactNode; badge?: string }[];
+  buttonLabel?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative inline-block text-left">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="inline-flex items-center gap-1.5 rounded-xl border border-line dark:border-dark-border bg-white dark:bg-dark-card px-2.5 sm:px-3 py-1.5 text-xs font-medium text-ink dark:text-white shadow-2xs hover:border-ink dark:hover:border-white transition-all"
+        aria-expanded={open}
+      >
+        <span className="inline-flex items-center justify-center h-4 w-4 rounded-full border border-rule dark:border-dark-border text-[10px] font-mono font-bold text-accent dark:text-[#46D9A4]">
+          ?
+        </span>
+        <span className="font-semibold">{buttonLabel}</span>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 z-50 w-80 sm:w-96 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3 shadow-xl backdrop-blur-md animate-fade-in space-y-2">
+          <div className="flex items-center justify-between px-2 pt-1 pb-2 border-b border-line dark:border-dark-border">
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-xs text-ink dark:text-white">Help & Rules Guide</span>
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-wider text-accent dark:text-[#46D9A4] font-semibold">
+                Tips
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-mute hover:text-ink dark:hover:text-white p-0.5 rounded text-xs transition-colors"
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-1.5 max-h-80 overflow-y-auto">
+            {guides.map((item, idx) => {
+              const isItemExpanded = expandedIndex === idx;
+              return (
+                <div
+                  key={item.title}
+                  className="rounded-xl border border-line/60 dark:border-dark-border/60 bg-paper/40 dark:bg-dark-card/40 transition-colors"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setExpandedIndex(isItemExpanded ? null : idx)}
+                    className="w-full flex items-center justify-between p-2.5 text-left text-xs font-medium text-ink dark:text-white hover:text-accent transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] text-mute dark:text-dark-mute">0{idx + 1}</span>
+                      <span className="font-semibold">{item.title}</span>
+                    </div>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`transition-transform duration-200 ${isItemExpanded ? "rotate-180" : ""}`}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                  {isItemExpanded && (
+                    <div className="px-2.5 pb-2.5 pt-0 text-[11.5px] leading-relaxed text-mute dark:text-dark-mute border-t border-line/40 dark:border-dark-border/40 mt-1 pt-1.5">
+                      {item.description}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Field({
   label,
   hint,
+  help,
   error,
   children,
 }: {
   label: string;
   hint?: string;
+  help?: string | ReactNode;
   error?: string | null;
   children: ReactNode;
 }) {
+  const helpContent = help || hint;
+
   return (
-    <label className="block">
-      <span className="text-[15px] font-semibold text-ink dark:text-white">
-        {label}
-      </span>
+    <div className="block">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[14.5px] font-semibold text-ink dark:text-white">
+            {label}
+          </span>
+          {helpContent && (
+            <HelpButton
+              content={helpContent}
+              title={label}
+              label={`Help for ${label}`}
+            />
+          )}
+        </div>
+      </div>
+
       {children}
+
       {error ? (
         <span className="mt-1.5 block text-[13.5px] text-bad">{error}</span>
-      ) : hint ? (
-        <span className="mt-1.5 block text-[13.5px] text-mute dark:text-dark-mute">
-          {hint}
-        </span>
       ) : null}
-    </label>
+    </div>
   );
 }
 

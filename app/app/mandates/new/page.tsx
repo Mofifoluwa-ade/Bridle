@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Btn, Card, Field, Label, Notice, PageHeader, monoInputCls } from "@/components/app/ui";
+import { Btn, Card, Field, HelpButton, HelpDropdown, HelpGuideMenu, Label, Notice, PageHeader, monoInputCls } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
 import { CHAINS, CONFIG } from "@/lib/config";
 import { duration, formatNearWithUsd, parseNear, parseUnits, usdc, validAddress, validNearAccount } from "@/lib/format";
@@ -15,6 +15,87 @@ const STEPS = [
   { title: "Agent & recipients", description: "Choose who can request payments and where funds may go." },
   { title: "Spending limits", description: "Set hard caps that constrain every payment." },
   { title: "Review & test", description: "Try sample payments, inspect the policy, then sign when ready." },
+];
+
+const STEP_GUIDES = [
+  [
+    {
+      title: "Agent NEAR account",
+      description: (
+        <p>
+          The NEAR testnet account your AI agent operates with. It will be permitted to request payments that satisfy these exact rules.
+        </p>
+      ),
+    },
+    {
+      title: "Enabled networks",
+      description: (
+        <p>
+          Select which blockchain networks (e.g. Base, Solana, Ethereum) your agent can route USDC to. Any disabled chain is automatically blocked.
+        </p>
+      ),
+    },
+    {
+      title: "Approved recipient whitelist",
+      description: (
+        <p>
+          Zero-trust address allowlist. Your agent can only transfer funds to addresses registered here, protecting against prompt injection or compromised workflows.
+        </p>
+      ),
+    },
+  ],
+  [
+    {
+      title: "Per-payment cap (USDC)",
+      description: (
+        <p>
+          The absolute maximum amount for any single transaction. Requests exceeding this amount are rejected immediately on-chain.
+        </p>
+      ),
+    },
+    {
+      title: "Daily rolling cap (USDC)",
+      description: (
+        <p>
+          Cumulative spending ceiling within a 24-hour sliding window. Resets automatically every 24 hours.
+        </p>
+      ),
+    },
+    {
+      title: "Review pause window",
+      description: (
+        <p>
+          Payments larger than your pause threshold remain in challenge status for the specified minutes, allowing you to review or veto them before final execution.
+        </p>
+      ),
+    },
+    {
+      title: "Agent security deposit",
+      description: (
+        <p>
+          Collateral in testnet NEAR staked by the agent upon rule activation. Can be slashed if the agent attempts fraudulent activity.
+        </p>
+      ),
+    },
+  ],
+  [
+    {
+      title: "Local policy preview",
+      description: (
+        <p>
+          Simulate transactions against your draft rules locally in your browser to verify limits and allowlist before on-chain activation.
+        </p>
+      ),
+    },
+    {
+      title: "On-chain signing",
+      description: (
+        <p>
+          Connect your NEAR testnet wallet and sign a transaction to store your rule on-chain. No real money is spent.
+        </p>
+      ),
+    },
+  ],
 ];
 
 export default function NewMandate() {
@@ -128,11 +209,36 @@ function Form() {
   const testTone = testOutcome.startsWith("Blocked") ? "bad" : testOutcome.startsWith("Review") ? "warn" : "neutral";
 
   const show = (k: string) => (touched ? v.e[k] : undefined);
-  const canContinue = step === 0
-    ? Boolean(validNearAccount(agent) && agent !== accountId && chains.length > 0 && v.filled.length > 0 && !v.e.agent && !v.e.chains && !v.e.rows && v.filled.every((r) => !v.e[`row${r.index}`]))
-    : step === 1
-      ? !v.e.perTx && !v.e.daily && !v.e.threshold && !v.e.window && !v.e.bond && !v.e.days
-      : ok;
+
+  const step0Done = Boolean(
+    validNearAccount(agent) &&
+    agent !== accountId &&
+    chains.length > 0 &&
+    v.filled.length > 0 &&
+    !v.e.agent &&
+    !v.e.chains &&
+    !v.e.rows &&
+    v.filled.every((r) => !v.e[`row${r.index}`])
+  );
+
+  const step1Done = Boolean(
+    step0Done &&
+    !v.e.perTx &&
+    !v.e.daily &&
+    !v.e.threshold &&
+    !v.e.window &&
+    !v.e.bond &&
+    !v.e.days
+  );
+
+  const isStepAccessible = (target: Step): boolean => {
+    if (target === 0) return true;
+    if (target === 1) return step0Done;
+    if (target === 2) return step0Done && step1Done;
+    return false;
+  };
+
+  const canContinue = step === 0 ? step0Done : step === 1 ? step1Done : ok;
 
   const submit = async () => {
     setTouched(true);
@@ -187,31 +293,126 @@ function Form() {
 
         <Card className="p-4 sm:p-5">
           <div className="grid grid-cols-3 gap-2">
-            {STEPS.map((item, i) => (
-              <button key={item.title} type="button" onClick={() => setStep(i as Step)}
-                className={`rounded-xl border p-3 text-left transition-colors ${step === i ? "border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink" : "border-line bg-white text-mute hover:text-ink dark:border-dark-border dark:bg-dark-card dark:text-dark-mute dark:hover:text-white"}`}>
-                <span className="block font-mono text-[10px] uppercase tracking-wider opacity-75">Step 0{i + 1}</span>
-                <span className="mt-1 block text-xs sm:text-sm font-semibold">{item.title}</span>
-              </button>
-            ))}
+            {STEPS.map((item, i) => {
+              const isCurrent = step === i;
+              const isAccessible = isStepAccessible(i as Step);
+              const isCompleted = (i === 0 && step0Done) || (i === 1 && step1Done);
+
+              return (
+                <button
+                  key={item.title}
+                  type="button"
+                  onClick={() => {
+                    if (isAccessible) {
+                      setStep(i as Step);
+                    } else {
+                      setTouched(true);
+                    }
+                  }}
+                  className={`rounded-xl border p-3 text-left transition-all ${
+                    isCurrent
+                      ? "border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink shadow-sm"
+                      : isAccessible
+                        ? "border-line bg-white text-ink hover:border-ink/50 dark:border-dark-border dark:bg-dark-card dark:text-white"
+                        : "border-line/60 bg-paper/50 text-mute/60 dark:border-dark-border/50 dark:bg-dark-card/30 dark:text-dark-mute/50 cursor-not-allowed opacity-60"
+                  }`}
+                  aria-disabled={!isAccessible}
+                  title={
+                    !isAccessible
+                      ? `Complete Step 0${i} to unlock ${item.title}`
+                      : item.title
+                  }
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="block font-mono text-[10px] uppercase tracking-wider opacity-75">
+                      Step 0{i + 1}
+                    </span>
+                    <span className="font-mono text-[9px] uppercase tracking-wider font-semibold">
+                      {isCurrent
+                        ? "Active"
+                        : isCompleted
+                          ? "Done"
+                          : !isAccessible
+                            ? "Locked"
+                            : ""}
+                    </span>
+                  </div>
+                  <span className="mt-1 block text-xs sm:text-sm font-semibold truncate">
+                    {item.title}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <p className="mt-3 text-sm text-mute dark:text-dark-mute">{STEPS[step].description}</p>
+          <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm text-mute dark:text-dark-mute">
+            <p>{STEPS[step].description}</p>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <HelpGuideMenu
+                buttonLabel={`Step 0${step + 1} Guide`}
+                guides={STEP_GUIDES[step]}
+              />
+            </div>
+          </div>
+          {step === 0 && !step0Done && touched && (
+            <p className="mt-2 text-bad font-medium text-xs">
+              Complete agent & recipient address to unlock Step 02
+            </p>
+          )}
+          {step === 1 && !step1Done && touched && (
+            <p className="mt-2 text-bad font-medium text-xs">
+              Fill in valid spending limits to unlock Step 03
+            </p>
+          )}
         </Card>
 
         {step === 0 && (
           <>
             <Card className="space-y-5 p-5 sm:p-7">
-              <Label>01 · Agent account</Label>
-              <Field label="Agent NEAR address" hint="The NEAR account your AI agent uses. It can only request payments within your rules." error={show("agent")}>
-                <input className={monoInputCls} value={agent} onChange={(e) => setAgent(e.target.value.trim())} placeholder="research-agent.testnet" autoCapitalize="none" spellCheck={false} />
+              <div className="flex items-center justify-between">
+                <Label>01 · Agent account</Label>
+              </div>
+              <Field
+                label="Agent NEAR address"
+                help="The NEAR testnet account your AI agent uses. It can only request payments that satisfy your configured rules."
+                error={show("agent")}
+              >
+                <input
+                  className={monoInputCls}
+                  value={agent}
+                  onChange={(e) => setAgent(e.target.value.trim())}
+                  placeholder="research-agent.testnet"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                />
               </Field>
               <fieldset>
-                <legend className="text-[15px] font-semibold text-ink dark:text-white">Enabled networks</legend>
-                <p className="mt-1 text-sm text-mute dark:text-dark-mute">USDC only. A recipient must belong to an enabled network.</p>
+                <div className="flex items-center gap-2">
+                  <legend className="text-[14.5px] font-semibold text-ink dark:text-white">Enabled networks</legend>
+                  <HelpButton
+                    content="USDC only. A recipient must belong to an enabled network. Cross-chain payments on disabled networks are immediately blocked."
+                    title="Enabled Networks"
+                  />
+                </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {CHAINS.map((c) => (
-                    <label key={c} className={`cursor-pointer rounded-full border px-4 py-2.5 text-sm font-semibold ${chains.includes(c) ? "border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink" : "border-line bg-white text-mute dark:border-dark-border dark:bg-dark-card dark:text-dark-mute"}`}>
-                      <input type="checkbox" className="sr-only" checked={chains.includes(c)} onChange={() => setChains((old) => old.includes(c) ? old.filter((x) => x !== c) : [...old, c])} />
+                    <label
+                      key={c}
+                      className={`cursor-pointer rounded-full border px-4 py-2.5 text-sm font-semibold transition-all ${
+                        chains.includes(c)
+                          ? "border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink shadow-2xs"
+                          : "border-line bg-white text-mute hover:text-ink dark:border-dark-border dark:bg-dark-card dark:text-dark-mute dark:hover:text-white"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={chains.includes(c)}
+                        onChange={() =>
+                          setChains((old) =>
+                            old.includes(c) ? old.filter((x) => x !== c) : [...old, c]
+                          )
+                        }
+                      />
                       {c}
                     </label>
                   ))}
@@ -219,25 +420,81 @@ function Form() {
                 {show("chains") && <p className="mt-2 text-sm text-bad">{v.e.chains}</p>}
               </fieldset>
             </Card>
+
             <Card className="space-y-4 p-5 sm:p-7">
-              <div>
-                <Label>02 · Approved recipients</Label>
-                <p className="mt-2 text-sm text-mute dark:text-dark-mute">Your agent can only send money to addresses on this list. Any other address is automatically blocked.</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label>02 · Approved recipients</Label>
+                  <HelpButton
+                    content="Your agent can only send money to addresses explicitly included on this list. Any other destination address is automatically blocked by the smart contract."
+                    title="Recipient Whitelist"
+                  />
+                </div>
               </div>
               {rows.map((r, i) => (
                 <div key={i} className="space-y-1.5">
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <select aria-label={`Recipient ${i + 1} network`} className="rounded-xl border border-rule bg-white px-3 py-3 text-sm text-ink dark:border-dark-border dark:bg-dark-card dark:text-white" value={r.chain} onChange={(e) => setRows((old) => old.map((x, j) => j === i ? { ...x, chain: e.target.value as Chain } : x))}>
-                      {CHAINS.map((c) => <option key={c} value={c}>{c}</option>)}
+                    <select
+                      aria-label={`Recipient ${i + 1} network`}
+                      className="rounded-xl border border-rule bg-white px-3 py-3 text-sm text-ink dark:border-dark-border dark:bg-dark-card dark:text-white"
+                      value={r.chain}
+                      onChange={(e) =>
+                        setRows((old) =>
+                          old.map((x, j) => (j === i ? { ...x, chain: e.target.value as Chain } : x))
+                        )
+                      }
+                    >
+                      {CHAINS.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
                     </select>
-                    <input aria-label={`Recipient ${i + 1} address`} className={`${monoInputCls} mt-0 min-w-0 flex-1`} value={r.address} placeholder={r.chain === "Base" ? "0x…" : "Solana address"} onChange={(e) => setRows((old) => old.map((x, j) => j === i ? { ...x, address: e.target.value.trim() } : x))} spellCheck={false} />
-                    {rows.length > 1 && <Btn variant="outline" size="sm" type="button" onClick={() => setRows((old) => old.filter((_, j) => j !== i))}>Remove</Btn>}
+                    <input
+                      aria-label={`Recipient ${i + 1} address`}
+                      className={`${monoInputCls} mt-0 min-w-0 flex-1`}
+                      value={r.address}
+                      placeholder={r.chain === "Base" ? "0x…" : "Solana address"}
+                      onChange={(e) =>
+                        setRows((old) =>
+                          old.map((x, j) => (j === i ? { ...x, address: e.target.value.trim() } : x))
+                        )
+                      }
+                      spellCheck={false}
+                    />
+                    {rows.length > 1 && (
+                      <Btn
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={() => setRows((old) => old.filter((_, j) => j !== i))}
+                      >
+                        Remove
+                      </Btn>
+                    )}
                   </div>
                   {show(`row${i}`) && <p className="text-sm text-bad">{v.e[`row${i}`]}</p>}
                 </div>
               ))}
               {show("rows") && <p className="text-sm text-bad">{v.e.rows}</p>}
-              {rows.length < 20 && <Btn variant="outline" size="sm" type="button" onClick={() => setRows((old) => [...old, { chain: chains[0] ?? "Base", address: "" }])}>+ Add recipient</Btn>}
+              {rows.length < 20 && (
+                <Btn
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => setRows((old) => [...old, { chain: chains[0] ?? "Base", address: "" }])}
+                >
+                  + Add recipient
+                </Btn>
+              )}
+              <HelpDropdown title="How approved recipient allowlisting protects you">
+                <p>
+                  Zero-trust security: your AI agent is cryptographically restricted from sending any USDC or initiating cross-chain transactions to addresses not registered on this list.
+                </p>
+                <p className="mt-1">
+                  Even in cases of prompt injection or hijacked agent execution, funds cannot be redirected to attacker-controlled wallets.
+                </p>
+              </HelpDropdown>
             </Card>
           </>
         )}
@@ -245,34 +502,77 @@ function Form() {
         {step === 1 && (
           <>
             <Card className="space-y-5 p-5 sm:p-7">
-              <Label>03 · Spending limits</Label>
+              <div className="flex items-center justify-between">
+                <Label>03 · Spending limits</Label>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Max per payment (USDC)" hint="The most it can send at once" error={show("perTx")}>
+                <Field
+                  label="Max per payment (USDC)"
+                  help="The most USDC your agent can send in any single transaction. Requests exceeding this amount are rejected immediately on-chain."
+                  error={show("perTx")}
+                >
                   <input className={monoInputCls} inputMode="decimal" value={perTx} onChange={(e) => setPerTx(e.target.value)} />
                 </Field>
-                <Field label="Max per day (USDC)" hint="Resets every 24 hours" error={show("daily")}>
+                <Field
+                  label="Max per day (USDC)"
+                  help="Cumulative spending limit across all payments in a 24-hour rolling window. Resets automatically every 24 hours."
+                  error={show("daily")}
+                >
                   <input className={monoInputCls} inputMode="decimal" value={daily} onChange={(e) => setDaily(e.target.value)} />
                 </Field>
               </div>
-              <Notice title="How the caps work">The per-payment cap applies to one request. The daily cap limits cumulative spending. Both must permit a payment for it to proceed.</Notice>
+              <HelpDropdown title="How spending caps work">
+                <p>
+                  <strong>Per-payment cap:</strong> Limits the size of any individual payment transaction.
+                </p>
+                <p className="mt-1">
+                  <strong>Daily cap:</strong> Limits total cumulative spending across 24 hours. Both limits must pass for a transaction to succeed.
+                </p>
+              </HelpDropdown>
             </Card>
+
             <Card className="space-y-5 p-5 sm:p-7">
-              <Label>04 · Safety & Review time</Label>
-              <Field label="Pause payments above (USDC)" hint="Larger payments pause for review. Set to 0 to review every payment." error={show("threshold")}>
+              <div className="flex items-center justify-between">
+                <Label>04 · Safety & Review time</Label>
+              </div>
+              <Field
+                label="Pause payments above (USDC)"
+                help="Transactions larger than this amount will automatically pause in challenge/review status before executing, giving you time to inspect or veto. Set to 0 to review every payment."
+                error={show("threshold")}
+              >
                 <input className={monoInputCls} inputMode="decimal" value={threshold} onChange={(e) => setThreshold(e.target.value)} />
               </Field>
-              <Field label="Review pause time (minutes)" hint="How long large payments pause for review before processing." error={show("window")}>
+              <Field
+                label="Review pause time (minutes)"
+                help="How long payments exceeding your pause threshold remain paused in review before auto-executing."
+                error={show("window")}
+              >
                 <input className={monoInputCls} inputMode="numeric" value={windowMin} onChange={(e) => setWindowMin(e.target.value)} />
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Security deposit (NEAR)" hint={v.b ? `Agent deposits ${formatNearWithUsd(v.b)} to ensure good behavior` : "Security deposit from the agent"} error={show("bond")}>
+                <Field
+                  label="Security deposit (NEAR)"
+                  help={v.b ? `Agent deposits ${formatNearWithUsd(v.b)} as collateral to guarantee good behavior.` : "Security deposit collateral required from the agent."}
+                  error={show("bond")}
+                >
                   <input className={monoInputCls} inputMode="decimal" value={bond} onChange={(e) => setBond(e.target.value)} />
                 </Field>
-                <Field label="Rule duration (days)" hint="How many days rules stay active (1–30)" error={show("days")}>
+                <Field
+                  label="Rule duration (days)"
+                  help="How many days this spending rule stays active (1–30 days). Expired rules require renewal."
+                  error={show("days")}
+                >
                   <input className={monoInputCls} inputMode="numeric" value={days} onChange={(e) => setDays(e.target.value)} />
                 </Field>
               </div>
-              <Notice tone="warn" title="Understand the deposit">The deposit uses NEAR test tokens on this environment. Review the contract's deposit and slashing behavior before using real funds.</Notice>
+              <HelpDropdown title="Understand security deposits & review pauses">
+                <p>
+                  <strong>Security deposit:</strong> Uses NEAR testnet tokens. The agent must lock collateral which can be slashed upon malicious behavior.
+                </p>
+                <p className="mt-1">
+                  <strong>Review pause:</strong> Payments above your pause threshold enter a challenge window where you can inspect and veto them directly from Bridle Watch.
+                </p>
+              </HelpDropdown>
             </Card>
           </>
         )}
@@ -280,8 +580,13 @@ function Form() {
         {step === 2 && (
           <>
             <Card className="space-y-5 p-5 sm:p-7">
-              <Label>Try a sample payment</Label>
-              <p className="text-sm text-mute dark:text-dark-mute">This local preview evaluates the draft values in this form. It does not call the contract or guarantee how an on-chain request will be processed.</p>
+              <div className="flex items-center justify-between">
+                <Label>Try a sample payment</Label>
+                <HelpButton
+                  content="This local preview evaluates your draft rule limits in the browser without calling the smart contract. You can test permitted and blocked cases safely."
+                  title="Simulation Preview"
+                />
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Payment amount (USDC)">
                   <input className={monoInputCls} inputMode="decimal" value={testAmount} onChange={(e) => setTestAmount(e.target.value)} />
@@ -292,11 +597,16 @@ function Form() {
                   </select>
                 </Field>
               </div>
-              <Field label="Recipient address" hint="Paste an address from your allowlist to test an allowed path.">
+              <Field
+                label="Recipient address"
+                help="Paste an address from your allowlist to test an allowed payment, or enter an unapproved address to test rejection."
+              >
                 <input className={monoInputCls} value={testRecipient} onChange={(e) => setTestRecipient(e.target.value.trim())} placeholder="Paste a recipient address" spellCheck={false} />
               </Field>
               <Notice tone={testTone as "bad" | "warn" | "neutral"} title="Draft policy result">{testOutcome}</Notice>
-              <p className="text-xs text-mute dark:text-dark-mute">This example assumes no previous spending today. It does not assess cumulative daily usage, chain execution, signatures, or contract state.</p>
+              <HelpDropdown title="About this local test simulation">
+                This local preview evaluates the draft values in this form. It does not call the contract or guarantee how an on-chain request will be processed, assuming no prior spending today.
+              </HelpDropdown>
             </Card>
             <Card className="space-y-4 p-5 sm:p-7">
               <Label>Final review</Label>
@@ -320,7 +630,12 @@ function Form() {
         <div className="flex items-center justify-between gap-3">
           <Btn variant="outline" disabled={step === 0 || busy} onClick={() => setStep((s) => (s - 1) as Step)}>Back</Btn>
           {step < 2 ? (
-            <Btn onClick={() => { setTouched(true); if (canContinue) setStep((s) => (s + 1) as Step); }} disabled={!canContinue}>
+            <Btn
+              onClick={() => {
+                setTouched(true);
+                if (canContinue) setStep((s) => (s + 1) as Step);
+              }}
+            >
               Continue to {step === 0 ? "spending limits" : "review"} →
             </Btn>
           ) : accountId && CONFIG.contractId ? (
@@ -331,7 +646,21 @@ function Form() {
             </Btn>
           )}
         </div>
-        {step === 2 && !accountId && CONFIG.contractId && <p className="text-right text-xs text-mute dark:text-dark-mute">Your draft stays local. Connect a NEAR testnet wallet only when you are ready to submit it.</p>}
+        {step === 0 && !step0Done && touched && (
+          <p className="text-right text-xs text-bad">
+            Please enter a valid agent NEAR account and at least one approved recipient before continuing.
+          </p>
+        )}
+        {step === 1 && !step1Done && touched && (
+          <p className="text-right text-xs text-bad">
+            Please resolve the highlighted limits above before continuing to review.
+          </p>
+        )}
+        {step === 2 && !accountId && CONFIG.contractId && (
+          <p className="text-right text-xs text-mute dark:text-dark-mute">
+            Your draft stays local. Connect a NEAR testnet wallet only when you are ready to submit it.
+          </p>
+        )}
       </div>
 
       <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
@@ -355,18 +684,26 @@ function Form() {
           </div>
 
           {step < 2 ? (
-            <Btn
-              variant="accent"
-              size="lg"
-              className="mt-6 w-full"
-              onClick={() => {
-                setTouched(true);
-                if (canContinue) setStep((s) => (s + 1) as Step);
-              }}
-              disabled={!canContinue}
-            >
-              Continue to {step === 0 ? "spending limits" : "review"} →
-            </Btn>
+            <div className="mt-6 space-y-2">
+              <Btn
+                variant="accent"
+                size="lg"
+                className="w-full"
+                onClick={() => {
+                  setTouched(true);
+                  if (canContinue) setStep((s) => (s + 1) as Step);
+                }}
+              >
+                Continue to {step === 0 ? "spending limits" : "review"} →
+              </Btn>
+              {!canContinue && touched && (
+                <p className="text-center text-xs text-amber-300">
+                  {step === 0
+                    ? "Complete agent & recipient address to unlock step 2."
+                    : "Fill in spending limits to unlock step 3."}
+                </p>
+              )}
+            </div>
           ) : accountId && CONFIG.contractId ? (
             <Btn variant="accent" size="lg" className="mt-6 w-full" busy={busy} onClick={submit} disabled={touched && !ok}>
               Save and activate rule
