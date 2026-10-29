@@ -146,7 +146,7 @@ function WalletButton() {
         <span>{shortAddr(accountId, 8, 4)}</span>
         <span className="text-dim dark:text-dark-dim">·</span>
         <span className="font-semibold text-accent dark:text-[#46D9A4]">
-          {balance.loading ? "…" : `${balance.near} NEAR`}
+          {balance.loading && balance.near === 0 ? "…" : `${balance.near} NEAR`}
         </span>
         <span className="text-mute dark:text-dark-mute text-[11px] font-sans">
           ({balance.usd})

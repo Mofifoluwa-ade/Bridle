@@ -14,6 +14,8 @@ type BalanceState = {
   usd: string;
   price: number;
   loading: boolean;
+  isUpdating: boolean;
+  statusText: string;
   refresh: () => void;
 };
 
@@ -25,6 +27,24 @@ export async function fetchNearUsdPrice(): Promise<number> {
     return cachedPrice.price;
   }
 
+  // 1. Try Binance ticker (fast, high rate-limit ceiling)
+  try {
+    const bRes = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=NEARUSDT");
+    if (bRes.ok) {
+      const bData = await bRes.json();
+      const p = Number(bData?.price);
+      if (p && !isNaN(p) && p > 0) {
+        const rounded = +p.toFixed(2);
+        cachedPrice = { price: rounded, timestamp: now };
+        try {
+          localStorage.setItem("bridle:near_price", JSON.stringify({ price: rounded, timestamp: now }));
+        } catch {}
+        return rounded;
+      }
+    }
+  } catch {}
+
+  // 2. Try CoinGecko fallback
   try {
     const res = await fetch(
       "https://api.coingecko.com/api/v3/simple/price?ids=near&vs_currencies=usd",
@@ -34,16 +54,17 @@ export async function fetchNearUsdPrice(): Promise<number> {
       const data = await res.json();
       const p = Number(data?.near?.usd);
       if (p && !isNaN(p) && p > 0) {
-        cachedPrice = { price: p, timestamp: now };
+        const rounded = +p.toFixed(2);
+        cachedPrice = { price: rounded, timestamp: now };
         try {
-          localStorage.setItem("bridle:near_price", JSON.stringify({ price: p, timestamp: now }));
+          localStorage.setItem("bridle:near_price", JSON.stringify({ price: rounded, timestamp: now }));
         } catch {}
-        return p;
+        return rounded;
       }
     }
   } catch {}
 
-  // Try local storage cache
+  // 3. Try local storage cache
   try {
     const stored = localStorage.getItem("bridle:near_price");
     if (stored) {
@@ -92,26 +113,43 @@ export function useNearPrice(): { price: number; loading: boolean } {
   return { price, loading };
 }
 
+function getStoredBalance(account: string | null | undefined) {
+  if (!account || typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(`bridle:balance:${account}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed?.near === "number") {
+        return parsed as { yocto: string; near: number; totalNear: number; time: number };
+      }
+    }
+  } catch {}
+  return null;
+}
+
 export function useAccountBalance(customAccount?: string | null): BalanceState {
   const { accountId } = useWallet();
-  // Strictly use connected accountId, or customAccount if passed explicitly. Never fallback to contract or dummy accounts!
   const targetAccount = customAccount !== undefined ? customAccount : accountId;
   const { price } = useNearPrice();
 
-  const [yocto, setYocto] = useState<string>("0");
-  const [near, setNear] = useState<number>(0);
-  const [totalNear, setTotalNear] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(Boolean(targetAccount));
+  const stored = getStoredBalance(targetAccount);
+  const [yocto, setYocto] = useState<string>(() => stored?.yocto ?? "0");
+  const [near, setNear] = useState<number>(() => stored?.near ?? 0);
+  const [totalNear, setTotalNear] = useState<number>(() => stored?.totalNear ?? 0);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState<boolean>(() => Boolean(stored));
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   const fetchBalance = useCallback(async () => {
     if (!targetAccount) {
       setYocto("0");
       setNear(0);
       setTotalNear(0);
-      setLoading(false);
+      setHasLoadedOnce(false);
+      setIsUpdating(false);
       return;
     }
-    setLoading(true);
+
+    setIsUpdating(true);
     try {
       const res = await fetch(CONFIG.rpc, {
         method: "POST",
@@ -148,10 +186,18 @@ export function useAccountBalance(customAccount?: string | null): BalanceState {
       setYocto(amountStr);
       setNear(calcNear);
       setTotalNear(calcTotal);
+      setHasLoadedOnce(true);
+
+      try {
+        localStorage.setItem(
+          `bridle:balance:${targetAccount}`,
+          JSON.stringify({ yocto: amountStr, near: calcNear, totalNear: calcTotal, time: Date.now() })
+        );
+      } catch {}
     } catch {
-      // Keep previous or 0 on failure
+      // Keep previous cached values on failure
     } finally {
-      setLoading(false);
+      setIsUpdating(false);
     }
   }, [targetAccount]);
 
@@ -160,7 +206,8 @@ export function useAccountBalance(customAccount?: string | null): BalanceState {
       setYocto("0");
       setNear(0);
       setTotalNear(0);
-      setLoading(false);
+      setHasLoadedOnce(false);
+      setIsUpdating(false);
       return;
     }
     fetchBalance();
@@ -178,6 +225,8 @@ export function useAccountBalance(customAccount?: string | null): BalanceState {
     currency: "USD",
   }).format(usdValue);
 
+  const statusText = isUpdating ? "Updating price…" : "Updated price";
+
   return {
     account: targetAccount ?? null,
     isConnected: Boolean(targetAccount),
@@ -187,7 +236,9 @@ export function useAccountBalance(customAccount?: string | null): BalanceState {
     nearFormatted: `${near} NEAR`,
     usd: usdFormatted,
     price,
-    loading,
+    loading: !hasLoadedOnce && isUpdating,
+    isUpdating,
+    statusText,
     refresh: fetchBalance,
   };
 }

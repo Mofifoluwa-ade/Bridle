@@ -162,21 +162,34 @@ export default function Dashboard() {
         {accountId ? (
           <Stat
             label="Wallet balance"
-            value={walletBalance.loading ? "Loading…" : walletBalance.usd}
+            value={walletBalance.loading && walletBalance.near === 0 ? "$0.00" : walletBalance.usd}
             sub={
-              walletBalance.loading
-                ? "Checking balance…"
+              walletBalance.isUpdating
+                ? `Updating price · ${walletBalance.near} NEAR`
                 : walletBalance.near === 0
                 ? "0.00 NEAR · Get free test tokens from testnet faucet"
                 : `${walletBalance.near} NEAR (test tokens) · $${walletBalance.price.toFixed(2)}/NEAR`
             }
             badge={
-              <span
-                className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border truncate max-w-[100px]"
-                title={accountId}
-              >
-                {accountId}
-              </span>
+              <div className="flex items-center gap-1.5">
+                {walletBalance.isUpdating ? (
+                  <span className="flex items-center gap-1 font-mono text-[10px] text-accent dark:text-[#46D9A4]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent dark:bg-[#46D9A4] animate-pulse" />
+                    Updating
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 font-mono text-[10px] text-mute dark:text-dark-mute">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Updated price
+                  </span>
+                )}
+                <span
+                  className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border truncate max-w-[100px]"
+                  title={accountId}
+                >
+                  {accountId}
+                </span>
+              </div>
             }
           />
         ) : (
