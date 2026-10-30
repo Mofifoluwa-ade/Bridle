@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Label, NearAccountLink, Notice, PageHeader, Skeleton, Btn } from "@/components/app/ui";
+import { Card, Label, NearAccountLink, Notice, PageHeader, Skeleton, Btn, Toast } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
 import { usePoll } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
@@ -86,13 +86,9 @@ export default function Settings() {
         </p>
       </div>
 
-      {msg && (
-        <div className="mb-6 animate-fade-in">
-          <Notice tone="ok" title="Saved">
-            {msg}
-          </Notice>
-        </div>
-      )}
+      <Toast open={Boolean(msg)} onClose={() => setMsg(null)} title="Settings updated">
+        {msg}
+      </Toast>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Appearance Setting Card */}

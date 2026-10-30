@@ -250,6 +250,62 @@ export function Notice({
   );
 }
 
+export function Toast({
+  open,
+  onClose,
+  title = "Saved",
+  children,
+}: {
+  open: boolean;
+  onClose?: () => void;
+  title?: string;
+  children: ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      role="status"
+      className="fixed top-5 right-5 sm:top-6 sm:right-7 z-50 flex items-start gap-3 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 pr-11 shadow-2xl animate-slide-in text-ink dark:text-white transition-all max-w-sm sm:max-w-md pointer-events-auto"
+    >
+      <div className="flex-none mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4]">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
+      <div className="min-w-0 flex-1">
+        {title && (
+          <p className="text-[13.5px] font-semibold text-ink dark:text-white leading-tight">
+            {title}
+          </p>
+        )}
+        <div className="mt-0.5 text-[12.5px] text-mute dark:text-dark-mute leading-snug">
+          {children}
+        </div>
+      </div>
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-3.5 right-3.5 flex h-6 w-6 items-center justify-center rounded-lg text-mute hover:text-ink dark:text-dark-mute dark:hover:text-white hover:bg-paper dark:hover:bg-dark-card-hover transition-colors text-xs"
+          aria-label="Dismiss notification"
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function Empty({
   title,
   children,
