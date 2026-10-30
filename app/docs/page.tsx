@@ -322,9 +322,9 @@ export default function DocsPage() {
   }, [searchQuery]);
 
   return (
-    <div className="min-h-screen w-full bg-paper dark:bg-dark-bg text-ink dark:text-dark-text transition-colors overflow-x-hidden max-w-full">
+    <div className="min-h-screen w-full bg-paper dark:bg-dark-bg text-ink dark:text-dark-text transition-colors overflow-x-clip max-w-full">
       {/* 1. Header Bar */}
-      <header className="sticky top-0 z-40 w-full border-b border-line dark:border-dark-border bg-white/90 dark:bg-dark-card/90 backdrop-blur-md">
+      <header className="fixed top-0 inset-x-0 z-40 w-full h-16 border-b border-line dark:border-dark-border bg-white/95 dark:bg-dark-card/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2.5 sm:gap-4 min-w-0">
           <div className="flex items-center gap-4">
             <button
@@ -422,17 +422,17 @@ export default function DocsPage() {
         </div>
       </header>
 
-      {/* 2. Main Content Grid */}
-      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 min-w-0 max-w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start min-w-0">
+      {/* 2. Main Content Layout */}
+      <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-20 pb-12 sm:pb-16 min-w-0">
+        <div className="flex items-start min-w-0">
           
-          {/* Left Sticky Sidebar Nav */}
+          {/* Left Fixed Sidebar Nav */}
           <aside
             data-mobile-menu-scrollable="true"
-            className={`lg:col-span-3 lg:sticky lg:top-24 max-h-[calc(100vh-7rem)] overflow-y-auto space-y-6 pr-2 overscroll-contain ${
+            className={`overflow-y-auto space-y-6 overscroll-contain z-30 transition-colors ${
               mobileMenuOpen
-                ? "fixed inset-0 top-16 z-30 bg-white dark:bg-dark-card p-6 overflow-y-auto block"
-                : "hidden lg:block"
+                ? "fixed inset-0 top-16 bg-white dark:bg-dark-card p-6 overflow-y-auto block"
+                : "hidden lg:block lg:fixed lg:top-16 lg:bottom-0 lg:left-[max(1.5rem,calc((100vw-80rem)/2+2rem))] lg:w-64 xl:w-72 lg:py-8 lg:pr-6 lg:border-r lg:border-line dark:lg:border-dark-border"
             }`}
           >
             <div className="block lg:hidden mb-4">
@@ -500,7 +500,7 @@ export default function DocsPage() {
           </aside>
 
           {/* Center Main Documentation */}
-          <main className="lg:col-span-9 min-w-0 max-w-full space-y-12 sm:space-y-16">
+          <main className="w-full min-w-0 max-w-full lg:pl-72 xl:pl-80 space-y-12 sm:space-y-16">
             
             {/* HERO / OVERVIEW */}
             <section id="overview" className="scroll-mt-24 space-y-4">
