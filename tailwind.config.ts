@@ -89,11 +89,35 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateX(12px)" },
           "100%": { opacity: "1", transform: "translateX(0)" },
         },
+        // Hero card loop (components/MandateCard.tsx)
+        heroShake: {
+          "0%,100%": { transform: "translateX(0)" },
+          "20%": { transform: "translateX(-7px)" },
+          "40%": { transform: "translateX(6px)" },
+          "60%": { transform: "translateX(-4px)" },
+          "80%": { transform: "translateX(3px)" },
+        },
+        heroDraw: {
+          from: { strokeDashoffset: "26" },
+          to: { strokeDashoffset: "0" },
+        },
+        heroDrain: {
+          from: { transform: "scaleX(1)" },
+          to: { transform: "scaleX(0)" },
+        },
+        heroPing: {
+          "0%": { transform: "scale(.6)", opacity: ".55" },
+          "100%": { transform: "scale(1.9)", opacity: "0" },
+        },
       },
       animation: {
         "fade-in": "fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         "modal-in": "modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         "slide-in": "slideInRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "hero-shake": "heroShake 450ms ease-in-out 1",
+        "hero-draw": "heroDraw 500ms cubic-bezier(.65,0,.35,1) 120ms both",
+        "hero-drain": "heroDrain 2300ms linear forwards",
+        "hero-ping": "heroPing 650ms ease-out 1 forwards",
       },
     },
   },
