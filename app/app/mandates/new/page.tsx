@@ -8,6 +8,7 @@ import { useWallet } from "@/components/app/WalletProvider";
 import { CHAINS, CONFIG } from "@/lib/config";
 import { duration, formatNearWithUsd, parseNear, parseUnits, usdc, validAddress, validNearAccount } from "@/lib/format";
 import type { Chain } from "@/lib/types";
+import { parsePayment, parseRule } from "@/lib/sentence";
 
 type Row = { chain: Chain; address: string };
 type Step = 0 | 1 | 2;
@@ -169,6 +170,52 @@ function Form() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  const [sentence, setSentence] = useState("");
+  const [applied, setApplied] = useState<string | null>(null);
+  const [payText, setPayText] = useState("");
+  const [payNote, setPayNote] = useState<string | null>(null);
+  const understood = useMemo(() => parseRule(sentence), [sentence]);
+
+  const applySentence = () => {
+    const { draft, understood: found } = understood;
+    if (found.length === 0) {
+      setApplied("Nothing recognised yet. Try: Up to $50 a day, to three approved recipients. Pause anything over $20.");
+      return;
+    }
+    const nextChains = draft.chains ?? chains;
+    let p = draft.perTx ?? perTx;
+    const d = draft.daily ?? daily;
+    let t = draft.threshold ?? threshold;
+    const pn = parseUnits(p), dn = parseUnits(d), tn = parseUnits(t);
+    // Adapt a field the sentence did not mention, so it does not conflict with one it did.
+    if (!draft.perTx && pn !== null && dn !== null && dn < pn) p = d;
+    const pn2 = parseUnits(p);
+    if (!draft.threshold && tn !== null && pn2 !== null && tn > pn2) t = p;
+    if (draft.perTx !== undefined) setPerTx(draft.perTx); else if (p !== perTx) setPerTx(p);
+    if (draft.daily !== undefined) setDaily(draft.daily);
+    if (draft.threshold !== undefined) setThreshold(draft.threshold); else if (t !== threshold) setThreshold(t);
+    if (draft.windowMin !== undefined) setWindowMin(draft.windowMin);
+    if (draft.days !== undefined) setDays(draft.days);
+    if (draft.chains) setChains(draft.chains);
+    setRows((cur) => {
+      let next = cur.map((r) => (nextChains.includes(r.chain) ? r : { ...r, chain: nextChains[0] ?? r.chain }));
+      while (draft.recipientCount && next.length < draft.recipientCount) next = [...next, { chain: nextChains[0] ?? "Base", address: "" }];
+      return next;
+    });
+    setApplied(`Applied ${found.length} ${found.length === 1 ? "rule" : "rules"}. Add the agent account and recipient addresses below. Limits are still checked before you can continue.`);
+  };
+
+  const applyPayment = () => {
+    const d = parsePayment(payText);
+    if (!d.amount && !d.chain && !d.recipient) {
+      setPayNote("Nothing recognised. Try: Pay $240 to 0x… on Solana");
+      return;
+    }
+    if (d.amount) setTestAmount(d.amount);
+    if (d.chain) setTestChain(d.chain);
+    if (d.recipient) setTestRecipient(d.recipient);
+    setPayNote("Filled in below. The result updates immediately.");
+  };
 
   const v = useMemo(() => {
     const e: Record<string, string> = {};
@@ -378,6 +425,45 @@ function Form() {
 
         {step === 0 && (
           <>
+            <Card className="space-y-4 p-5 sm:p-7">
+              <div className="flex items-center justify-between gap-3">
+                <Label>Write it in a sentence</Label>
+                <button
+                  type="button"
+                  onClick={() => { setSentence("Up to $50 a day, to three approved recipients. Pause anything over $20."); setApplied(null); }}
+                  className="text-xs font-medium text-accent dark:text-[#46D9A4] hover:underline"
+                >
+                  Use an example
+                </button>
+              </div>
+              <textarea
+                value={sentence}
+                onChange={(e) => { setSentence(e.target.value); setApplied(null); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); applySentence(); } }}
+                rows={2}
+                spellCheck={false}
+                aria-label="Describe your spending rule in plain words"
+                placeholder="Up to $50 a day, to three approved recipients. Pause anything over $20."
+                className="w-full resize-none rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card px-4 py-3 text-[17px] sm:text-[19px] font-semibold tracking-tight text-ink dark:text-white placeholder:text-dim dark:placeholder:text-dark-dim placeholder:font-medium focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+              />
+              <div className="flex flex-wrap items-center gap-2 min-h-[32px]" aria-live="polite">
+                {understood.understood.map((u) => (
+                  <span key={u.key} className="inline-flex items-center rounded-full border border-line dark:border-dark-border bg-paper dark:bg-dark-card px-3 py-1 text-xs font-medium text-ink dark:text-white">
+                    {u.label}
+                  </span>
+                ))}
+                {sentence.trim() && understood.understood.length === 0 && (
+                  <span className="text-xs text-mute dark:text-dark-mute">Nothing recognised yet.</span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Btn size="sm" onClick={applySentence} disabled={!sentence.trim()}>Apply to rules</Btn>
+                <p className="text-xs text-mute dark:text-dark-mute">
+                  Fills the fields below. Addresses are never guessed, and you can edit anything after.
+                </p>
+              </div>
+              {applied && <p className="text-xs text-mute dark:text-dark-mute" role="status">{applied}</p>}
+            </Card>
             <Card className="space-y-5 p-5 sm:p-7">
               <div className="flex items-center justify-between">
                 <Label>01 · Agent account</Label>
@@ -598,6 +684,20 @@ function Form() {
                   title="Simulation Preview"
                 />
               </div>
+              <Field label="Or describe a payment" help="For example: Pay $240 to 0x… on Solana. This fills the three fields below, so you can test a blocked or allowed case in one line.">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    className={`${monoInputCls} mt-0 min-w-0 flex-1`}
+                    value={payText}
+                    onChange={(e) => { setPayText(e.target.value); setPayNote(null); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPayment(); } }}
+                    placeholder="Pay $240 to 0x… on Solana"
+                    spellCheck={false}
+                  />
+                  <Btn size="sm" variant="outline" onClick={applyPayment} disabled={!payText.trim()}>Test payment</Btn>
+                </div>
+                {payNote && <p className="mt-2 text-xs text-mute dark:text-dark-mute" role="status">{payNote}</p>}
+              </Field>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Payment amount (USDC)">
                   <input className={monoInputCls} inputMode="decimal" value={testAmount} onChange={(e) => setTestAmount(e.target.value)} />
