@@ -1,0 +1,17 @@
+import assert from "node:assert/strict";
+import { parseRule, parsePayment } from "../lib/sentence.ts";
+const a = parseRule("Up to $50 a day, to three approved recipients. Pause anything over $20.");
+assert.deepEqual(a.draft, { daily: "50", threshold: "20", recipientCount: 3 });
+const b = parseRule("Max $25 per payment, $1,000 a day on Base and Solana. Hold anything above $10 for 30 minutes. Valid for 14 days.");
+assert.deepEqual(b.draft, { daily: "1000", perTx: "25", threshold: "10", windowMin: "30", days: "14", chains: ["Base", "Solana"] });
+const c = parseRule("$25 at a time, $50 each day, 2 hour review window, on Solana");
+assert.deepEqual(c.draft, { perTx: "25", daily: "50", windowMin: "120", chains: ["Solana"] });
+assert.deepEqual(parseRule("hello there").draft, {});
+assert.equal(parseRule("$50 each day").draft.perTx, undefined);
+const p = parsePayment("Pay $240 to 0x1234567890abcdef1234567890abcdef12345678 on Solana");
+assert.deepEqual(p, { recipient: "0x1234567890abcdef1234567890abcdef12345678", amount: "240", chain: "Solana" });
+const q = parsePayment("send 18.50 USDC to 0x1234567890abcdef1234567890abcdef12345678");
+assert.deepEqual(q, { recipient: "0x1234567890abcdef1234567890abcdef12345678", amount: "18.50", chain: "Base" });
+const r = parsePayment("pay $900 to 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU");
+assert.deepEqual(r, { recipient: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU", amount: "900", chain: "Solana" });
+console.log("all passed");
