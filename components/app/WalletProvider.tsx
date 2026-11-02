@@ -1,9 +1,6 @@
 "use client";
 
-import "@near-wallet-selector/modal-ui/styles.css";
-import { setupWalletSelector, type WalletSelector } from "@near-wallet-selector/core";
-import { setupModal, type WalletSelectorModal } from "@near-wallet-selector/modal-ui";
-import { setupMyNearWallet } from "@near-wallet-selector/my-near-wallet";
+import { NearConnector } from "@hot-labs/near-connect";
 import { actionCreators } from "@near-js/transactions";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CONFIG } from "@/lib/config";
@@ -36,67 +33,63 @@ export function useWallet(): WalletCtx {
 }
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [selector, setSelector] = useState<WalletSelector | null>(null);
+  const connector = useRef<NearConnector | null>(null);
+  const [ready, setReady] = useState(false);
   const [accountId, setAccountId] = useState<string | null>(null);
-  const modal = useRef<WalletSelectorModal | null>(null);
 
   useEffect(() => {
-    let sub: { unsubscribe: () => void } | null = null;
     let cancelled = false;
-    (async () => {
-      const s = await setupWalletSelector({
-        network: CONFIG.network,
-        modules: [setupMyNearWallet()],
-      });
-      if (cancelled) return;
-      modal.current = setupModal(s, { contractId: CONFIG.contractId || "bridle.testnet" });
-      setSelector(s);
-      const accounts = s.store.getState().accounts;
-      const initialAccount = accounts.find((a) => a.active)?.accountId || accounts[0]?.accountId || null;
-      setAccountId(initialAccount);
-      sub = s.store.observable.subscribe((st: any) => {
-        const nextAccount = st.accounts.find((a: any) => a.active)?.accountId || st.accounts[0]?.accountId || null;
-        setAccountId(nextAccount);
-      });
-    })().catch(() => {
-      /* wallet modules failed to load; the UI shows a signed-out state */
+    const near = new NearConnector({ network: CONFIG.network });
+    connector.current = near;
+
+    near.on("wallet:signIn", ({ accounts }) => {
+      if (!cancelled) setAccountId(accounts[0]?.accountId ?? null);
     });
+    near.on("wallet:signOut", () => {
+      if (!cancelled) setAccountId(null);
+    });
+
+    setReady(true);
     return () => {
       cancelled = true;
-      sub?.unsubscribe();
     };
   }, []);
 
-  const signIn = useCallback(() => modal.current?.show(), []);
+  const signIn = useCallback(() => {
+    void connector.current?.connect().catch((error: unknown) => {
+      console.error("NEAR wallet connection failed:", error);
+    });
+  }, []);
 
   const signOut = useCallback(async () => {
-    if (!selector) return;
-    const w = await selector.wallet();
-    await w.signOut();
-  }, [selector]);
+    if (!connector.current) return;
+    await connector.current.disconnect();
+    setAccountId(null);
+  }, []);
 
   const call = useCallback(
     async ({ method, args, deposit = "0", gas = "100000000000000" }: CallArgs) => {
-      if (!selector) throw new Error("Wallet is still loading. Try again in a second.");
+      if (!connector.current || !ready) throw new Error("Wallet connector is still loading. Try again in a second.");
+      if (!accountId) throw new Error("Connect your NEAR wallet before submitting this transaction.");
       if (!CONFIG.contractId) throw new Error("NEXT_PUBLIC_BRIDLE_CONTRACT is not set.");
       try {
-        const w = await selector.wallet();
-        const out = await w.signAndSendTransaction({
+        const wallet = await connector.current.wallet();
+        const out = await wallet.signAndSendTransaction({
           receiverId: CONFIG.contractId,
           actions: [actionCreators.functionCall(method, args, BigInt(gas), BigInt(deposit))],
         });
-        // Browser wallets redirect and return void; extension wallets return the outcome.
+        // Browser wallets may redirect and return no outcome; extensions can return the transaction.
         return out && "transaction" in out ? (out.transaction.hash as string) : null;
-      } catch (e) {
-        throw new Error(explainError(e));
+      } catch (error) {
+        throw new Error(explainError(error));
       }
     },
-    [selector],
+    [accountId, ready],
   );
 
   const value = useMemo<WalletCtx>(
-    () => ({ ready: !!selector, accountId, signIn, signOut, call }),
-    [selector, accountId, signIn, signOut, call],
+    () => ({ ready, accountId, signIn, signOut, call }),
+    [ready, accountId, signIn, signOut, call],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
