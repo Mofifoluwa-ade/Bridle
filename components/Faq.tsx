@@ -1,8 +1,8 @@
 import { Container, Eyebrow } from "./Container";
 
-const REPO = "https://github.com/Mofifoluwa-ade/Bridle";
-const issue = (title: string, body: string) =>
-  `${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+const EMAIL = "usebridle@gmail.com";
+const mail = (subject: string, body: string) =>
+  `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
 const faqs = [
   {
@@ -89,23 +89,25 @@ export function Faq() {
             </p>
             <div className="mt-5 flex flex-col gap-3">
               <a
-                href={issue("Question: ", "What would you like to know?\n\n")}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={mail("Bridle question", "What would you like to know?\n\n")}
                 className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-ink px-5 text-[15px] font-semibold text-white shadow-sm transition-opacity hover:opacity-85 dark:bg-white dark:text-ink"
               >
                 Ask a question
               </a>
               <a
-                href={issue("Feedback: ", "What worked, what did not, and what is missing?\n\n")}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={mail("Bridle feedback", "What worked, what did not, and what is missing?\n\n")}
                 className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-rule px-5 text-[15px] font-semibold text-ink transition-colors hover:bg-white dark:border-dark-border dark:text-white dark:hover:bg-white/10"
               >
                 Send feedback
               </a>
             </div>
-            <p className="mt-4 text-xs text-mute dark:text-dark-mute">Opens a public GitHub issue, so it needs a GitHub account.</p>
+            <p className="mt-4 text-xs text-mute dark:text-dark-mute">
+              Opens your email app. Or write to{" "}
+              <a href={`mailto:${EMAIL}`} className="underline underline-offset-2 hover:text-ink dark:hover:text-white">
+                {EMAIL}
+              </a>
+              .
+            </p>
           </aside>
         </div>
       </section>
