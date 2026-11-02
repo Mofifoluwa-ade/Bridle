@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Container, Eyebrow } from "./Container";
 
 const steps = [
@@ -40,6 +41,12 @@ export function HowItWorks() {
             </li>
           ))}
         </ol>
+        <Link
+          href="/how-it-works"
+          className="mt-10 inline-block text-[15px] font-medium text-ink dark:text-white underline underline-offset-4 decoration-rule dark:decoration-dark-border hover:decoration-current"
+        >
+          See the full walkthrough →
+        </Link>
       </section>
     </Container>
   );

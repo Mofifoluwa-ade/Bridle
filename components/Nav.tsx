@@ -6,7 +6,7 @@ import { Container, PrimaryButton } from "./Container";
 import { Logo } from "./Logo";
 
 const links = [
-  { href: "/#how", label: "How it works" },
+  { href: "/how-it-works", label: "How it works" },
   { href: "/#principles", label: "Principles" },
   { href: "/#questions", label: "Questions" },
   { href: "/docs", label: "Docs" },
