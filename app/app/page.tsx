@@ -11,7 +11,6 @@ import {
   Notice,
   PageHeader,
   Skeleton,
-  Stat,
   Label,
   Btn,
 } from "@/components/app/ui";
@@ -157,122 +156,110 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Metric Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {accountId ? (
-          <Stat
-            label="Wallet balance"
-            value={walletBalance.loading && walletBalance.near === 0 ? "$0.00" : walletBalance.usd}
-            sub={
-              walletBalance.isUpdating
-                ? `Updating… · ${walletBalance.near} NEAR`
-                : walletBalance.near === 0
-                ? "0.00 NEAR ·Get Testnet faucet"
-                : `≈ ${walletBalance.near} NEAR · $${walletBalance.price.toFixed(2)}/NEAR`
-            }
-            badge={
-              walletBalance.isUpdating ? (
-                <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4] border border-accent/20 flex items-center gap-1 font-semibold">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent dark:bg-[#46D9A4] animate-pulse" />
-                  Updating
-                </span>
-              ) : (
-                <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border">
-                  Testnet
-                </span>
-              )
-            }
-          />
-        ) : (
-          <div className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-[11px] uppercase tracking-wider text-mute dark:text-dark-mute">
-                  Wallet balance
-                </span>
-                <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border">
-                  Disconnected
-                </span>
-              </div>
-              <div className="mt-1.5 text-xs text-mute dark:text-dark-mute">
-                Connect your NEAR wallet to see your balance and spending rules.
-              </div>
+      {/* Wallet overview */}
+      <section className="overflow-hidden rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card shadow-sm">
+        <div className="p-5 sm:p-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-medium text-mute dark:text-dark-mute">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-paper dark:bg-dark-bg border border-line dark:border-dark-border">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="M3 10h18M16 15h2" />
+                </svg>
+              </span>
+              Wallet balance
             </div>
-            <div className="mt-3">
-              <Btn size="sm" onClick={signIn} disabled={!ready} className="w-full">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-mute dark:text-dark-mute">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent dark:bg-[#46D9A4]" />
+              NEAR {CONFIG.network}
+            </span>
+          </div>
+
+          {accountId ? (
+            <>
+              <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <div className="text-4xl sm:text-5xl font-semibold tracking-[-0.045em] leading-none text-ink dark:text-white tabular-nums">
+                    {walletBalance.loading && walletBalance.near === 0 ? "Loading…" : walletBalance.usd}
+                  </div>
+                  <p className="mt-2 text-xs text-mute dark:text-dark-mute">
+                    {walletBalance.isUpdating
+                      ? `Updating balance… · ${walletBalance.near} NEAR`
+                      : `≈ ${walletBalance.near} NEAR · Testnet tokens have no real monetary value`}
+                  </p>
+                </div>
+                {walletBalance.isUpdating && (
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-accent dark:text-[#46D9A4]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent dark:bg-[#46D9A4] animate-pulse" />
+                    Updating
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <Link href="/app/mandates/new" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-ink dark:bg-white px-3 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 transition-opacity">
+                  <span aria-hidden="true">＋</span> New mandate
+                </Link>
+                <Link href="/app/agent" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line dark:border-dark-border px-3 py-2.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover transition-colors">
+                  <span aria-hidden="true">↗</span> Test agent
+                </Link>
+                <button type="button" onClick={() => setFilter("Paused")} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line dark:border-dark-border px-3 py-2.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover transition-colors">
+                  <span aria-hidden="true">⌁</span> Review proposals
+                  {mineToDecide.length > 0 && <span className="rounded-full bg-warn-tint px-1.5 py-0.5 text-[10px] text-warn">{mineToDecide.length}</span>}
+                </button>
+                <button type="button" onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(accountId);
+                    showNotification("Wallet address copied.");
+                  } catch {
+                    showNotification("Could not copy the wallet address. Select it from your wallet menu.");
+                  }
+                }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line dark:border-dark-border px-3 py-2.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover transition-colors">
+                  <span aria-hidden="true">▢</span> Copy address
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-mute dark:text-dark-mute">
+                <span>Connected as</span>
+                <span className="font-mono text-ink dark:text-white">{accountId}</span>
+                <span>·</span>
+                <a href={`${CONFIG.explorer}/address/${accountId}`} target="_blank" rel="noreferrer" className="font-medium text-accent dark:text-[#46D9A4] hover:underline">View on explorer ↗</a>
+              </div>
+            </>
+          ) : (
+            <div className="mt-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div>
+                <div className="text-3xl sm:text-4xl font-semibold tracking-[-0.04em] text-ink dark:text-white">Connect your wallet</div>
+                <p className="mt-2 max-w-lg text-xs leading-relaxed text-mute dark:text-dark-mute">
+                  Connect a NEAR testnet wallet to view its balance, manage spending mandates, and review agent payment proposals.
+                </p>
+              </div>
+              <Btn size="sm" onClick={signIn} disabled={!ready} className="shrink-0">
                 {ready ? "Connect wallet" : "Loading wallet…"}
               </Btn>
             </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 border-t border-line dark:border-dark-border bg-paper/50 dark:bg-dark-bg/40">
+          <div className="p-4 sm:px-5">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">Active mandates</div>
+            <div className="mt-1 text-xl font-semibold tracking-tight text-ink dark:text-white tabular-nums">{activeMandates.length}</div>
+            <p className="mt-0.5 text-[11px] text-mute dark:text-dark-mute">
+              {accountId ? (needsDepositMandates.length > 0 ? `${needsDepositMandates.length} awaiting agent deposit` : `${displayMandates.length} total created`) : "Connect wallet to view mandates"}
+            </p>
           </div>
-        )}
-        <Stat
-          label="Active rules"
-          value={`${activeMandates.length} active`}
-          sub={
-            !accountId
-              ? "Connect wallet to view rules"
-              : needsDepositMandates.length > 0
-              ? `${needsDepositMandates.length} rule${needsDepositMandates.length === 1 ? "" : "s"} waiting for agent deposit`
-              : activeMandates.length > 0
-              ? `${displayMandates.length} rule${displayMandates.length === 1 ? "" : "s"} created`
-              : "No active rules created yet"
-          }
-          badge={
-            needsDepositMandates.length > 0 ? (
-              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-warn-tint dark:bg-warn-tint/15 text-warn border border-warn/20 font-semibold">
-                Needs deposit
-              </span>
-            ) : activeMandates.length > 0 ? (
-              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4] border border-accent/20">
-                Active
-              </span>
-            ) : (
-              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border">
-                {accountId ? "None active" : "Disconnected"}
-              </span>
-            )
-          }
-        />
-        <Stat
-          label="Needs review"
-          value={mineToDecide.length}
-          tone={mineToDecide.length > 0 ? "warn" : undefined}
-          sub={
-            !accountId
-              ? "Connect wallet to review"
-              : mineToDecide.length > 0
-              ? `${mineToDecide.length} waiting for your review`
-              : "No payments waiting for review"
-          }
-          badge={
-            <span
-              className={`font-mono text-[10px] px-2 py-0.5 rounded-full border ${
-                mineToDecide.length > 0
-                  ? "bg-warn-tint dark:bg-warn-tint/15 text-warn border-warn/20"
-                  : "bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border-line dark:border-dark-border"
-              }`}
-            >
-              {mineToDecide.length > 0 ? "Review now" : "All clear"}
-            </span>
-          }
-        />
-        <Stat
-          label="Spent today"
-          value={usdc(spent)}
-          sub={
-            !accountId
-              ? "Connect wallet to view daily limit"
-              : cap > BigInt(0)
-              ? `of ${usdc(cap)} allowed per day`
-              : "No daily limit active"
-          }
-          badge={
-            <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-paper dark:bg-dark-bg text-mute dark:text-dark-mute border border-line dark:border-dark-border">
-              Daily limit
-            </span>
-          }
-        />
-      </div>
+          <div className="border-t sm:border-t-0 sm:border-l border-line dark:border-dark-border p-4 sm:px-5">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">Needs your review</div>
+            <div className={`mt-1 text-xl font-semibold tracking-tight tabular-nums ${mineToDecide.length > 0 ? "text-warn" : "text-ink dark:text-white"}`}>{mineToDecide.length}</div>
+            <p className="mt-0.5 text-[11px] text-mute dark:text-dark-mute">{mineToDecide.length > 0 ? "Proposals waiting for a decision" : "No proposals waiting"}</p>
+          </div>
+          <div className="border-t sm:border-t-0 sm:border-l border-line dark:border-dark-border p-4 sm:px-5">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">Spent today</div>
+            <div className="mt-1 text-xl font-semibold tracking-tight text-ink dark:text-white tabular-nums">{usdc(spent)}</div>
+            <p className="mt-0.5 text-[11px] text-mute dark:text-dark-mute">{cap > BigInt(0) ? `of ${usdc(cap)} combined daily cap` : "No daily cap configured"}</p>
+          </div>
+        </div>
+      </section>
 
       {/* Optional Slim Alert if any proposals require veto decision */}
       {mineToDecide.length > 0 && (
