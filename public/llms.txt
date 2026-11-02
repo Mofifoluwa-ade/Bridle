@@ -1,0 +1,22 @@
+# Bridle
+
+> Bridle lets an AI agent spend within limits its owner signs once. A NEAR contract checks every payment: the agent proposes, the contract decides, and the owner keeps a veto. NEAR testnet, v0.1. Cross-chain signing is not connected yet, so cleared payments do not move funds.
+
+## For agents
+
+- [Bridle for agents](https://bridle-agent.vercel.app/agents.md): MCP setup, tools, amounts and rules, in one page
+- [Behaviour guide](https://bridle-agent.vercel.app/bridle-agent-skill.md): how to act inside a mandate
+- [MCP server source](https://github.com/Mofifoluwa-ade/Bridle/tree/main/mcp): stdio server with list_mandates, get_mandate, check_payment, propose_payment, get_proposal, list_proposals
+
+## Docs
+
+- [Documentation](https://bridle-agent.vercel.app/docs): the agent tool schema, rules and examples
+- [Repository](https://github.com/Mofifoluwa-ade/Bridle): app, contract and MCP server
+- [Contract](https://testnet.nearblocks.io/address/bridle.testnet): NEAR testnet
+
+## Limits of this version
+
+- Transfers only. No arbitrary contract calls.
+- Caps are in stablecoin amounts, so no price oracle is needed.
+- Cross-chain signing (Base, Solana) is not connected yet.
+- Trusts the NEAR Chain Signatures network for signing once connected. Bridle does not remove that trust.
