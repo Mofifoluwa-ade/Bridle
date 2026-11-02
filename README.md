@@ -4,9 +4,9 @@
 
 ### Steer your agents, don't trust them. Policy-bound autonomous payments across chains without key custody.
 
-[Architecture](#architecture) • [The Mandate](#mandate-specification) • [Proposal Lifecycle](#proposal-lifecycle) • [Threat Model](#threat-model) • [Trust Assumptions](#trust-assumptions) • [Local](#local)
+[Status](#status-what-works-today) • [Try it](#try-it) • [The Mandate](#mandate-specification) • [Proposal Lifecycle](#proposal-lifecycle) • [Threat Model](#threat-model) • [Trust Assumptions](#trust-assumptions) • [Local](#local)
 
-**Built for:** NEAR Chain Signatures & Intents • **Multi-chain execution:** Base (EVM) & Solana • **Policy enforcement:** On-chain contract
+**Chain:** NEAR (testnet) • **Targets:** Base (EVM) & Solana • **Policy enforcement:** On-chain contract • **Status:** policy layer live on testnet, cross-chain signing in progress
 
 </div>
 
@@ -16,7 +16,7 @@ An AI agent that holds a private key is one prompt injection away from an empty 
 
 **Bridle removes the private key while preserving the autonomy.** 
 
-The owner defines a spending mandate once and signs it on NEAR. The agent receives zero keys and never signs transactions. When the agent needs to pay for an API, compute, or an external tool, it provides only four high-level parameters. The Bridle contract verifies policy limits, constructs the destination transaction bytes, and invokes NEAR Chain Signatures MPC to broadcast derived transactions to EVM chains (Base) and Solana.
+The owner defines a spending mandate once and signs it on NEAR. The agent receives zero keys and never signs transactions. When the agent needs to pay for an API, compute, or an external tool, it provides only four high-level parameters. The Bridle contract verifies policy limits. The design is for the contract to build the destination transaction bytes and ask NEAR Chain Signatures to sign them, so the agent never touches calldata. That signing step is being connected now; see [Status](#status-what-works-today).
 
 ---
 
@@ -31,15 +31,49 @@ The owner defines a spending mandate once and signs it on NEAR. The agent receiv
 
 ## Three Surfaces, One Policy Core
 
-The contract is the single source of truth. Every spending proposal passes through strict on-chain checks before NEAR Chain Signatures ever signs for a derived address.
+The contract is the single source of truth. Every spending proposal passes through strict on-chain checks. By design, Chain Signatures only signs for a derived address after those checks pass.
 
 | Surface | Role | Technology |
 | --- | --- | --- |
-| **Contract** | Enforces mandates, checks caps, manages bond locks and slashes, requests Chain Signatures. | NEAR smart contract (`bridle.near`) |
-| **Agent Interface** | Minimal 4-field tool schema for AI agents (`propose_payment`). No key handling. | MCP Server / Tool API |
+| **Contract** | Enforces mandates, checks caps, manages bond locks and slashes. Requesting Chain Signatures is in progress. | NEAR smart contract (`bridle.testnet`) |
+| **Agent Interface** | Minimal 4-field tool schema for AI agents (`propose_payment`). No key handling. | MCP server in [`mcp/`](mcp/README.md) |
 | **Monitor & App** | Mandate builder, live execution feed, watcher interface, and one-tap owner veto/revoke. | Next.js (App Router), TypeScript, Tailwind CSS |
 
 ---
+
+## Status: what works today
+
+| Piece | State |
+| --- | --- |
+| Mandate rules, caps, allowlist, daily reset, loosening delay, revoke | Working on NEAR testnet, covered by contract unit tests |
+| Challenge window, watcher flags, bonds, 40/30/30 slashing, veto | Working on NEAR testnet |
+| Agent proposals (`propose_payment`) and blocked-with-reason records | Working on NEAR testnet |
+| Web app: sentence-based mandate builder, live feed, watcher view | Working, reads the contract directly over RPC |
+| MCP server for agents (read limits, dry-run a payment, propose) | Working, tested against a mock chain |
+| **Cross-chain signing (Base, then Solana) through NEAR Chain Signatures** | **In progress.** Today `execute` marks a proposal `Signing` and emits a `ready_to_sign` event. No funds move yet. |
+| NEAR Intents | Not used |
+
+Nothing in this repository moves real money. The demo shows the policy layer deciding; it does not show a completed on-chain transfer.
+
+## Try it
+
+You need Node 20+ and Rust (for the contract tests).
+
+1. `npm install && npm run dev`, then open http://localhost:3000.
+2. Open **/app/mandates/new** and type a rule such as `Up to $50 a day, to two approved recipients. Pause anything over $20.` Press **Apply to rules** and see the form fill in. Nothing is sent until you sign with a wallet.
+3. `npm run test:sentence` runs the parser checks.
+4. `cd contract && cargo test` runs the policy tests (caps, allowlist, window, flags and slashing, loosening, revoke).
+5. `cd mcp && npm install && npm test` runs the agent tool tests, including a check that no owner actions are exposed.
+
+To run against a deployed contract, set `NEXT_PUBLIC_BRIDLE_CONTRACT` (see [contract/README.md](contract/README.md)).
+
+## Hackathon disclosure
+
+Built for the NEAR HACKATHON window. Every commit in this repository is from 2026-10-28 onward, after the 2026-10-19 announcement; there is no earlier baseline and no earlier version of Bridle on another chain.
+
+* Libraries: Next.js, React, Tailwind, near-api-js, NEAR wallet selector, near-sdk (Rust), the MCP TypeScript SDK, zod.
+* Much of the code was written with AI assistance (Claude Code). Behaviour is covered by the tests above.
+* Product name, copy and visuals are original.
 
 ## Mandate Specification
 
@@ -81,7 +115,7 @@ A **Mandate** is the primary governance object the owner signs on NEAR. Every pr
    | Active Mandate     |
    +--------------------+
              |
-             +--- Amount <= Cooling Threshold ---> [SIGNED & EXECUTED IMMEDIATELY]
+             +--- Amount <= Cooling Threshold ---> [READY: marked for signing]
              |
              +--- Amount > Cooling Threshold (Requires Agent Bond)
                        |
@@ -97,7 +131,7 @@ A **Mandate** is the primary governance object the owner signs on NEAR. Every pr
          |                           |
          v                           v
   [Anyone Calls Execute]     Owner reviews flag:
-  [Signed via NEAR MPC]      - Confirmed: Agent slashed (40% watcher, 30% owner, 30% burn)
+  [Marked for signing]      - Confirmed: Agent slashed (40% watcher, 30% owner, 30% burn)
                              - Dismissed: Watcher bond forfeited to agent
                              - Silent: Proposal expires unexecuted
 ```
@@ -150,25 +184,14 @@ Because the adapter on NEAR builds the destination calldata directly, prompt-inj
 
 ```
 .
-├── app/
-│   ├── layout.tsx         # Root layout (Instrument Sans, JetBrains Mono, metadata)
-│   ├── page.tsx           # Assembly: Nav, Hero, HowItWorks, Principles, Edges, Cta, Footer
-│   ├── globals.css        # Tailwind directives and focus accessibility
-│   └── icon.svg           # High-contrast dual-theme Bridle brand favicon
-├── components/
-│   ├── Nav.tsx            # Header navigation & demo action
-│   ├── Hero.tsx           # Headline, pitch, and interactive mandate card
-│   ├── MandateCard.tsx    # Live policy visualization & sample proposal feed
-│   ├── HowItWorks.tsx     # 3-step lifecycle breakdown
-│   ├── Principles.tsx     # Foundational design principles
-│   ├── Edges.tsx          # Human-in-the-loop edge control & veto guarantees
-│   ├── Cta.tsx            # Community, demo link, and developer spec targets
-│   ├── Footer.tsx         # Clean footer with attribution
-│   └── Logo.tsx           # Scalable SVG brand mark and wordmark
-├── public/                # Static brand assets (bridle-mark.svg, icon.svg, logo.png)
-├── SPEC.txt               # Complete technical specification and economics
-├── tailwind.config.ts     # Curated palette (ink, paper, mute, accent: #0A7C59)
-└── tsconfig.json          # Strict TypeScript configuration
+├── app/                   # Next.js App Router: landing, /docs, /how-it-works, /app (dashboard, mandate builder, watcher)
+├── components/            # Hero, MandateCard, HowItWorks, Faq, Nav, Footer and the rest of the site
+├── lib/                   # Contract client (near.ts), config, types, sentence parser (sentence.ts)
+├── contract/              # NEAR smart contract (Rust, near-sdk) with unit tests and deploy script
+├── mcp/                   # MCP server for agents: read limits, check a payment, propose one
+├── public/                # llms.txt, agents.md, agent skill file, brand assets
+├── scripts/               # Parser tests
+└── SPEC.txt               # Technical specification and economics
 ```
 
 ---
@@ -198,3 +221,9 @@ npm run build      # Produces optimized production bundle
 ## For agents (MCP)
 
 `mcp/` holds an MCP server so an agent can read its limits, check a payment and propose one. Owner actions are deliberately not exposed. See [mcp/README.md](mcp/README.md) and [public/agents.md](public/agents.md). `public/llms.txt` points agents to both.
+
+---
+
+## License
+
+MIT. See [LICENSE](LICENSE).

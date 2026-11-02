@@ -17,7 +17,7 @@ One contract holds every mandate and proposal. The web app reads it directly ove
 ## Test it
 
 ```bash
-cargo test            # 8 unit tests: caps, allowlist, window, flag/slash, loosening, revoke
+cargo test            # 9 unit tests: caps, allowlist, window, flag/slash, loosening, revoke
 ```
 
 (`rust-toolchain.toml` adds the wasm target. If you run plain `cargo check`, use `cargo check --tests`.)
