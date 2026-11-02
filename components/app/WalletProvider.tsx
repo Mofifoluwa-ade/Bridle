@@ -39,7 +39,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const near = new NearConnector({ network: CONFIG.network });
+    const near = new NearConnector({
+      network: CONFIG.network,
+      // Bridle submits contract calls on NEAR testnet. This keeps wallets that
+      // advertise testnet transaction support (including Meteor) discoverable.
+      features: { testnet: true, signAndSendTransaction: true },
+    });
     connector.current = near;
 
     near.on("wallet:signIn", ({ accounts }) => {
