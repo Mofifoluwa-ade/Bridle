@@ -54,7 +54,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (!cancelled) setAccountId(null);
     });
 
-    setReady(true);
+    // NEAR Connect can retain the selected wallet between page loads.
+    // The signIn event only covers a fresh connection, so hydrate the app
+    // from the existing wallet session during provider initialization.
+    void (async () => {
+      try {
+        const wallet = await near.wallet();
+        const accounts = await wallet.getAccounts();
+        if (!cancelled) setAccountId(accounts[0]?.accountId ?? null);
+      } catch {
+        // No existing wallet session is a normal disconnected state.
+        if (!cancelled) setAccountId(null);
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+
     return () => {
       cancelled = true;
     };
