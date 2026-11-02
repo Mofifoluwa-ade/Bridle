@@ -28,7 +28,7 @@ export function Footer() {
           </a>
         </div>
         <span className="text-[12.5px] sm:text-[13.5px] text-mute dark:text-dark-mute">
-          Built for the NEAR Build Beyond Boundaries hackathon, 2026
+          Built on NEAR · Testnet · Open source
         </span>
       </Container>
     </footer>
