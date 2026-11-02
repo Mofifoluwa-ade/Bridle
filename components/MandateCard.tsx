@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 /**
  * Hero card. A ~13 second loop that shows the whole product:
@@ -126,9 +126,9 @@ export function MandateCard() {
 
           <p className="mt-4 sm:mt-5 text-[20px] sm:text-[25px] font-medium leading-[1.3] tracking-[-0.02em] text-ink dark:text-white">
             {HEADLINE.map((w, i) => (
+              <Fragment key={i}>
               <span
-                key={i}
-                className="mr-[0.27em] inline-block transition-all duration-500 ease-out"
+                className="inline-block transition-all duration-500 ease-out"
                 style={{
                   opacity: intro >= 1 ? 1 : 0,
                   transform: intro >= 1 ? "translateY(0)" : "translateY(8px)",
@@ -137,6 +137,8 @@ export function MandateCard() {
               >
                 {w}
               </span>
+              {i < HEADLINE.length - 1 ? " " : null}
+              </Fragment>
             ))}
           </p>
 
