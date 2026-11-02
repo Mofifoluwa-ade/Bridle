@@ -192,3 +192,9 @@ npm run build      # Produces optimized production bundle
 * **Fail-closed:** If an over-threshold action is contested or unacknowledged, funds stay put.
 * **Minimal agent authority:** The agent is an untrusted proposer, never a keyholder.
 * **Brand identity:** Monochrome foundation (`#0E1116` ink, `#F6F7F9` paper) accented with forest green (`#0A7C59`). Clean typography using Instrument Sans and JetBrains Mono.
+
+---
+
+## For agents (MCP)
+
+`mcp/` holds an MCP server so an agent can read its limits, check a payment and propose one. Owner actions are deliberately not exposed. See [mcp/README.md](mcp/README.md) and [public/agents.md](public/agents.md). `public/llms.txt` points agents to both.

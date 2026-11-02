@@ -1,0 +1,25 @@
+{
+  "name": "bridle-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Bridle: lets an AI agent read its spending rules, check a payment, and propose one. Owner actions are deliberately not exposed.",
+  "type": "module",
+  "private": true,
+  "bin": { "bridle-mcp": "dist/index.js" },
+  "files": ["dist", "README.md"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test \"dist/test/*.test.js\"",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "near-api-js": "^7.4.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
