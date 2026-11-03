@@ -126,15 +126,20 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 function WalletButton() {
-  const { ready, accountId, signIn, signOut } = useWallet();
+  const { ready, accountId, connecting, connectionError, signIn, signOut } = useWallet();
   const balance = useAccountBalance(accountId);
 
   if (!accountId)
     return (
       <div id="tour-wallet-btn">
-        <Btn size="sm" onClick={signIn} disabled={!ready}>
-          {ready ? "Connect wallet" : "Loading wallet"}
+        <Btn size="sm" onClick={signIn} disabled={!ready || connecting}>
+          {!ready ? "Loading wallet" : connecting ? "Opening wallet…" : "Connect wallet"}
         </Btn>
+        {connectionError && (
+          <p role="alert" className="mt-2 max-w-56 text-[11px] leading-relaxed text-bad">
+            Wallet connection failed: {connectionError}
+          </p>
+        )}
       </div>
     );
   return (
