@@ -6,7 +6,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { LogoMark, Wordmark } from "@/components/Logo";
 import { CONFIG } from "@/lib/config";
 import { shortAddr } from "@/lib/format";
-import { Btn, Notice } from "./ui";
+import { Btn, Notice, Toast } from "./ui";
 import { useWallet } from "./WalletProvider";
 import { GettingStartedModal } from "./GettingStartedModal";
 import { useTour } from "./SpotlightTour";
@@ -126,15 +126,24 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 function WalletButton() {
-  const { ready, accountId, signIn, signOut } = useWallet();
+  const { ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut } = useWallet();
   const balance = useAccountBalance(accountId);
+
+  useEffect(() => {
+    if (!connectionError) return;
+    const timeout = window.setTimeout(clearConnectionError, 4000);
+    return () => window.clearTimeout(timeout);
+  }, [connectionError, clearConnectionError]);
 
   if (!accountId)
     return (
       <div id="tour-wallet-btn">
-        <Btn size="sm" onClick={signIn} disabled={!ready}>
-          {ready ? "Connect wallet" : "Loading wallet"}
+        <Btn size="sm" onClick={signIn} disabled={!ready || connecting}>
+          {!ready ? "Loading wallet" : connecting ? "Opening wallet…" : "Connect wallet"}
         </Btn>
+        <Toast open={Boolean(connectionError)} title="Wallet not connected" tone="error" onClose={clearConnectionError}>
+          Couldn’t connect. Please try again.
+        </Toast>
       </div>
     );
   return (
