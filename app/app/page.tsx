@@ -354,7 +354,7 @@ export default function Dashboard() {
               </Link>
             </div>
             </div>
-          </div>
+          </section>
         </section>
 
         {/* Right Column: Live Stream Agent Payment Feed */}
