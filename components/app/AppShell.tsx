@@ -136,8 +136,8 @@ function WalletButton() {
           {!ready ? "Loading wallet" : connecting ? "Opening wallet…" : "Connect wallet"}
         </Btn>
         {connectionError && (
-          <p role="alert" className="mt-2 max-w-56 text-[11px] leading-relaxed text-bad">
-            Wallet connection failed: {connectionError}
+          <p role="status" className="mt-1 max-w-56 text-[11px] leading-relaxed text-dim dark:text-dark-dim">
+            Couldn't connect. Please try again.
           </p>
         )}
       </div>
