@@ -1,15 +1,20 @@
 //! Bridle: policy contract. An agent proposes payments; the contract checks them against an
 //! owner-signed mandate, holds large ones in a challenge window, and lets watchers flag them.
 //!
-//! What this file does: every rule in the spec up to the moment a payment is cleared to sign.
-//! What it does not do yet: build chain transactions and call the MPC signer. That is the
-//! day-one spike (see README). `execute` marks a proposal `Signing` and emits an event; a
-//! registered executor reports the final tx hash with `report_execution`.
+//! What this file does: every rule in the spec, then, for Base, the signing step. A cleared
+//! proposal is `Signing`. The registered executor calls `request_signature` with only the nonce
+//! and fee settings; the contract builds the ERC-20 `transfer` itself (see `evm.rs`) and asks the
+//! NEAR Chain Signatures MPC contract to sign it with a key derived for the mandate. The executor
+//! broadcasts the signed transaction and reports the hash with `report_execution`.
+//! Solana signing (Ed25519) is not built yet.
+
+pub mod evm;
 
 use near_sdk::json_types::{U128, U64};
 use near_sdk::store::IterableMap;
 use near_sdk::{
-    env, near, require, AccountId, BorshStorageKey, NearToken, PanicOnDefault, Promise,
+    env, near, require, AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault, Promise,
+    PromiseError,
 };
 
 const DAY_NS: u64 = 86_400 * 1_000_000_000;
@@ -20,6 +25,19 @@ const MAX_EXPIRY_DAYS: u64 = 30;
 const MAX_ALLOWLIST: usize = 50;
 // Valid implicit account nobody holds a key for: slashed funds sent here are burned.
 const BURN_ACCOUNT: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+
+// ── Chain Signatures (testnet) ──
+/// NEAR MPC signer. Mainnet is `v1.signer`.
+const SIGNER_ID: &str = "v1.signer-prod.testnet";
+/// Base Sepolia.
+const BASE_CHAIN_ID: u64 = 84_532;
+/// Circle USDC on Base Sepolia.
+const BASE_USDC: &str = "0x036cbd53842c5426634e7929541ec2318f3dcf7e";
+/// The executor picks nonce and fees; these caps bound what a bad executor can burn in gas.
+const MAX_GAS_LIMIT: u64 = 250_000;
+const MAX_FEE_PER_GAS: u128 = 200_000_000_000; // 200 gwei
+const SIGN_GAS: Gas = Gas::from_tgas(230);
+const CALLBACK_GAS: Gas = Gas::from_tgas(15);
 
 #[near(serializers = [json, borsh])]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -119,6 +137,47 @@ pub struct Proposal {
     pub tx_hash: Option<String>,
 }
 
+#[near(serializers = [json, borsh])]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum SigningState {
+    /// Sent to the MPC signer, no answer yet.
+    Requested,
+    /// Signature stored. The executor can assemble and broadcast.
+    Signed,
+}
+
+/// One per proposal, ever. Its existence is what stops a second signature for the same payment.
+#[near(serializers = [json, borsh])]
+#[derive(Clone)]
+pub struct SigningRecord {
+    pub state: SigningState,
+    pub nonce: u64,
+    /// Hex of the unsigned EIP-1559 transaction the contract built (no 0x prefix).
+    pub unsigned_tx: String,
+    /// Hex r and s (no 0x prefix) and the recovery id (0 or 1) once signed.
+    pub r: Option<String>,
+    pub s: Option<String>,
+    pub recovery_id: Option<u8>,
+}
+
+#[near(serializers = [json])]
+pub struct AffinePoint {
+    pub affine_point: String,
+}
+
+#[near(serializers = [json])]
+pub struct ScalarValue {
+    pub scalar: String,
+}
+
+/// The MPC contract's secp256k1 answer. Other fields (such as `scheme`) are ignored.
+#[near(serializers = [json])]
+pub struct SignResponse {
+    pub big_r: AffinePoint,
+    pub s: ScalarValue,
+    pub recovery_id: u8,
+}
+
 #[near(serializers = [json])]
 pub struct Config {
     pub executor: AccountId,
@@ -130,6 +189,7 @@ pub struct Config {
 enum Key {
     Mandates,
     Proposals,
+    Signing,
 }
 
 #[near(contract_state)]
@@ -140,6 +200,23 @@ pub struct Bridle {
     next_proposal: u64,
     mandates: IterableMap<u64, Mandate>,
     proposals: IterableMap<u64, Proposal>,
+    signing: IterableMap<u64, SigningRecord>,
+}
+
+/// State layout before the signing map existed. Used only by `migrate`.
+#[near(serializers = [borsh])]
+struct BridleV1 {
+    executor: AccountId,
+    next_mandate: u64,
+    next_proposal: u64,
+    mandates: IterableMap<u64, Mandate>,
+    proposals: IterableMap<u64, Proposal>,
+}
+
+/// Each mandate gets its own Base address: the signer derives it from this contract's account
+/// id and this path.
+fn derivation_path(mandate_id: u64) -> String {
+    format!("bridle-{}", mandate_id)
 }
 
 fn event(name: &str, data: String) {
@@ -159,6 +236,23 @@ impl Bridle {
             next_proposal: 1,
             mandates: IterableMap::new(Key::Mandates),
             proposals: IterableMap::new(Key::Proposals),
+            signing: IterableMap::new(Key::Signing),
+        }
+    }
+
+    /// Upgrade a contract deployed before Chain Signatures support. Keeps every mandate and
+    /// proposal. Call once, by the contract account, right after deploying the new code.
+    #[private]
+    #[init(ignore_state)]
+    pub fn migrate() -> Self {
+        let old: BridleV1 = env::state_read().unwrap_or_else(|| env::panic_str("no old state"));
+        Self {
+            executor: old.executor,
+            next_mandate: old.next_mandate,
+            next_proposal: old.next_proposal,
+            mandates: old.mandates,
+            proposals: old.proposals,
+            signing: IterableMap::new(Key::Signing),
         }
     }
 
@@ -543,6 +637,109 @@ impl Bridle {
         );
     }
 
+
+    /// Executor only. Builds the Base USDC transfer for a cleared proposal and asks the MPC
+    /// signer to sign it with the key derived for this mandate. The executor chooses only the
+    /// nonce and fees; the token, recipient and amount come from the proposal, so nobody can
+    /// redirect the payment. One signature per proposal: a second call is refused.
+    /// Attach 300 TGas. Returns the stored signing record, or null if the MPC call failed.
+    pub fn request_signature(
+        &mut self,
+        proposal_id: u64,
+        nonce: u64,
+        max_fee_per_gas: U128,
+        max_priority_fee_per_gas: U128,
+        gas_limit: u64,
+    ) -> Promise {
+        require!(env::predecessor_account_id() == self.executor, "only the executor can request signatures");
+        let p = self.proposal(proposal_id);
+        let m = self.mandate(p.mandate_id);
+        require!(p.status == ProposalStatus::Signing, "proposal is not being signed");
+        require!(m.state == MandateState::Active, "mandate is revoked");
+        require!(env::block_timestamp() < m.expires_at.0, "mandate has expired");
+        require!(p.chain == Chain::Base, "only Base signing is built");
+        require!(p.asset == "USDC", "only USDC is supported");
+        require!(!self.signing.contains_key(&proposal_id), "a signature was already requested for this proposal");
+        require!(gas_limit > 0 && gas_limit <= MAX_GAS_LIMIT, "gas limit out of range");
+        require!(max_fee_per_gas.0 > 0 && max_fee_per_gas.0 <= MAX_FEE_PER_GAS, "max fee out of range");
+        require!(max_priority_fee_per_gas.0 <= max_fee_per_gas.0, "priority fee above max fee");
+
+        let token = evm::parse_address(BASE_USDC).unwrap_or_else(|| env::panic_str("bad token"));
+        let recipient = evm::parse_address(&p.recipient)
+            .unwrap_or_else(|| env::panic_str("recipient is not a valid EVM address"));
+        let unsigned = evm::unsigned_eip1559_transfer(&evm::Eip1559Transfer {
+            chain_id: BASE_CHAIN_ID,
+            nonce,
+            max_priority_fee_per_gas: max_priority_fee_per_gas.0,
+            max_fee_per_gas: max_fee_per_gas.0,
+            gas_limit,
+            token: &token,
+            recipient: &recipient,
+            amount: p.amount.0,
+        });
+        let digest = env::keccak256_array(&unsigned);
+        let unsigned_hex = evm::hex(&unsigned);
+
+        self.signing.insert(
+            proposal_id,
+            SigningRecord {
+                state: SigningState::Requested,
+                nonce,
+                unsigned_tx: unsigned_hex.clone(),
+                r: None,
+                s: None,
+                recovery_id: None,
+            },
+        );
+        event(
+            "signature_requested",
+            format!(
+                "{{\"id\":{},\"mandate\":{},\"path\":\"{}\",\"nonce\":{},\"digest\":\"{}\"}}",
+                proposal_id, p.mandate_id, derivation_path(p.mandate_id), nonce, evm::hex(&digest)
+            ),
+        );
+
+        let args = near_sdk::serde_json::json!({
+            "request": {
+                "payload_v2": { "Ecdsa": evm::hex(&digest) },
+                "path": derivation_path(p.mandate_id),
+                "domain_id": 0
+            }
+        })
+        .to_string()
+        .into_bytes();
+        let signer: AccountId = SIGNER_ID.parse().unwrap();
+        Promise::new(signer)
+            .function_call("sign".to_string(), args, NearToken::from_yoctonear(1), SIGN_GAS)
+            .then(Self::ext(env::current_account_id()).with_static_gas(CALLBACK_GAS).on_signed(proposal_id))
+    }
+
+    #[private]
+    pub fn on_signed(
+        &mut self,
+        proposal_id: u64,
+        #[callback_result] result: Result<SignResponse, PromiseError>,
+    ) -> Option<SigningRecord> {
+        let mut rec = self.signing.get(&proposal_id).cloned()?;
+        match result {
+            Ok(sig) if sig.big_r.affine_point.len() == 66 && sig.s.scalar.len() == 64 && sig.recovery_id <= 1 => {
+                rec.state = SigningState::Signed;
+                rec.r = Some(sig.big_r.affine_point[2..].to_string());
+                rec.s = Some(sig.s.scalar);
+                rec.recovery_id = Some(sig.recovery_id);
+                self.signing.insert(proposal_id, rec.clone());
+                event("signed", format!("{{\"id\":{}}}", proposal_id));
+                Some(rec)
+            }
+            _ => {
+                // Free the slot so the executor can ask again. Nothing was signed.
+                self.signing.remove(&proposal_id);
+                event("signature_failed", format!("{{\"id\":{}}}", proposal_id));
+                None
+            }
+        }
+    }
+
     /// The registered executor reports the broadcast transaction.
     pub fn report_execution(&mut self, proposal_id: u64, tx_hash: String) {
         require!(env::predecessor_account_id() == self.executor, "only the executor can report");
@@ -573,6 +770,10 @@ impl Bridle {
     pub fn timeout_signing(&mut self, proposal_id: u64) {
         let mut p = self.proposal(proposal_id);
         require!(p.status == ProposalStatus::Signing, "proposal is not in signing state");
+        require!(
+            !self.signing.contains_key(&proposal_id),
+            "a signature exists; the executor must broadcast it and report"
+        );
         let timeout_ns = 3600 * SEC_NS;
         require!(
             env::block_timestamp() >= p.executable_at.0 + timeout_ns,
@@ -588,6 +789,15 @@ impl Bridle {
     }
 
     // ───────────── views ─────────────
+
+    pub fn get_signing(&self, proposal_id: u64) -> Option<SigningRecord> {
+        self.signing.get(&proposal_id).cloned()
+    }
+
+    /// The derivation path the MPC signer uses for this mandate's Base address.
+    pub fn get_derivation_path(&self, mandate_id: u64) -> String {
+        derivation_path(mandate_id)
+    }
 
     pub fn get_config(&self) -> Config {
         Config { executor: self.executor.clone(), flag_bond_divisor: 10 }
@@ -838,6 +1048,144 @@ mod tests {
         ctx("agent.testnet", 0, T0 + 15 * SEC_NS);
         c.withdraw_bond(id);
         assert_eq!(c.get_mandate(id).unwrap().bond_posted.0, 0);
+    }
+
+
+    // ───────────── Chain Signatures ─────────────
+
+    fn signing_proposal() -> (Bridle, Proposal) {
+        let (mut c, id) = setup();
+        let p = propose(&mut c, id, 18_000_000, ADDR, T0);
+        ctx("anyone.testnet", 0, T0);
+        c.execute(p.id);
+        (c, p)
+    }
+    fn request(c: &mut Bridle, id: u64, nonce: u64) {
+        ctx("exec.testnet", 0, T0);
+        let _ = c.request_signature(id, nonce, U128(2_000_000), U128(1_000_000), 100_000);
+    }
+    fn sig(rec: u8) -> SignResponse {
+        SignResponse {
+            big_r: AffinePoint { affine_point: format!("03{}", "ab".repeat(32)) },
+            s: ScalarValue { scalar: "cd".repeat(32) },
+            recovery_id: rec,
+        }
+    }
+
+    #[test]
+    fn contract_builds_the_transfer_not_the_executor() {
+        let (mut c, p) = signing_proposal();
+        request(&mut c, p.id, 5);
+        let rec = c.get_signing(p.id).unwrap();
+        assert_eq!(rec.state, SigningState::Requested);
+        assert_eq!(rec.nonce, 5);
+        let token = evm::parse_address(BASE_USDC).unwrap();
+        let to = evm::parse_address(ADDR).unwrap();
+        let expected = evm::unsigned_eip1559_transfer(&evm::Eip1559Transfer {
+            chain_id: BASE_CHAIN_ID,
+            nonce: 5,
+            max_priority_fee_per_gas: 1_000_000,
+            max_fee_per_gas: 2_000_000,
+            gas_limit: 100_000,
+            token: &token,
+            recipient: &to,
+            amount: 18_000_000,
+        });
+        assert_eq!(rec.unsigned_tx, evm::hex(&expected));
+        // the call goes to the USDC token and carries zero ETH
+        assert!(rec.unsigned_tx.contains("036cbd53842c5426634e7929541ec2318f3dcf7e80b844a9059cbb"));
+    }
+
+    #[test]
+    #[should_panic(expected = "only the executor")]
+    fn only_the_executor_can_request_a_signature() {
+        let (mut c, p) = signing_proposal();
+        ctx("agent.testnet", 0, T0);
+        let _ = c.request_signature(p.id, 0, U128(2_000_000), U128(1), 100_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "already requested")]
+    fn a_proposal_is_signed_once() {
+        let (mut c, p) = signing_proposal();
+        request(&mut c, p.id, 0);
+        request(&mut c, p.id, 1); // a different nonce must not produce a second payment
+    }
+
+    #[test]
+    #[should_panic(expected = "not being signed")]
+    fn only_cleared_proposals_are_signed() {
+        let (mut c, id) = setup();
+        let p = propose(&mut c, id, 18_000_000, ADDR, T0); // Ready, not yet executed
+        request(&mut c, p.id, 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "max fee out of range")]
+    fn executor_cannot_set_absurd_fees() {
+        let (mut c, p) = signing_proposal();
+        ctx("exec.testnet", 0, T0);
+        let _ = c.request_signature(p.id, 0, U128(MAX_FEE_PER_GAS + 1), U128(1), 100_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "gas limit out of range")]
+    fn executor_cannot_set_absurd_gas_limits() {
+        let (mut c, p) = signing_proposal();
+        ctx("exec.testnet", 0, T0);
+        let _ = c.request_signature(p.id, 0, U128(2_000_000), U128(1), MAX_GAS_LIMIT + 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "mandate is revoked")]
+    fn revoked_mandates_are_not_signed() {
+        let (mut c, p) = signing_proposal();
+        ctx("owner.testnet", 0, T0);
+        c.revoke(p.mandate_id);
+        request(&mut c, p.id, 0);
+    }
+
+    #[test]
+    fn signature_is_stored_and_blocks_timeout() {
+        let (mut c, p) = signing_proposal();
+        request(&mut c, p.id, 0);
+        let rec = c.on_signed(p.id, Ok(sig(1))).unwrap();
+        assert_eq!(rec.state, SigningState::Signed);
+        assert_eq!(rec.r.as_deref(), Some("ab".repeat(32).as_str()));
+        assert_eq!(rec.recovery_id, Some(1));
+        // a stored signature means a transaction may be in flight: the budget is not refunded
+        ctx("anyone.testnet", 0, T0 + 2 * 3600 * SEC_NS);
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| c.timeout_signing(p.id)));
+        assert!(r.is_err());
+        assert_eq!(c.get_proposal(p.id).unwrap().status, ProposalStatus::Signing);
+    }
+
+    #[test]
+    fn failed_signing_frees_the_slot_for_a_retry() {
+        let (mut c, p) = signing_proposal();
+        request(&mut c, p.id, 0);
+        assert!(c.on_signed(p.id, Err(PromiseError::Failed)).is_none());
+        assert!(c.get_signing(p.id).is_none());
+        request(&mut c, p.id, 0); // allowed again: nothing was signed
+        assert_eq!(c.get_signing(p.id).unwrap().state, SigningState::Requested);
+    }
+
+    #[test]
+    fn malformed_signatures_are_rejected() {
+        let (mut c, p) = signing_proposal();
+        request(&mut c, p.id, 0);
+        let mut bad = sig(0);
+        bad.s.scalar = "cd".into();
+        assert!(c.on_signed(p.id, Ok(bad)).is_none());
+        request(&mut c, p.id, 0);
+        assert!(c.on_signed(p.id, Ok(sig(2))).is_none()); // recovery id must be 0 or 1
+    }
+
+    #[test]
+    fn derivation_path_is_per_mandate() {
+        let (c, id) = setup();
+        assert_eq!(c.get_derivation_path(id), format!("bridle-{}", id));
+        assert_ne!(c.get_derivation_path(1), c.get_derivation_path(2));
     }
 
     impl Bridle {
