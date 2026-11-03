@@ -1,0 +1,27 @@
+{
+  "name": "bridle-executor",
+  "version": "0.1.0",
+  "description": "Bridle executor: asks the contract to get a Base USDC transfer signed by NEAR Chain Signatures, broadcasts it, and reports the result. It cannot change what is paid.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test \"dist/test/*.test.js\"",
+    "address": "node dist/index.js address",
+    "once": "node dist/index.js once",
+    "start": "node dist/index.js run"
+  },
+  "dependencies": {
+    "@noble/curves": "^1.9.0",
+    "@noble/hashes": "^1.8.0",
+    "@scure/base": "^1.2.0",
+    "near-api-js": "^7.4.0",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
