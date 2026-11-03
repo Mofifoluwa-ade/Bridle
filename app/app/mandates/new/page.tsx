@@ -152,7 +152,7 @@ export default function NewMandate() {
 }
 
 function Form() {
-  const { accountId, call, signIn, ready } = useWallet();
+  const { accountId, call, signIn, ready, connecting, connectionError } = useWallet();
   const router = useRouter();
   const [step, setStep] = useState<Step>(0);
   const [agent, setAgent] = useState("");
@@ -736,6 +736,16 @@ function Form() {
           </>
         )}
 
+        {connectionError && (
+          <Notice tone="bad" title="Wallet connection failed">
+            {connectionError} Close any open wallet prompt, then try connecting again. If it persists, reload this page and reconnect.
+          </Notice>
+        )}
+        {busy && (
+          <Notice tone="warn" title="Waiting for wallet approval">
+            Bridle has sent the transaction request to your connected wallet. Approve or reject it there; keep this page open while the wallet responds.
+          </Notice>
+        )}
         {err && <Notice tone="bad" title="The rule was not created">{err}</Notice>}
 
         <div className="flex items-center justify-between gap-3">
@@ -752,8 +762,8 @@ function Form() {
           ) : accountId && CONFIG.contractId ? (
             <Btn variant="accent" busy={busy} onClick={submit} disabled={!ok}>Save and activate rule</Btn>
           ) : (
-            <Btn variant="accent" onClick={() => { if (!CONFIG.contractId) return; signIn(); }} disabled={!CONFIG.contractId || !ready || !ok}>
-              {!CONFIG.contractId ? "Contract not configured" : !ready ? "Loading wallet…" : "Connect wallet to create rule"}
+            <Btn variant="accent" onClick={() => { if (!CONFIG.contractId) return; signIn(); }} disabled={!CONFIG.contractId || !ready || connecting || !ok}>
+              {!CONFIG.contractId ? "Contract not configured" : !ready ? "Loading wallet…" : connecting ? "Opening wallet…" : "Connect wallet to create rule"}
             </Btn>
           )}
         </div>
