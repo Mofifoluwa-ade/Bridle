@@ -18,6 +18,9 @@ type CallArgs = {
 type WalletCtx = {
   ready: boolean;
   accountId: string | null;
+  connecting: boolean;
+  connectionError: string | null;
+  clearConnectionError: () => void;
   signIn: () => void;
   signOut: () => Promise<void>;
   /** Sign and send a function call to the Bridle contract. Throws a readable Error. */
@@ -36,6 +39,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const connector = useRef<NearConnector | null>(null);
   const [ready, setReady] = useState(false);
   const [accountId, setAccountId] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const connectingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,10 +82,20 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(() => {
-    void connector.current?.connect().catch((error: unknown) => {
+    if (!connector.current || connectingRef.current) return;
+    connectingRef.current = true;
+    setConnecting(true);
+    setConnectionError(null);
+    void connector.current.connect().catch((error: unknown) => {
       console.error("NEAR wallet connection failed:", error);
+      setConnectionError(explainError(error));
+    }).finally(() => {
+      connectingRef.current = false;
+      setConnecting(false);
     });
   }, []);
+
+  const clearConnectionError = useCallback(() => setConnectionError(null), []);
 
   const signOut = useCallback(async () => {
     if (!connector.current) return;
@@ -108,8 +124,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<WalletCtx>(
-    () => ({ ready, accountId, signIn, signOut, call }),
-    [ready, accountId, signIn, signOut, call],
+    () => ({ ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call }),
+    [ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
