@@ -355,7 +355,7 @@ export default function Dashboard() {
             </div>
             </div>
           </section>
-        </section>
+        </div>
 
         {/* Right Column: Live Stream Agent Payment Feed */}
         <section className="lg:col-span-7 flex flex-col min-w-0">
