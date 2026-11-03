@@ -736,7 +736,6 @@ function Form() {
           </>
         )}
 
-}
         {busy && (
           <Notice tone="warn" title="Waiting for wallet approval">
             Bridle has sent the transaction request to your connected wallet. Approve or reject it there; keep this page open while the wallet responds.
