@@ -6,7 +6,7 @@
 
 [Status](#status-what-works-today) • [Try it](#try-it) • [The Mandate](#mandate-specification) • [Proposal Lifecycle](#proposal-lifecycle) • [Threat Model](#threat-model) • [Trust Assumptions](#trust-assumptions) • [Local](#local)
 
-**Chain:** NEAR (testnet) • **Targets:** Base (EVM) & Solana • **Policy enforcement:** On-chain contract • **Status:** policy layer live on testnet, cross-chain signing in progress
+**Chain:** NEAR (testnet) • **Targets:** Base (EVM) now, Solana planned • **Policy enforcement:** On-chain contract • **Status:** policy layer live on testnet, Base signing code complete and awaiting a live run
 
 </div>
 
@@ -16,7 +16,7 @@ An AI agent that holds a private key is one prompt injection away from an empty 
 
 **Bridle removes the private key while preserving the autonomy.** 
 
-The owner defines a spending mandate once and signs it on NEAR. The agent receives zero keys and never signs transactions. When the agent needs to pay for an API, compute, or an external tool, it provides only four high-level parameters. The Bridle contract verifies policy limits. The design is for the contract to build the destination transaction bytes and ask NEAR Chain Signatures to sign them, so the agent never touches calldata. That signing step is being connected now; see [Status](#status-what-works-today).
+The owner defines a spending mandate once and signs it on NEAR. The agent receives zero keys and never signs transactions. When the agent needs to pay for an API, compute, or an external tool, it provides only four high-level parameters. The Bridle contract verifies policy limits. The contract builds the destination transaction bytes and asks NEAR Chain Signatures to sign them, so neither the agent nor the executor ever touches calldata. Base is built; Solana is not. See [Status](#status-what-works-today).
 
 ---
 
@@ -50,10 +50,11 @@ The contract is the single source of truth. Every spending proposal passes throu
 | Agent proposals (`propose_payment`) and blocked-with-reason records | Working on NEAR testnet |
 | Web app: sentence-based mandate builder, live feed, watcher view | Working, reads the contract directly over RPC |
 | MCP server for agents (read limits, dry-run a payment, propose) | Working, tested against a mock chain |
-| **Cross-chain signing (Base, then Solana) through NEAR Chain Signatures** | **In progress.** Today `execute` marks a proposal `Signing` and emits a `ready_to_sign` event. No funds move yet. |
+| Base USDC transfer through NEAR Chain Signatures | Code complete: the contract builds the EIP-1559 transfer, asks `v1.signer-prod.testnet` to sign it, and the [executor](executor/README.md) broadcasts it. Verified offline (bytes checked against viem, addresses against chainsig.js). **Not yet run end to end on testnet.** |
+| Solana signing (Ed25519) | Not built |
 | NEAR Intents | Not used |
 
-Nothing in this repository moves real money. The demo shows the policy layer deciding; it does not show a completed on-chain transfer.
+Everything targets testnets. Nothing here moves real money.
 
 ## Try it
 
@@ -64,6 +65,7 @@ You need Node 20+ and Rust (for the contract tests).
 3. `npm run test:sentence` runs the parser checks.
 4. `cd contract && cargo test` runs the policy tests (caps, allowlist, window, flags and slashing, loosening, revoke).
 5. `cd mcp && npm install && npm test` runs the agent tool tests, including a check that no owner actions are exposed.
+6. `cd executor && npm install && npm test` runs the signing-flow tests. To send a real Base Sepolia transfer, follow [executor/README.md](executor/README.md).
 
 To run against a deployed contract, set `NEXT_PUBLIC_BRIDLE_CONTRACT` (see [contract/README.md](contract/README.md)).
 
@@ -189,6 +191,7 @@ Because the adapter on NEAR builds the destination calldata directly, prompt-inj
 ├── lib/                   # Contract client (near.ts), config, types, sentence parser (sentence.ts)
 ├── contract/              # NEAR smart contract (Rust, near-sdk) with unit tests and deploy script
 ├── mcp/                   # MCP server for agents: read limits, check a payment, propose one
+├── executor/              # Gets a Base payment signed via Chain Signatures, broadcasts it, reports it
 ├── public/                # llms.txt, agents.md, agent skill file, brand assets
 ├── scripts/               # Parser tests
 └── SPEC.txt               # Technical specification and economics
