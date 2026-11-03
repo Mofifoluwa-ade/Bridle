@@ -254,20 +254,22 @@ export function Toast({
   open,
   onClose,
   title = "Saved",
+  tone = "success",
   children,
 }: {
   open: boolean;
   onClose?: () => void;
   title?: string;
+  tone?: "success" | "error";
   children: ReactNode;
 }) {
   if (!open) return null;
   return (
     <div
       role="status"
-      className="fixed top-5 right-5 sm:top-6 sm:right-7 z-50 flex items-start gap-3 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 pr-11 shadow-2xl animate-slide-in text-ink dark:text-white transition-all max-w-sm sm:max-w-md pointer-events-auto"
+      className="fixed bottom-5 right-5 sm:bottom-6 sm:right-7 z-50 flex items-start gap-3 rounded-xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3.5 pr-10 shadow-lg animate-slide-in text-ink dark:text-white transition-all max-w-[min(22rem,calc(100vw-2.5rem))] pointer-events-auto"
     >
-      <div className="flex-none mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4]">
+      <div className={`flex-none mt-0.5 flex h-5 w-5 items-center justify-center rounded-full ${tone === "error" ? "bg-paper dark:bg-dark-card-hover text-mute dark:text-dark-mute" : "bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4]"}`}>
         <svg
           width="14"
           height="14"
@@ -279,7 +281,7 @@ export function Toast({
           strokeLinejoin="round"
           aria-hidden="true"
         >
-          <polyline points="20 6 9 17 4 12" />
+          {tone === "error" ? <path d="M12 8v4m0 4h.01" /> : <polyline points="20 6 9 17 4 12" />}
         </svg>
       </div>
       <div className="min-w-0 flex-1">
