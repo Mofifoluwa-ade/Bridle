@@ -736,10 +736,10 @@ function Form() {
           </>
         )}
 
-        {connectionError && (
-          <Notice tone="bad" title="Wallet connection failed">
-            {connectionError} Close any open wallet prompt, then try connecting again. If it persists, reload this page and reconnect.
-          </Notice>
+        {connectionError && !accountId && (
+          <p role="status" className="text-right text-xs text-dim dark:text-dark-dim">
+            Couldn't connect to your wallet. Try again.
+          </p>
         )}
         {busy && (
           <Notice tone="warn" title="Waiting for wallet approval">
