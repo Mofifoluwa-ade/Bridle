@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { MandateCard } from "@/components/app/MandateCard";
 import { ProposalRow } from "@/components/app/ProposalRow";
 import {
   Card,
@@ -310,54 +309,50 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="mt-3.5 space-y-3">
-              {displayMandates.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-line dark:border-dark-border p-6 text-center text-xs text-mute dark:text-dark-mute">
-                  {!accountId ? (
-                    <div className="space-y-2 py-3 max-w-xs mx-auto">
-                      <p className="font-semibold text-ink dark:text-white text-[13px]">
-                        Spending rules
-                      </p>
-                      <p className="text-mute dark:text-dark-mute text-xs leading-relaxed">
-                        Connect your NEAR testnet account to view active rules, daily limits, and approved recipients for your agents.
-                      </p>
-                      <div className="pt-2">
-                        <Link
-                          href="/app/mandates/new"
-                          className="inline-flex items-center gap-1 font-semibold text-accent dark:text-[#46D9A4] hover:underline text-xs"
-                        >
-                          Preview rule builder →
-                        </Link>
-                      </div>
-                    </div>
-                  ) : liveMandates.loading ? (
-                    "Loading spending rules…"
-                  ) : liveMandates.error ? (
-                    "Spending rules could not be loaded. See the error above."
-                  ) : (
-                    <>
-                      <p>No spending rules found for {accountId} yet.</p>
-                      {isContractConfigured && (
-                        <div className="mt-3">
-                          <Link className="font-semibold text-accent dark:text-[#46D9A4] hover:underline" href="/app/mandates/new">
-                            Create your first spending rule →
-                          </Link>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              ) : (
-                displayMandates.map((m) => (
-                  <MandateCard
-                    key={m.id}
-                    m={m}
-                    now={now}
-                    viewer={accountId || m.owner}
-                    compact
-                  />
-                ))
-              )}
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-line dark:border-dark-border bg-paper/60 dark:bg-dark-bg/50 p-3.5">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">Total rules</p>
+                <p className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums text-ink dark:text-white">
+                  {liveMandates.loading ? "—" : displayMandates.length}
+                </p>
+                <p className="mt-0.5 text-[11px] text-mute dark:text-dark-mute">Created for this wallet</p>
+              </div>
+              <div className="rounded-xl border border-line dark:border-dark-border bg-paper/60 dark:bg-dark-bg/50 p-3.5">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">Active</p>
+                <p className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums text-accent dark:text-[#46D9A4]">
+                  {liveMandates.loading ? "—" : activeMandates.length}
+                </p>
+                <p className="mt-0.5 text-[11px] text-mute dark:text-dark-mute">Currently enabled</p>
+              </div>
+              <div className="rounded-xl border border-line dark:border-dark-border bg-paper/60 dark:bg-dark-bg/50 p-3.5">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">Needs deposit</p>
+                <p className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums text-ink dark:text-white">
+                  {liveMandates.loading ? "—" : needsDepositMandates.length}
+                </p>
+                <p className="mt-0.5 text-[11px] text-mute dark:text-dark-mute">Awaiting agent bond</p>
+              </div>
+              <div className="rounded-xl border border-line dark:border-dark-border bg-paper/60 dark:bg-dark-bg/50 p-3.5">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">Daily allowance</p>
+                <p className="mt-1.5 text-lg font-semibold tracking-tight tabular-nums text-ink dark:text-white">
+                  {usdc(cap)}
+                </p>
+                <p className="mt-0.5 text-[11px] text-mute dark:text-dark-mute">Combined active limits</p>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-mute dark:text-dark-mute">
+              <span>
+                {liveMandates.loading
+                  ? "Updating rule summary…"
+                  : liveMandates.error
+                    ? "Rule summary may be out of date."
+                    : displayMandates.length === 0
+                      ? "No spending rules created yet."
+                      : `${readyMandates.length} funded · ${needsDepositMandates.length} awaiting deposit`}
+              </span>
+              <Link href="/app/mandates" className="shrink-0 font-semibold text-accent dark:text-[#46D9A4] hover:underline">
+                Manage rules →
+              </Link>
+            </div>
             </div>
           </div>
         </section>
