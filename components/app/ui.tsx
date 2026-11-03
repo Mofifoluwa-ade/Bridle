@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { CONFIG } from "@/lib/config";
 import { shortAddr } from "@/lib/format";
 import type { ProposalStatus } from "@/lib/types";
@@ -263,11 +264,18 @@ export function Toast({
   tone?: "success" | "error";
   children: ReactNode;
 }) {
-  if (!open) return null;
-  return (
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!open || !mounted) return null;
+
+  return createPortal(
     <div
       role="status"
-      className="fixed bottom-5 right-5 sm:bottom-6 sm:right-7 z-50 flex items-start gap-3 rounded-xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3.5 pr-10 shadow-lg animate-slide-in text-ink dark:text-white transition-all max-w-[min(22rem,calc(100vw-2.5rem))] pointer-events-auto"
+      className="fixed bottom-5 right-5 sm:bottom-6 sm:right-7 z-[9999] flex items-start gap-3 rounded-xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3.5 pr-10 shadow-lg animate-slide-in text-ink dark:text-white transition-all max-w-[min(22rem,calc(100vw-2.5rem))] pointer-events-auto"
     >
       <div className={`flex-none mt-0.5 flex h-5 w-5 items-center justify-center rounded-full ${tone === "error" ? "bg-paper dark:bg-dark-card-hover text-mute dark:text-dark-mute" : "bg-accent-tint dark:bg-accent-tint/15 text-accent dark:text-[#46D9A4]"}`}>
         <svg
@@ -304,7 +312,8 @@ export function Toast({
           ✕
         </button>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
