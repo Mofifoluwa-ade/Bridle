@@ -1,4 +1,6 @@
-import { Container, Eyebrow, PrimaryButton, SecondaryButton } from "./Container";
+import { AGENT_PROMPT } from "@/lib/agentPrompt";
+import { CopyPromptButton } from "./CopyButton";
+import { Container, Eyebrow, SecondaryButton } from "./Container";
 import { MandateCard } from "./MandateCard";
 
 export function Hero() {
@@ -17,13 +19,17 @@ export function Hero() {
             key. You set the limits once, and a contract enforces them.
           </p>
           <div className="mt-7 sm:mt-9 flex flex-wrap gap-3">
-            <PrimaryButton href="/app" large>
-              Open app
-            </PrimaryButton>
-            <SecondaryButton href="#how">Read how it works</SecondaryButton>
+            <CopyPromptButton text={AGENT_PROMPT} label="Copy agent prompt" />
+            <SecondaryButton href="/app">Open app</SecondaryButton>
           </div>
+          <p className="mt-4 max-w-[480px] text-[14px] leading-[1.6] text-mute dark:text-dark-mute">
+            Paste it into Claude, Cursor or any agent. It tells the agent how to work inside your limits.{" "}
+            <a href="/mcp" className="font-medium text-ink underline underline-offset-4 decoration-rule hover:decoration-current dark:text-white dark:decoration-dark-border">
+              See what it sets up
+            </a>
+          </p>
           <p className="mt-6 sm:mt-7 font-mono text-xs text-mute dark:text-dark-mute">
-            Built on NEAR Chain Signatures and Intents
+            Built on NEAR · Signs through NEAR Chain Signatures
           </p>
         </div>
 

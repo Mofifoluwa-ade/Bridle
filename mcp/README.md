@@ -51,7 +51,7 @@ Tools take decimal USDC (`18.50`). The contract takes smallest units (`"18500000
 
 ## Honest limits
 
-- Cross-chain signing is not connected, so a cleared proposal does not move funds. The tools say "cleared", never "paid".
+- Base signing is built but not yet verified end to end, and Solana is not built, so the tools say "cleared", never "paid".
 - Tested against a mock NEAR RPC, including a signed `propose_payment`. Not yet run against a live testnet contract with a real agent key.
 - Not published to npm. Check the package name before publishing.
 
