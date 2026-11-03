@@ -736,11 +736,7 @@ function Form() {
           </>
         )}
 
-        {connectionError && !accountId && (
-          <p role="status" className="text-right text-xs text-dim dark:text-dark-dim">
-            Couldn't connect to your wallet. Try again.
-          </p>
-        )}
+}
         {busy && (
           <Notice tone="warn" title="Waiting for wallet approval">
             Bridle has sent the transaction request to your connected wallet. Approve or reject it there; keep this page open while the wallet responds.
