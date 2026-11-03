@@ -54,7 +54,7 @@ export function Faq() {
     <Container className="pb-10 pt-16 sm:pt-[104px]">
       <section id="questions" aria-labelledby="questions-title">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-        <Eyebrow>Questions</Eyebrow>
+        <Eyebrow>FAQ</Eyebrow>
         <h2
           id="questions-title"
           className="max-w-[720px] text-[clamp(28px,4.2vw,46px)] font-semibold leading-[1.08] tracking-heading text-ink dark:text-white"
