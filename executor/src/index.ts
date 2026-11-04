@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 // Bridle executor. Commands:
 //   address <mandateId>   print the Base address the signer controls for a mandate (fund this)
+//   doctor <mandateId>    check everything the first run depends on and say what to fix
 //   once                  process every proposal that is waiting for a signature, then exit
 //   run                   same, forever
 // It can only choose a nonce and fees. The contract builds the payment, and a signature is only
 // broadcast if it recovers to the mandate's own derived address.
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, parseAbi } from "viem";
 import { baseSepolia } from "viem/chains";
 import { loadConfig, type Config } from "./config.js";
+import { doctor, render, type DoctorIO } from "./doctor.js";
 import { mandateAddress } from "./derive.js";
 import { call, view } from "./near.js";
 import { processProposal, type Deps, type Fees } from "./process.js";
@@ -106,6 +108,32 @@ async function main() {
     console.log(mandateAddress(cfg.network, cfg.contractId, arg));
     return;
   }
+  if (cmd === "doctor") {
+    if (!arg) throw new Error("usage: doctor <mandateId>");
+    const client = createPublicClient({ chain: baseSepolia, transport: http(cfg.baseRpc) });
+    const erc20 = parseAbi(["function balanceOf(address) view returns (uint256)"]);
+    const io: DoctorIO = {
+      view: (m, a) => view(cfg, m, a),
+      async nearBalance(id) {
+        const res = await fetch(cfg.nearRpc, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: "d", method: "query", params: { request_type: "view_account", finality: "optimistic", account_id: id } }),
+        });
+        const body: any = await res.json();
+        return body.result?.amount ? BigInt(body.result.amount) : null;
+      },
+      baseChainId: () => client.getChainId(),
+      baseEth: (address) => client.getBalance({ address }),
+      baseUsdc: (address) =>
+        client.readContract({ address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", abi: erc20, functionName: "balanceOf", args: [address] }),
+      nowNs: () => BigInt(Date.now()) * 1_000_000n,
+    };
+    const checks = await doctor(cfg, Number(arg), io);
+    console.log(render(checks));
+    if (checks.some((c) => c.level === "fail")) process.exit(1);
+    return;
+  }
   if (cmd === "once") return pass(cfg, makeDeps(cfg));
   if (cmd === "run") {
     const deps = makeDeps(cfg);
@@ -114,7 +142,7 @@ async function main() {
       await sleep(cfg.pollMs);
     }
   }
-  console.log("usage: bridle-executor address <mandateId> | once | run");
+  console.log("usage: bridle-executor address <mandateId> | doctor <mandateId> | once | run");
 }
 
 main().catch((e) => {
