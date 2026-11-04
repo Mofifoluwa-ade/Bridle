@@ -19,10 +19,14 @@ It is deliberately small. The contract is the authority, and this server is a th
 ## Run
 
 ```bash
-cd mcp
-npm install
-npm run build
-BRIDLE_CONTRACT=bridle.testnet node dist/index.js   # speaks MCP over stdio
+BRIDLE_CONTRACT=bridle.testnet npx -y bridle-mcp   # speaks MCP over stdio
+```
+
+Most clients launch it for you from their config (see below). From source:
+
+```bash
+cd mcp && npm install && npm run build
+BRIDLE_CONTRACT=bridle.testnet node dist/index.js
 ```
 
 | Variable | Needed | Meaning |
@@ -53,7 +57,6 @@ Tools take decimal USDC (`18.50`). The contract takes smallest units (`"18500000
 
 - Base signing is built but not yet verified end to end, and Solana is not built, so the tools say "cleared", never "paid".
 - Tested against a mock NEAR RPC, including a signed `propose_payment`. Not yet run against a live testnet contract with a real agent key.
-- Not published to npm. Check the package name before publishing.
 
 ## Develop
 

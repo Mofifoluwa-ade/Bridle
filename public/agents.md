@@ -11,12 +11,7 @@ Status: NEAR testnet, version 0.1. Base signing through NEAR Chain Signatures is
 
 ## Connect with MCP
 
-The MCP server lives in the repo under `mcp/`. It is not on npm yet.
-
-```bash
-git clone https://github.com/Mofifoluwa-ade/Bridle
-cd Bridle/mcp && npm install && npm run build
-```
+The MCP server is the npm package `bridle-mcp`. It needs Node 22.22.2 or newer (a dependency requires it) and runs locally over stdio. Nothing to install or build: your client runs it with `npx`.
 
 Claude Desktop, Cursor and most MCP clients take this shape:
 
@@ -24,8 +19,8 @@ Claude Desktop, Cursor and most MCP clients take this shape:
 {
   "mcpServers": {
     "bridle": {
-      "command": "node",
-      "args": ["/absolute/path/to/Bridle/mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "bridle-mcp"],
       "env": {
         "BRIDLE_CONTRACT": "bridle.testnet",
         "BRIDLE_AGENT_ACCOUNT": "your-agent.testnet",
@@ -36,7 +31,9 @@ Claude Desktop, Cursor and most MCP clients take this shape:
 }
 ```
 
-Claude Code: `claude mcp add bridle -e BRIDLE_CONTRACT=bridle.testnet -e BRIDLE_AGENT_ACCOUNT=your-agent.testnet -e BRIDLE_AGENT_KEY=ed25519:... -- node /absolute/path/to/Bridle/mcp/dist/index.js`
+Claude Code: `claude mcp add bridle -e BRIDLE_CONTRACT=bridle.testnet -e BRIDLE_AGENT_ACCOUNT=your-agent.testnet -e BRIDLE_AGENT_KEY=ed25519:... -- npx -y bridle-mcp`
+
+To run from source instead: `git clone https://github.com/Mofifoluwa-ade/Bridle`, then `cd Bridle/mcp && npm install && npm run build`, and point `command` at `node` with the path to `mcp/dist/index.js`.
 
 Without `BRIDLE_AGENT_ACCOUNT` and `BRIDLE_AGENT_KEY` the server is read-only: `list_mandates` (with an account id), `get_mandate`, `check_payment`, `get_proposal` and `list_proposals` still work.
 
