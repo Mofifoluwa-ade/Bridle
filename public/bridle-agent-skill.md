@@ -25,4 +25,4 @@ Your owner has signed a mandate: the chains, approved recipients and caps you ma
 
 ## Honest limits of this version
 
-Cross-chain signing is not connected yet. A proposal can be cleared by the mandate, but no funds move on Base or Solana. Report it as "cleared", never as "paid".
+Cross-chain signing is not verified end to end yet. Base signing is built but untested live, and Solana is not built. A proposal can be cleared by the mandate, but do not assume funds moved. Report it as "cleared", never as "paid".

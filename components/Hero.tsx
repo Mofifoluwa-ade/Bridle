@@ -20,10 +20,14 @@ export function Hero() {
             <PrimaryButton href="/app" large>
               Open app
             </PrimaryButton>
-            <SecondaryButton href="#how">Read how it works</SecondaryButton>
+            <SecondaryButton href="/mcp">Connect your agent</SecondaryButton>
           </div>
+          <p className="mt-4 max-w-[480px] text-[14px] leading-[1.6] text-mute dark:text-dark-mute">
+            Using Claude, Cursor or another agent? Set up the MCP server and copy the prompt that tells it how to
+            work inside your limits.
+          </p>
           <p className="mt-6 sm:mt-7 font-mono text-xs text-mute dark:text-dark-mute">
-            Built on NEAR Chain Signatures and Intents
+            Built on NEAR · Signs through NEAR Chain Signatures
           </p>
         </div>
 

@@ -14,9 +14,9 @@ export function Footer() {
           <Link href="/docs" className="hover:text-ink dark:hover:text-white transition-colors">
             Documentation
           </Link>
-          <a href="/agents.md" className="hover:text-ink dark:hover:text-white transition-colors">
+          <Link href="/mcp" className="hover:text-ink dark:hover:text-white transition-colors">
             For agents
-          </a>
+          </Link>
           <Link href="/app" className="hover:text-ink dark:hover:text-white transition-colors">
             Launch App
           </Link>
