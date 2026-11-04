@@ -28,14 +28,11 @@ const env = [
   ["BRIDLE_RPC", "No", "Defaults to https://test.rpc.fastnear.com."],
 ];
 
-const install = `git clone https://github.com/Mofifoluwa-ade/Bridle
-cd Bridle/mcp && npm install && npm run build`;
-
 const clientConfig = `{
   "mcpServers": {
     "bridle": {
-      "command": "node",
-      "args": ["/absolute/path/to/Bridle/mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "bridle-mcp"],
       "env": {
         "BRIDLE_CONTRACT": "bridle.testnet",
         "BRIDLE_AGENT_ACCOUNT": "your-agent.testnet",
@@ -49,7 +46,7 @@ const claudeCode = `claude mcp add bridle \\
   -e BRIDLE_CONTRACT=bridle.testnet \\
   -e BRIDLE_AGENT_ACCOUNT=your-agent.testnet \\
   -e BRIDLE_AGENT_KEY=ed25519:... \\
-  -- node /absolute/path/to/Bridle/mcp/dist/index.js`;
+  -- npx -y bridle-mcp`;
 
 const h2 = "text-[clamp(24px,3.4vw,38px)] font-semibold leading-[1.1] tracking-heading text-ink dark:text-white";
 const body = "text-[15px] sm:text-base leading-[1.65] text-mute dark:text-dark-mute";
@@ -88,15 +85,15 @@ export default function McpPage() {
         <section className="mt-16 sm:mt-20" aria-labelledby="install-title">
           <h2 id="install-title" className={h2}>Set it up</h2>
           <p className={`mt-4 max-w-[640px] ${body}`}>
-            The server runs locally over stdio. It is not on npm yet, so build it from the repo.
+            The server is the npm package <code className="font-mono text-[13px]">bridle-mcp</code>. It runs locally over stdio and needs Node 20 or newer. There is nothing to install or build: your client runs it with <code className="font-mono text-[13px]">npx</code>.
           </p>
           <div className="mt-6 grid gap-4">
-            <CodeBlock code={install} label="1. Build" />
-            <CodeBlock code={clientConfig} label="2. Claude Desktop, Cursor, most MCP clients" />
+            <CodeBlock code={clientConfig} label="Claude Desktop, Cursor, most MCP clients" />
             <CodeBlock code={claudeCode} label="Or: Claude Code" />
           </div>
           <p className={`mt-5 max-w-[640px] ${body}`}>
-            Without the agent account and key the server is read-only: everything but <code className="font-mono text-[13px]">propose_payment</code> still works.
+            Without the agent account and key the server is read-only: everything but <code className="font-mono text-[13px]">propose_payment</code> still works. To run from source instead, see the{" "}
+            <a className={link} href="https://github.com/Mofifoluwa-ade/Bridle/tree/main/mcp" target="_blank" rel="noopener noreferrer">repo</a>.
           </p>
           <div className="mt-8 overflow-x-auto">
             <table className="w-full min-w-[520px] border-collapse text-left text-[14.5px]">
