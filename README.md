@@ -58,7 +58,7 @@ Everything targets testnets. Nothing here moves real money.
 
 ## Try it
 
-You need Node 20+ and Rust (for the contract tests).
+You need Node 22.22.2+ and Rust (for the contract tests).
 
 1. `npm install && npm run dev`, then open http://localhost:3000.
 2. Open **/app/mandates/new** and type a rule such as `Up to $50 a day, to two approved recipients. Pause anything over $20.` Press **Apply to rules** and see the form fill in. Nothing is sent until you sign with a wallet.

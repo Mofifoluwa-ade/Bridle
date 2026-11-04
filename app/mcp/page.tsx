@@ -85,7 +85,7 @@ export default function McpPage() {
         <section className="mt-16 sm:mt-20" aria-labelledby="install-title">
           <h2 id="install-title" className={h2}>Set it up</h2>
           <p className={`mt-4 max-w-[640px] ${body}`}>
-            The server is the npm package <code className="font-mono text-[13px]">bridle-mcp</code>. It runs locally over stdio and needs Node 20 or newer. There is nothing to install or build: your client runs it with <code className="font-mono text-[13px]">npx</code>.
+            The server is the npm package <code className="font-mono text-[13px]">bridle-mcp</code>. It runs locally over stdio and needs Node 22.22.2 or newer. There is nothing to install or build: your client runs it with <code className="font-mono text-[13px]">npx</code>.
           </p>
           <div className="mt-6 grid gap-4">
             <CodeBlock code={clientConfig} label="Claude Desktop, Cursor, most MCP clients" />

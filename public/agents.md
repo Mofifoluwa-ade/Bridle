@@ -11,7 +11,7 @@ Status: NEAR testnet, version 0.1. Base signing through NEAR Chain Signatures is
 
 ## Connect with MCP
 
-The MCP server is the npm package `bridle-mcp`. It needs Node 20 or newer and runs locally over stdio. Nothing to install or build: your client runs it with `npx`.
+The MCP server is the npm package `bridle-mcp`. It needs Node 22.22.2 or newer (a dependency requires it) and runs locally over stdio. Nothing to install or build: your client runs it with `npx`.
 
 Claude Desktop, Cursor and most MCP clients take this shape:
 
