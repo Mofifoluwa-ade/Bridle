@@ -8,3 +8,4 @@ contract/target
 *.wasm
 mcp/dist
 executor/dist
+public/brand/
