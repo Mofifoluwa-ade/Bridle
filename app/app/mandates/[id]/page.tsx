@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { NeedsContract } from "@/components/app/Gate";
-import { Budget, MandateStatePill } from "../../../../components/app/MandateCard";
+import { MandatePolicySummary, MandateStatePill } from "../../../../components/app/MandateCard";
 import { ProposalRow } from "../../../../components/app/ProposalRow";
 import { TxBanner } from "@/components/app/TxBanner";
 import { Addr, Btn, Card, Empty, Field, Label, LinkBtn, NearAccountLink, Notice, PageHeader, Skeleton, monoInputCls } from "@/components/app/ui";
@@ -173,7 +173,7 @@ function Body({ id }: { id: number }) {
         <aside className="space-y-6 min-w-0">
           <Card className="p-5 sm:p-6">
             <Label>Daily budget</Label>
-            <div className="mt-4"><Budget m={mandate} /></div>
+            <MandatePolicySummary m={mandate} />
           </Card>
           {isOwner && mandate.state === "Active" && (
             <Card className="p-5 sm:p-6">

@@ -44,6 +44,39 @@ export function Budget({ m }: { m: Mandate }) {
   );
 }
 
+/** A plain-language view of the controls that decide whether a payment proceeds. */
+export function MandatePolicySummary({ m }: { m: Mandate }) {
+  const cap = BigInt(m.daily_cap);
+  const spent = BigInt(m.spent_today);
+  const remaining = cap > spent ? cap - spent : BigInt(0);
+  const pct = cap === BigInt(0) ? 0 : Number((spent * BigInt(1000)) / cap) / 10;
+
+  return (
+    <div className="mt-4 rounded-xl border border-line dark:border-dark-border bg-paper/60 dark:bg-dark-bg/50 p-3.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] font-medium text-mute dark:text-dark-mute">Available today</span>
+        <span className="font-mono text-[12px] font-semibold text-ink dark:text-white">{usdc(remaining)}</span>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white dark:bg-dark-card border border-line dark:border-dark-border" role="progressbar" aria-valuenow={Math.min(100, Math.round(pct))} aria-valuemin={0} aria-valuemax={100} aria-label="Daily allowance used">
+        <div className="h-full rounded-full bg-accent dark:bg-[#46D9A4]" style={{ width: `${Math.min(100, pct)}%` }} />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3 text-[11px]">
+        <div>
+          <p className="text-mute dark:text-dark-mute">Per payment</p>
+          <p className="mt-0.5 font-mono font-medium text-ink dark:text-white">Up to {usdc(m.per_tx_cap)}</p>
+        </div>
+        <div>
+          <p className="text-mute dark:text-dark-mute">Pause above</p>
+          <p className="mt-0.5 font-mono font-medium text-ink dark:text-white">Above {usdc(m.cooling_threshold)}</p>
+        </div>
+      </div>
+      <p className="mt-2 text-[10.5px] leading-relaxed text-mute dark:text-dark-mute">
+        Payments must go to an approved recipient. Requests above the threshold pause for the {duration(m.challenge_window_s)} review window.
+      </p>
+    </div>
+  );
+}
+
 export function MandateCard({
   m,
   now,
@@ -76,7 +109,7 @@ export function MandateCard({
         </div>
 
         <div className={compact ? "mt-3" : "mt-5"}>
-          <Budget m={m} />
+          <MandatePolicySummary m={m} />
         </div>
 
         <dl
@@ -84,18 +117,6 @@ export function MandateCard({
             compact ? "mt-3.5 pt-3 text-[12.5px]" : "mt-6 pt-4 text-[13.5px]"
           } grid grid-cols-3 gap-2 border-t border-line dark:border-dark-border`}
         >
-          <div>
-            <dt className="text-mute dark:text-dark-mute text-[11px]">Max per payment</dt>
-            <dd className="mt-0.5 font-mono font-medium text-ink dark:text-white">
-              {usdc(m.per_tx_cap)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-mute dark:text-dark-mute text-[11px]">Pause above</dt>
-            <dd className="mt-0.5 font-mono font-medium text-ink dark:text-white">
-              {usdc(m.cooling_threshold)}
-            </dd>
-          </div>
           <div>
             <dt className="text-mute dark:text-dark-mute text-[11px]">Review delay</dt>
             <dd className="mt-0.5 font-mono font-medium text-ink dark:text-white">

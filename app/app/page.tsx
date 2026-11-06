@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ProposalRow } from "@/components/app/ProposalRow";
 import {
   Card,
   Empty,
@@ -17,9 +16,10 @@ import { useWallet } from "@/components/app/WalletProvider";
 import { useMyMandates, useProposalsFor } from "@/hooks/useMyData";
 import { useNow } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
-import { timeAgo, usdc } from "@/lib/format";
+import { nsToMs, timeAgo, usdc } from "@/lib/format";
 import { useAccountBalance } from "@/hooks/useNearBalance";
 import type { Proposal, Mandate } from "@/lib/types";
+import { MandatePolicySummary } from "@/components/app/MandateCard";
 
 export default function Dashboard() {
   const { accountId, signIn, ready } = useWallet();
@@ -28,8 +28,15 @@ export default function Dashboard() {
   const liveMandates = useMyMandates();
   const liveProposals = useProposalsFor(liveMandates.data);
 
-  const [filter, setFilter] = useState<string>("All");
+  const [filter, setFilter] = useState<"All" | "Needs review" | "Allowed" | "Stopped">("All");
   const [notification, setNotification] = useState<string | null>(null);
+  const [showSetup, setShowSetup] = useState(true);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("bridle_hide_getting_started") === "true") setShowSetup(false);
+    } catch {}
+  }, []);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -41,32 +48,61 @@ export default function Dashboard() {
   const displayMandates: Mandate[] = liveMandates.data ?? [];
   const displayProposals: Proposal[] = liveProposals.data ?? [];
 
-  // Filtered proposals with smooth counts
+  // The contract stores current proposal outcomes, not a timestamp for each status change.
   const filteredProposals = displayProposals.filter((p) => {
     if (filter === "All") return true;
-    if (filter === "Approved")
+    if (filter === "Allowed")
       return p.status === "Ready" || p.status === "Signing" || p.status === "Executed";
-    if (filter === "Blocked")
-      return p.status === "Rejected" || p.status === "Cancelled";
-    if (filter === "Paused" || filter === "Waiting")
+    if (filter === "Stopped")
+      return p.status === "Rejected" || p.status === "Cancelled" || p.status === "Vetoed" || p.status === "Expired";
+    if (filter === "Needs review")
       return p.status === "Waiting" || p.status === "Flagged";
     return true;
   });
 
   const counts = {
     All: displayProposals.length,
-    Approved: displayProposals.filter(
+    Allowed: displayProposals.filter(
       (p) => p.status === "Ready" || p.status === "Signing" || p.status === "Executed"
     ).length,
-    Paused: displayProposals.filter(
+    "Needs review": displayProposals.filter(
       (p) => p.status === "Waiting" || p.status === "Flagged"
     ).length,
-    Blocked: displayProposals.filter(
-      (p) => p.status === "Rejected" || p.status === "Cancelled"
+    Stopped: displayProposals.filter(
+      (p) => p.status === "Rejected" || p.status === "Cancelled" || p.status === "Vetoed" || p.status === "Expired"
     ).length,
   };
 
+  const activityItems = [
+    ...(filter === "All"
+      ? displayMandates.map((m) => ({
+          id: `rule-${m.id}`,
+          timestamp: nsToMs(m.created_at),
+          href: `/app/mandates/${m.id}`,
+          title: "Spending rule created",
+          detail: `Rule #${m.id} for ${m.agent}`,
+          status: m.state === "Active" ? "Active rule" : "Stopped",
+          kind: "rule" as const,
+        }))
+      : []),
+    ...filteredProposals.map((p) => {
+      const mandate = displayMandates.find((m) => m.id === p.mandate_id);
+      const detail = p.reason || p.flag_reason || proposalStatusDetail(p.status);
+      return {
+        id: `proposal-${p.id}`,
+        timestamp: nsToMs(p.created_at),
+        href: `/app/proposals/${p.id}`,
+        title: `Payment request · ${usdc(p.amount)}`,
+        detail: `${p.chain} · to ${p.recipient}${mandate ? ` · Rule #${mandate.id}` : ""}${detail ? ` · ${detail}` : ""}`,
+        status: p.status,
+        kind: "proposal" as const,
+      };
+    }),
+  ].sort((a, b) => b.timestamp - a.timestamp);
+
   const activeMandates = displayMandates.filter((m) => m.state === "Active");
+  const hasAgent = displayMandates.some((m) => Boolean(m.agent));
+  const hasLimits = displayMandates.some((m) => BigInt(m.per_tx_cap) > BigInt(0) && BigInt(m.daily_cap) >= BigInt(m.per_tx_cap));
   const needsDepositMandates = activeMandates.filter(
     (m) => BigInt(m.bond_posted) < BigInt(m.bond)
   );
@@ -155,6 +191,25 @@ export default function Dashboard() {
         </div>
       )}
 
+      {showSetup && (!accountId || displayMandates.length === 0 || !hasAgent || !hasLimits) && (
+        <section className="rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 sm:p-5 shadow-sm" aria-labelledby="setup-title">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-accent dark:text-[#46D9A4]">Your first run</p>
+              <h2 id="setup-title" className="mt-1 text-base font-semibold text-ink dark:text-white">Get an agent ready to pay safely</h2>
+              <p className="mt-1 text-xs text-mute dark:text-dark-mute">A short checklist you can return to whenever you need it.</p>
+            </div>
+            <button type="button" onClick={() => { setShowSetup(false); try { localStorage.setItem("bridle_hide_getting_started", "true"); } catch {} }} className="text-xs text-mute hover:text-ink dark:hover:text-white">Dismiss</button>
+          </div>
+          <ol className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <SetupStep done={Boolean(accountId)} title="Connect wallet" href="#" action={accountId ? "Connected" : "Connect wallet"} onAction={!accountId ? signIn : undefined} />
+            <SetupStep done={displayMandates.length > 0} title="Create a mandate" href="/app/mandates/new" action="Create mandate" />
+            <SetupStep done={hasAgent} title="Assign your agent" href="/app/mandates/new" action="Choose an agent" />
+            <SetupStep done={hasLimits} title="Configure spending limits" href="/app/mandates/new" action="Set limits" />
+          </ol>
+        </section>
+      )}
+
       {/* Wallet overview */}
       <section className="overflow-hidden rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card shadow-sm">
         <div className="p-5 sm:p-7">
@@ -202,7 +257,7 @@ export default function Dashboard() {
                 <Link href="/app/agent" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line dark:border-dark-border px-3 py-2.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover transition-colors">
                   <span aria-hidden="true">↗</span> Test agent
                 </Link>
-                <button type="button" onClick={() => setFilter("Paused")} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line dark:border-dark-border px-3 py-2.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover transition-colors">
+                <button type="button" onClick={() => setFilter("Needs review")} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line dark:border-dark-border px-3 py-2.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover transition-colors">
                   <span aria-hidden="true">⌁</span> Review proposals
                   {mineToDecide.length > 0 && <span className="rounded-full bg-warn-tint px-1.5 py-0.5 text-[10px] text-warn">{mineToDecide.length}</span>}
                 </button>
@@ -260,7 +315,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Optional Slim Alert if any proposals require veto decision */}
+      {/* Review queue summary */}
       {mineToDecide.length > 0 && (
         <div className="rounded-xl border border-warn/30 bg-warn-tint/20 dark:bg-warn-tint/10 p-3 text-xs flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -271,7 +326,7 @@ export default function Dashboard() {
           </div>
           <button
             type="button"
-            onClick={() => setFilter("Paused")}
+            onClick={() => setFilter("Needs review")}
             className="font-medium text-warn underline text-xs hover:opacity-85"
           >
             Review paused payments →
@@ -339,6 +394,12 @@ export default function Dashboard() {
                 <p className="mt-0.5 text-[11px] text-mute dark:text-dark-mute">Combined active limits</p>
               </div>
             </div>
+            {displayMandates.slice(0, 2).map((m) => (
+              <div key={m.id} className="mt-3 rounded-xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3.5">
+                <Link href={`/app/mandates/${m.id}`} className="text-xs font-semibold text-ink dark:text-white hover:underline">Rule #{m.id} · {m.agent}</Link>
+                <MandatePolicySummary m={m} />
+              </div>
+            ))}
             <div className="mt-3 flex items-center justify-between gap-3 text-[11px] text-mute dark:text-dark-mute">
               <span>
                 {liveMandates.loading
@@ -353,6 +414,13 @@ export default function Dashboard() {
                 Manage rules →
               </Link>
             </div>
+            <Link href="/mcp" className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-accent/25 bg-accent-tint/20 dark:bg-accent-tint/10 px-3.5 py-3 group">
+              <span>
+                <span className="block text-xs font-semibold text-ink dark:text-white">Connect your AI agent with MCP</span>
+                <span className="mt-0.5 block text-[11px] text-mute dark:text-dark-mute">Setup steps, client config, and the six available tools</span>
+              </span>
+              <span className="text-sm text-accent dark:text-[#46D9A4] group-hover:translate-x-0.5 transition-transform" aria-hidden="true">→</span>
+            </Link>
             </div>
           </section>
 
@@ -363,16 +431,17 @@ export default function Dashboard() {
             <div className="flex flex-wrap items-center justify-between gap-2.5 pb-3.5 border-b border-line dark:border-dark-border">
               <div>
                 <span className="font-mono text-[10px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium">
-                  Live activity
+                  ACTIVITY TIMELINE
                 </span>
                 <h2 className="text-base sm:text-[17px] font-semibold tracking-[-0.01em] text-ink dark:text-white">
-                  Recent agent payments
+                  What happened
                 </h2>
+                <p className="mt-0.5 text-[10.5px] text-mute dark:text-dark-mute">Sorted by request time; each payment shows its current outcome.</p>
               </div>
 
               {/* Filter Pills with Count Badges */}
               <div className="flex items-center gap-1 p-0.5 rounded-full bg-paper dark:bg-dark-bg border border-line dark:border-dark-border text-xs overflow-x-auto max-w-full">
-                {(["All", "Approved", "Paused", "Blocked"] as const).map((tab) => {
+                {(["All", "Needs review", "Allowed", "Stopped"] as const).map((tab) => {
                   const isActive = filter === tab;
                   return (
                     <button
@@ -401,17 +470,17 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Proposals Scrollable List */}
+            {/* Chronological rule and payment activity */}
             <div className="max-h-[390px] overflow-y-auto divide-y divide-line dark:divide-dark-border -mx-4 sm:-mx-5 px-4 sm:px-5 scrollbar-thin">
-              {filteredProposals.length === 0 ? (
+              {activityItems.length === 0 ? (
                 <div className="py-14 text-center text-xs text-mute dark:text-dark-mute max-w-sm mx-auto px-4">
                   {!accountId ? (
                     <div className="space-y-1.5">
                       <p className="font-semibold text-ink dark:text-white text-[13px]">
-                        Live payment feed
+                        Activity will appear here
                       </p>
                       <p className="leading-relaxed">
-                        When your AI agents propose transactions to the contract, they stream here in real time with policy status badges and review actions.
+                        Connect your wallet to see spending rules and payment requests in one chronological view.
                       </p>
                     </div>
                   ) : liveProposals.loading ? (
@@ -419,18 +488,22 @@ export default function Dashboard() {
                   ) : liveProposals.error ? (
                     "Payments could not be loaded. See the error above."
                   ) : (
-                    "No payments requested yet."
+                    filter === "Needs review" ? "No payments need your review." : filter === "Allowed" ? "No allowed payments yet." : filter === "Stopped" ? "No stopped payments." : "No activity yet. Create a spending rule to get started."
                   )}
                 </div>
               ) : (
-                filteredProposals.map((p, index) => (
-                  <div
-                    key={`${filter}-${p.id}`}
-                    style={{ animationDelay: `${index * 30}ms` }}
-                    className="animate-fade-in"
-                  >
-                    <ProposalRow p={p} now={now} showMandate compact />
-                  </div>
+                activityItems.map((item, index) => (
+                  <Link key={item.id} href={item.href} style={{ animationDelay: `${index * 30}ms` }} className="group flex gap-3 py-3.5 animate-fade-in">
+                    <span className={`mt-1.5 h-2.5 w-2.5 flex-none rounded-full ${item.kind === "rule" ? "bg-accent dark:bg-[#46D9A4]" : item.status === "Waiting" || item.status === "Flagged" ? "bg-amber-500" : item.status === "Rejected" || item.status === "Cancelled" || item.status === "Vetoed" || item.status === "Expired" ? "bg-bad" : "bg-ink/60 dark:bg-white/60"}`} aria-hidden="true" />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                        <span className="text-xs font-semibold text-ink dark:text-white group-hover:underline">{item.title}</span>
+                        <span className="font-mono text-[10px] text-mute dark:text-dark-mute">{timeAgo(item.timestamp, now)}</span>
+                      </span>
+                      <span className="mt-1 block break-words text-[11px] leading-relaxed text-mute dark:text-dark-mute">{item.detail}</span>
+                      <span className="mt-1 inline-flex rounded-full border border-line dark:border-dark-border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-mute dark:text-dark-mute">{item.status}</span>
+                    </span>
+                  </Link>
                 ))
               )}
             </div>
@@ -440,4 +513,32 @@ export default function Dashboard() {
 
     </div>
   );
+}
+
+function SetupStep({ done, title, href, action, onAction }: { done: boolean; title: string; href: string; action: string; onAction?: () => void }) {
+  return (
+    <li className="flex min-w-0 items-center gap-2.5 rounded-xl border border-line dark:border-dark-border bg-paper/50 dark:bg-dark-bg/40 p-3">
+      <span className={`flex h-5 w-5 flex-none items-center justify-center rounded-full text-[10px] font-bold ${done ? "bg-accent text-white" : "border border-line dark:border-dark-border text-mute dark:text-dark-mute"}`} aria-label={done ? "Complete" : "Not complete"}>{done ? "✓" : ""}</span>
+      <span className="min-w-0 flex-1">
+        <span className={`block truncate text-[11px] font-semibold ${done ? "text-mute dark:text-dark-mute line-through" : "text-ink dark:text-white"}`}>{title}</span>
+        {done ? <span className="mt-0.5 block text-[10px] text-mute dark:text-dark-mute">Done</span> : onAction ? (
+          <button type="button" onClick={onAction} className="mt-0.5 text-[10px] font-semibold text-accent dark:text-[#46D9A4] hover:underline">{action} →</button>
+        ) : <Link href={href} className="mt-0.5 inline-block text-[10px] font-semibold text-accent dark:text-[#46D9A4] hover:underline">{action} →</Link>}
+      </span>
+    </li>
+  );
+}
+
+function proposalStatusDetail(status: Proposal["status"]): string {
+  switch (status) {
+    case "Waiting": return "Paused for the owner review window";
+    case "Flagged": return "Flagged for community review";
+    case "Ready": return "Cleared by the mandate rules";
+    case "Signing": return "Execution is in progress";
+    case "Executed": return "Execution completed";
+    case "Rejected": return "Stopped by a mandate rule";
+    case "Cancelled": return "Cancelled";
+    case "Vetoed": return "Vetoed by the owner";
+    case "Expired": return "Review window expired";
+  }
 }
