@@ -123,6 +123,17 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
   },
+  {
+    href: "/mcp",
+    label: "Connect an agent",
+    id: "tour-nav-mcp",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M8 8h8v8H8z" />
+        <path d="M12 3v5M12 16v5M3 12h5M16 12h5M5.6 5.6l3.5 3.5M14.9 14.9l3.5 3.5M18.4 5.6l-3.5 3.5M9.1 14.9l-3.5 3.5" />
+      </svg>
+    ),
+  },
 ];
 
 function WalletButton() {
@@ -219,19 +230,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  // Only auto-open Getting Started guide on the first visit to /app if never dismissed
-  useEffect(() => {
-    if (path !== "/app") return;
-    try {
-      const hidden = localStorage.getItem("bridle_hide_getting_started");
-      const sessionDismissed = sessionStorage.getItem("bridle_guide_dismissed_session");
-      if (!hidden && !sessionDismissed) {
-        openGuideModal();
-      }
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isSubActive = (sub: SubNavItem) =>

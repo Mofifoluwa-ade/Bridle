@@ -63,7 +63,7 @@ export default function McpPage() {
         </h1>
         <p className={`mt-5 max-w-[640px] text-base sm:text-lg ${body}`}>
           The Bridle MCP server lets an agent read its limits, check a payment before sending it, and propose it. The
-          contract decides. The agent never holds a spend key.
+          contract decides. Its restricted function-call key can submit proposals to Bridle, but cannot transfer funds.
         </p>
         <div className="mt-7 flex flex-wrap items-center gap-4">
           <CopyPromptButton text={AGENT_PROMPT} label="Copy agent prompt" />
@@ -71,6 +71,20 @@ export default function McpPage() {
             Read it as markdown
           </a>
         </div>
+
+        <nav aria-label="MCP setup guide" className="mt-10 grid gap-3 sm:grid-cols-3">
+          {[
+            ["01", "Install the server", "See the client configuration", "#install-title"],
+            ["02", "Choose agent tools", "Understand what each tool can do", "#tools-title"],
+            ["03", "Review the guardrails", "See what keys and limits allow", "#limits-title"],
+          ].map(([number, title, description, href]) => (
+            <a key={number} href={href} className="rounded-2xl border border-line dark:border-dark-border bg-white/70 dark:bg-dark-card/70 p-4 transition-colors hover:border-accent/50">
+              <span className="font-mono text-[10px] text-accent dark:text-[#46D9A4]">{number}</span>
+              <span className="mt-2 block text-sm font-semibold text-ink dark:text-white">{title}</span>
+              <span className="mt-1 block text-xs text-mute dark:text-dark-mute">{description} →</span>
+            </a>
+          ))}
+        </nav>
 
         <section className="mt-16 sm:mt-20" aria-labelledby="prompt-title">
           <h2 id="prompt-title" className={h2}>What the prompt says</h2>
