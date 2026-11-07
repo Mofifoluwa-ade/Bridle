@@ -1,6 +1,6 @@
 {
   "name": "bridle-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for Bridle: lets an AI agent read its spending rules, check a payment, and propose one. Owner actions are deliberately not exposed.",
   "license": "MIT",
   "repository": {
@@ -33,7 +33,7 @@
     "skill"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22.22.2"
   },
   "publishConfig": {
     "access": "public"
