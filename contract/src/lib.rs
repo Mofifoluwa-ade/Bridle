@@ -44,6 +44,8 @@ const CALLBACK_GAS: Gas = Gas::from_tgas(15);
 pub enum Chain {
     Base,
     Solana,
+    /// Native NEAR, paid out by this contract from the mandate's NEAR balance. No signer needed.
+    Near,
 }
 
 #[near(serializers = [json, borsh])]
@@ -190,6 +192,7 @@ enum Key {
     Mandates,
     Proposals,
     Signing,
+    NearBalances,
 }
 
 #[near(contract_state)]
@@ -201,16 +204,19 @@ pub struct Bridle {
     mandates: IterableMap<u64, Mandate>,
     proposals: IterableMap<u64, Proposal>,
     signing: IterableMap<u64, SigningRecord>,
+    /// NEAR (yoctoNEAR) the owner has funded per mandate, for native NEAR payments.
+    near_balances: IterableMap<u64, u128>,
 }
 
-/// State layout before the signing map existed. Used only by `migrate`.
+/// State layout before native NEAR payments existed. Used only by `migrate`.
 #[near(serializers = [borsh])]
-struct BridleV1 {
+struct BridleV2 {
     executor: AccountId,
     next_mandate: u64,
     next_proposal: u64,
     mandates: IterableMap<u64, Mandate>,
     proposals: IterableMap<u64, Proposal>,
+    signing: IterableMap<u64, SigningRecord>,
 }
 
 /// Each mandate gets its own Base address: the signer derives it from this contract's account
@@ -237,22 +243,24 @@ impl Bridle {
             mandates: IterableMap::new(Key::Mandates),
             proposals: IterableMap::new(Key::Proposals),
             signing: IterableMap::new(Key::Signing),
+            near_balances: IterableMap::new(Key::NearBalances),
         }
     }
 
-    /// Upgrade a contract deployed before Chain Signatures support. Keeps every mandate and
-    /// proposal. Call once, by the contract account, right after deploying the new code.
+    /// Upgrade a contract deployed before native NEAR payments. Keeps every mandate, proposal
+    /// and signing record. Call once, by the contract account, right after deploying the new code.
     #[private]
     #[init(ignore_state)]
     pub fn migrate() -> Self {
-        let old: BridleV1 = env::state_read().unwrap_or_else(|| env::panic_str("no old state"));
+        let old: BridleV2 = env::state_read().unwrap_or_else(|| env::panic_str("no old state"));
         Self {
             executor: old.executor,
             next_mandate: old.next_mandate,
             next_proposal: old.next_proposal,
             mandates: old.mandates,
             proposals: old.proposals,
-            signing: IterableMap::new(Key::Signing),
+            signing: old.signing,
+            near_balances: IterableMap::new(Key::NearBalances),
         }
     }
 
@@ -408,6 +416,32 @@ impl Bridle {
         event("limits_applied", format!("{{\"id\":{}}}", mandate_id));
     }
 
+    // ───────────── owner: native NEAR balance ─────────────
+
+    /// The owner tops up the NEAR a mandate may pay out. Only the owner can fund, and only the
+    /// owner can take it back. The agent never touches this balance.
+    #[payable]
+    pub fn fund_mandate(&mut self, mandate_id: u64) {
+        let m = self.mandate(mandate_id);
+        require!(env::predecessor_account_id() == m.owner, "only the owner can fund");
+        let amt = env::attached_deposit().as_yoctonear();
+        require!(amt > 0, "attach NEAR to fund the mandate");
+        let bal = self.near_balances.get(&mandate_id).copied().unwrap_or(0);
+        self.near_balances.insert(mandate_id, bal + amt);
+        event("near_funded", format!("{{\"mandate\":{},\"amount\":\"{}\"}}", mandate_id, amt));
+    }
+
+    /// The owner takes unspent NEAR back, any time, even after a revoke.
+    pub fn withdraw_near(&mut self, mandate_id: u64, amount: U128) -> Promise {
+        let m = self.mandate(mandate_id);
+        require!(env::predecessor_account_id() == m.owner, "only the owner can withdraw");
+        let bal = self.near_balances.get(&mandate_id).copied().unwrap_or(0);
+        require!(amount.0 > 0 && amount.0 <= bal, "amount exceeds the mandate's NEAR balance");
+        self.near_balances.insert(mandate_id, bal - amount.0);
+        event("near_withdrawn", format!("{{\"mandate\":{},\"amount\":\"{}\"}}", mandate_id, amount.0));
+        Promise::new(m.owner).transfer(NearToken::from_yoctonear(amount.0))
+    }
+
     // ───────────── agent ─────────────
 
     /// The agent posts its bond. Required before it can propose.
@@ -446,6 +480,10 @@ impl Bridle {
             Some("Chain is not allowed by the mandate".into())
         } else if !m.assets.contains(&asset) {
             Some("Asset is not allowed by the mandate".into())
+        } else if chain == Chain::Near && asset != "NEAR" {
+            Some("Native NEAR payments use the NEAR asset".into())
+        } else if chain == Chain::Near && recipient.parse::<AccountId>().is_err() {
+            Some("Recipient is not a valid NEAR account".into())
         } else if !m.allowlist.iter().any(|r| r.chain == chain && r.address == recipient) {
             Some("Recipient is not on the allowlist".into())
         } else if amount.0 == 0 {
@@ -626,6 +664,21 @@ impl Bridle {
             }
             _ => env::panic_str("proposal cannot be executed"),
         }
+        if p.chain == Chain::Near {
+            // Native NEAR: no signer. Take the amount from the mandate's balance and pay out now;
+            // `on_near_paid` finishes the proposal or puts the money back.
+            let bal = self.near_balances.get(&m.id).copied().unwrap_or(0);
+            require!(bal >= p.amount.0, "mandate's NEAR balance is too low; the owner must fund it");
+            self.near_balances.insert(m.id, bal - p.amount.0);
+            p.status = ProposalStatus::Signing;
+            self.proposals.insert(proposal_id, p.clone());
+            let to: AccountId = p.recipient.parse().unwrap_or_else(|_| env::panic_str("bad recipient"));
+            Promise::new(to)
+                .transfer(NearToken::from_yoctonear(p.amount.0))
+                .then(Self::ext(env::current_account_id()).with_static_gas(CALLBACK_GAS).on_near_paid(proposal_id))
+                .detach();
+            return;
+        }
         p.status = ProposalStatus::Signing;
         self.proposals.insert(proposal_id, p.clone());
         event(
@@ -715,6 +768,27 @@ impl Bridle {
     }
 
     #[private]
+    pub fn on_near_paid(&mut self, proposal_id: u64, #[callback_result] result: Result<(), PromiseError>) {
+        let mut p = self.proposal(proposal_id);
+        if p.status != ProposalStatus::Signing || p.chain != Chain::Near {
+            return;
+        }
+        if result.is_ok() {
+            p.status = ProposalStatus::Executed;
+            event("executed", format!("{{\"id\":{}}}", proposal_id));
+        } else {
+            // The transfer failed (for example the account does not exist). Put the money back
+            // and let the proposal be executed again.
+            let bal = self.near_balances.get(&p.mandate_id).copied().unwrap_or(0);
+            self.near_balances.insert(p.mandate_id, bal + p.amount.0);
+            p.status = ProposalStatus::Ready;
+            p.reason = Some("NEAR transfer failed; nothing moved".into());
+            event("near_transfer_failed", format!("{{\"id\":{}}}", proposal_id));
+        }
+        self.proposals.insert(proposal_id, p);
+    }
+
+    #[private]
     pub fn on_signed(
         &mut self,
         proposal_id: u64,
@@ -745,6 +819,7 @@ impl Bridle {
         require!(env::predecessor_account_id() == self.executor, "only the executor can report");
         let mut p = self.proposal(proposal_id);
         require!(p.status == ProposalStatus::Signing, "proposal is not being signed");
+        require!(p.chain != Chain::Near, "native NEAR payments settle on-chain");
         p.status = ProposalStatus::Executed;
         p.tx_hash = Some(tx_hash);
         self.proposals.insert(proposal_id, p);
@@ -756,6 +831,7 @@ impl Bridle {
         require!(env::predecessor_account_id() == self.executor, "only the executor can report");
         let mut p = self.proposal(proposal_id);
         require!(p.status == ProposalStatus::Signing, "proposal is not being signed");
+        require!(p.chain != Chain::Near, "native NEAR payments settle on-chain");
         let mut m = self.mandate(p.mandate_id);
         self.refund_budget(&mut m, &p);
         p.status = ProposalStatus::Cancelled;
@@ -770,6 +846,7 @@ impl Bridle {
     pub fn timeout_signing(&mut self, proposal_id: u64) {
         let mut p = self.proposal(proposal_id);
         require!(p.status == ProposalStatus::Signing, "proposal is not in signing state");
+        require!(p.chain != Chain::Near, "native NEAR payments settle on-chain");
         require!(
             !self.signing.contains_key(&proposal_id),
             "a signature exists; the executor must broadcast it and report"
@@ -795,6 +872,10 @@ impl Bridle {
     }
 
     /// The derivation path the MPC signer uses for this mandate's Base address.
+    pub fn get_near_balance(&self, mandate_id: u64) -> U128 {
+        U128(self.near_balances.get(&mandate_id).copied().unwrap_or(0))
+    }
+
     pub fn get_derivation_path(&self, mandate_id: u64) -> String {
         derivation_path(mandate_id)
     }
@@ -1188,6 +1269,122 @@ mod tests {
         assert_ne!(c.get_derivation_path(1), c.get_derivation_path(2));
     }
 
+    const ADE: &str = "ade.testnet";
+
+    /// owner signs a NEAR mandate (caps 5/8, threshold 3 NEAR) and funds it with 10 NEAR.
+    fn setup_near() -> (Bridle, u64) {
+        ctx("owner.testnet", 0, T0);
+        let mut c = Bridle::new(acct("exec.testnet"));
+        let m = c.create_mandate(
+            acct("agent.testnet"),
+            vec![Chain::Near],
+            vec!["near".into()],
+            vec![Recipient { chain: Chain::Near, address: ADE.into() }],
+            U128(5 * NEAR),
+            U128(8 * NEAR),
+            U128(3 * NEAR),
+            600,
+            U128(NEAR),
+            7,
+        );
+        ctx("agent.testnet", NEAR, T0);
+        c.post_bond(m.id);
+        ctx("owner.testnet", 10 * NEAR, T0);
+        c.fund_mandate(m.id);
+        (c, m.id)
+    }
+    fn propose_near(c: &mut Bridle, id: u64, amt: u128, to: &str) -> Proposal {
+        ctx("agent.testnet", 0, T0);
+        c.propose_payment(id, Chain::Near, "NEAR".into(), U128(amt), to.into())
+    }
+
+    #[test]
+    fn near_payment_pays_from_the_mandate_balance() {
+        let (mut c, id) = setup_near();
+        let p = propose_near(&mut c, id, 2 * NEAR, ADE);
+        assert_eq!(p.status, ProposalStatus::Ready);
+        ctx("anyone.testnet", 0, T0);
+        c.execute(p.id);
+        assert_eq!(c.get_proposal(p.id).unwrap().status, ProposalStatus::Signing);
+        assert_eq!(c.get_near_balance(id).0, 8 * NEAR);
+        c.on_near_paid(p.id, Ok(()));
+        assert_eq!(c.get_proposal(p.id).unwrap().status, ProposalStatus::Executed);
+        assert_eq!(c.get_near_balance(id).0, 8 * NEAR);
+    }
+
+    #[test]
+    fn failed_near_transfer_puts_the_money_back() {
+        let (mut c, id) = setup_near();
+        let p = propose_near(&mut c, id, 2 * NEAR, ADE);
+        ctx("anyone.testnet", 0, T0);
+        c.execute(p.id);
+        c.on_near_paid(p.id, Err(PromiseError::Failed));
+        assert_eq!(c.get_near_balance(id).0, 10 * NEAR);
+        assert_eq!(c.get_proposal(p.id).unwrap().status, ProposalStatus::Ready);
+    }
+
+    #[test]
+    fn near_rules_still_apply() {
+        let (mut c, id) = setup_near();
+        let p = propose_near(&mut c, id, 2 * NEAR, "mallory.testnet");
+        assert_eq!(p.reason.as_deref(), Some("Recipient is not on the allowlist"));
+        let p = propose_near(&mut c, id, 6 * NEAR, ADE);
+        assert_eq!(p.reason.as_deref(), Some("Over the per-payment cap"));
+        let p = propose_near(&mut c, id, 4 * NEAR, ADE);
+        assert_eq!(p.status, ProposalStatus::Waiting);
+        let p = propose_near(&mut c, id, 4 * NEAR, "NOT A VALID ACCOUNT");
+        assert_eq!(p.reason.as_deref(), Some("Recipient is not a valid NEAR account"));
+        ctx("agent.testnet", 0, T0);
+        let p = c.propose_payment(id, Chain::Near, "USDC".into(), U128(NEAR), ADE.into());
+        assert_eq!(p.reason.as_deref(), Some("Asset is not allowed by the mandate"));
+    }
+
+    #[test]
+    #[should_panic(expected = "NEAR balance is too low")]
+    fn near_payment_needs_funds() {
+        let (mut c, id) = setup_near();
+        ctx("owner.testnet", 0, T0);
+        let _ = c.withdraw_near(id, U128(9 * NEAR + NEAR / 2));
+        let p = propose_near(&mut c, id, 2 * NEAR, ADE);
+        ctx("anyone.testnet", 0, T0);
+        c.execute(p.id);
+    }
+
+    #[test]
+    #[should_panic(expected = "only the owner can fund")]
+    fn only_the_owner_funds() {
+        let (mut c, id) = setup_near();
+        ctx("agent.testnet", NEAR, T0);
+        c.fund_mandate(id);
+    }
+
+    #[test]
+    #[should_panic(expected = "only the owner can withdraw")]
+    fn the_agent_cannot_withdraw_the_balance() {
+        let (mut c, id) = setup_near();
+        ctx("agent.testnet", 0, T0);
+        let _ = c.withdraw_near(id, U128(NEAR));
+    }
+
+    #[test]
+    fn owner_withdraws_unspent_near() {
+        let (mut c, id) = setup_near();
+        ctx("owner.testnet", 0, T0);
+        let _ = c.withdraw_near(id, U128(4 * NEAR));
+        assert_eq!(c.get_near_balance(id).0, 6 * NEAR);
+    }
+
+    #[test]
+    #[should_panic(expected = "settle on-chain")]
+    fn executor_cannot_report_on_a_near_payment() {
+        let (mut c, id) = setup_near();
+        let p = propose_near(&mut c, id, 2 * NEAR, ADE);
+        ctx("anyone.testnet", 0, T0);
+        c.execute(p.id);
+        ctx("exec.testnet", 0, T0);
+        c.report_execution(p.id, "0xabc".into());
+    }
+
     impl Bridle {
         fn clone_for_test(&self) -> Bridle {
             let mut c = Bridle::new(self.executor.clone());
@@ -1195,6 +1392,7 @@ mod tests {
             for p in self.proposals.values() { c.proposals.insert(p.id, p.clone()); }
             c.next_mandate = self.next_mandate;
             c.next_proposal = self.next_proposal;
+            for (k, v) in self.near_balances.iter() { c.near_balances.insert(*k, *v); }
             c
         }
     }
