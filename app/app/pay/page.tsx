@@ -7,6 +7,7 @@ import { TxBanner } from "@/components/app/TxBanner";
 import { Addr, Btn, Card, Label, LinkBtn, Notice, PageHeader, Skeleton } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
 import { useMyMandates } from "@/hooks/useMyData";
+import { api } from "@/lib/near";
 import { useNow } from "@/hooks/usePoll";
 import { formatNear, nsToMs, unitOfMandate } from "@/lib/format";
 import { parseRequest } from "@/lib/request";
@@ -42,9 +43,11 @@ function Body() {
   const sp = useSearchParams();
   const router = useRouter();
   const now = useNow(30_000);
-  const { accountId, call, signIn } = useWallet();
+  const { accountId, call, callBatch, signIn } = useWallet();
   const mandates = useMyMandates();
   const [busy, setBusy] = useState<number | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const req = parseRequest((k) => sp.get(k));
 
@@ -65,6 +68,55 @@ function Body() {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(null);
+    }
+  };
+
+  // One click: a one-off rule for this payee and amount, funded, proposed and paid, in ONE transaction.
+  // The ids are read first. If another rule or payment lands in between, the contract refuses the
+  // whole batch (a wrong id fails the owner check), so nothing half-happens and you can try again.
+  const payNow = async () => {
+    if (!accountId) return;
+    setPaying(true);
+    setErr(null);
+    try {
+      const c = await api.counts();
+      const mid = c.mandates + 1;
+      const pid = c.proposals + 1;
+      const amt = yocto.toString();
+      const hash = await callBatch([
+        {
+          method: "create_mandate",
+          gas: "30000000000000",
+          args: {
+            agent: accountId,
+            chains: ["Near"],
+            assets: ["NEAR"],
+            allowlist: [{ chain: "Near", address: to }],
+            per_tx_cap: amt,
+            daily_cap: amt,
+            cooling_threshold: amt,
+            challenge_window_s: 60,
+            bond: "0",
+            expiry_days: 1,
+          },
+        },
+        { method: "fund_mandate", gas: "30000000000000", deposit: amt, args: { mandate_id: mid } },
+        { method: "propose_payment", gas: "30000000000000", args: { mandate_id: mid, chain: "Near", asset: "NEAR", amount: amt, recipient: to } },
+        { method: "execute", gas: "60000000000000", args: { proposal_id: pid } },
+      ]);
+      if (hash) {
+        // Extension wallets return here; check what happened instead of assuming.
+        await new Promise((r) => setTimeout(r, 2500));
+        const p = await api.proposal(pid).catch(() => null);
+        if (p && p.mandate_id === mid && p.status === "Executed") setDone(hash);
+        else if (p && p.mandate_id === mid) router.push(`/app/mandates/${mid}`);
+        else setErr("The transaction was sent, but I could not confirm the payment. Check your rules page.");
+      }
+      // Redirect wallets come back to this page with ?transactionHashes=..., shown by the banner above.
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -107,7 +159,20 @@ function Body() {
         <div className="mt-6"><Notice tone="bad" title="Could not read the contract">{mandates.error}</Notice></div>
       ) : (
         <div className="mt-6 space-y-4">
-          <Label>Pay under one of your NEAR rules</Label>
+          {done ? (
+            <Notice title="Paid">
+              <p>{formatNear(yocto)} was sent to {to}.</p>
+              <a className="mt-2 inline-block underline" href={`https://testnet.nearblocks.io/txns/${done}`} target="_blank" rel="noopener noreferrer">View the transaction ↗</a>
+            </Notice>
+          ) : (
+            <Card className="p-5 sm:p-6">
+              <Btn size="lg" busy={paying} onClick={payNow}>Pay {formatNear(yocto)} now</Btn>
+              <p className="mt-3 text-[13px] leading-relaxed text-mute">
+                One approval. It makes a one-off rule that can pay only {to}, only this amount, expires in a day, and sends the payment. You need {formatNear(yocto)} plus network fees in your wallet.
+              </p>
+            </Card>
+          )}
+          <Label>Or pay under one of your existing NEAR rules</Label>
           {usable.length === 0 && (
             <Notice title="None of your rules can pay this yet">
               <p>A rule only pays accounts on its approved list, and that list is fixed when the rule is created. Make a rule for this payment: it fills in the recipient and amount for you.</p>
