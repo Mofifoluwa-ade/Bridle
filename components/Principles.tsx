@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Container, Eyebrow } from "./Container";
+import { SpotlightGrid } from "./SpotlightGrid";
 
 function Icon({ children }: { children: ReactNode }) {
   return (
@@ -25,7 +26,7 @@ const principles: { number: string; title: string; body: string; icon: ReactNode
   {
     number: "03",
     title: "Tighten immediately",
-    body: "Owners can reduce limits or revoke access at once. Looser limits and expanded permissions wait through a challenge window.",
+    body: "Owners can reduce limits or revoke access at once. Looser limits wait through a challenge window. The approved recipients are fixed when you sign.",
     icon: <Icon><path d="M12 3v18M5 10l7-7 7 7" /><path d="M5 21h14" /></Icon>,
   },
   {
@@ -50,9 +51,9 @@ export function Principles() {
               The agent can ask. The mandate decides what is allowed.
             </p>
           </div>
-          <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+          <SpotlightGrid className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {principles.map((p) => (
-              <article key={p.number} className="border-t border-white/15 pt-5">
+              <article key={p.number} data-reveal-item data-spot style={{ "--i": Number(p.number) - 1 } as React.CSSProperties} className="spot rounded-2xl border border-white/10 bg-white/[0.025] p-5 sm:p-6">
                 <div className="flex items-center justify-between text-[#46D9A4]">
                   <span className="font-mono text-[11px]">{p.number}</span>
                   {p.icon}
@@ -61,7 +62,7 @@ export function Principles() {
                 <p className="mt-3 text-[14px] leading-[1.7] text-[#A3ABB8]">{p.body}</p>
               </article>
             ))}
-          </div>
+          </SpotlightGrid>
         </div>
       </Container>
     </section>

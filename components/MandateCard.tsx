@@ -14,7 +14,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 
 const HEADLINE =
   "Up to $50 a day, to three approved recipients. Pause anything over $20.".split(" ");
-const CHIPS = ["Base", "Solana", "USDC"];
+const CHIPS = ["Base", "USDC"];
 
 // 0 empty · 1 approved · 2 blocked · 3 waiting · 4 cursor arrives · 5 vetoed · 6 fading out
 type Feed = 0 | 1 | 2 | 3 | 4 | 5 | 6;

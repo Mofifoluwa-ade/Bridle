@@ -6,10 +6,13 @@ export function ScrollReveal({
   children,
   delay = 0,
   className = "",
+  stagger = false,
 }: {
   children: ReactNode;
   delay?: number;
   className?: string;
+  /** Animate children marked data-reveal-item one after another instead of the block as a whole. */
+  stagger?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
@@ -44,7 +47,7 @@ export function ScrollReveal({
   return (
     <div
       ref={ref}
-      className={`scroll-reveal ${className}`}
+      className={`${stagger ? "scroll-stagger" : "scroll-reveal"} ${className}`}
       data-reveal-ready={ready ? "true" : "false"}
       data-revealed={visible ? "true" : "false"}
       style={{ "--scroll-reveal-delay": `${delay}ms` } as CSSProperties}

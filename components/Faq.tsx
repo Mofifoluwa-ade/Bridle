@@ -26,6 +26,10 @@ const faqs = [
     a: "Install bridle-mcp with npx in an MCP-compatible client. Node.js 22.22.2 or newer is required. The server is read-only without agent credentials; proposing requires a function-call key restricted to propose_payment. The full configuration is on the MCP setup page.",
   },
   {
+    q: "What do I still have to trust?",
+    a: "The NEAR signing network that produces Base signatures, and the executor that broadcasts them. Bridle limits what an agent can ask for; it does not remove trust in those two parts. Native NEAR payments need neither: the contract pays them out itself.",
+  },
+  {
     q: "Is Bridle handling real funds?",
     a: "No. The current deployment targets NEAR testnet and Base Sepolia. Use test assets only. The contracts and execution flow have not been presented as audited production infrastructure.",
   },
@@ -49,7 +53,7 @@ export function Faq() {
         <Eyebrow>FAQ</Eyebrow>
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <h2 id="questions-title" className="max-w-[650px] text-[clamp(29px,4.2vw,46px)] font-semibold leading-[1.08] tracking-heading text-ink dark:text-white">
-            Clear answers. No security theatre.
+            Plain answers about the limits.
           </h2>
           <a href={mail("Bridle question", "What would you like to know?\n\n")} className="text-sm font-semibold text-ink underline underline-offset-4 decoration-rule hover:decoration-current dark:text-white dark:decoration-dark-border">
             Ask us a question ↗
