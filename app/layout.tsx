@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://bridle-agent.vercel.app"),
   title: "Bridle — Steer your agents. Don't trust them.",
   description:
-    "Bridle lets AI agents make payments within strict spending limits, without ever holding a private key.",
+    "Bridle lets AI agents propose payments within owner-signed spending mandates. A NEAR contract enforces approved chains, recipients and spending limits.",
   openGraph: {
     title: "Bridle — Steer your agents. Don't trust them.",
     description:
-      "Policy-bound payments for AI agents. Set the limits. Let the contract enforce them.",
+      "AI agents propose payments within owner-signed mandates. A NEAR contract enforces approved recipients and spending limits.",
     url: "https://bridle-agent.vercel.app/",
     siteName: "Bridle",
     type: "website",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Bridle — Steer your agents. Don't trust them.",
     description:
-      "Policy-bound payments for AI agents. Set the limits. Let the contract enforce them.",
+      "AI agents propose payments within owner-signed mandates. A NEAR contract enforces approved recipients and spending limits.",
     images: ["/bridle-og-final.png"],
   },
 };
