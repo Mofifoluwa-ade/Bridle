@@ -19,3 +19,13 @@ test("formatUsdc", () => {
   assert.equal(formatUsdc(1n), "0.000001");
   assert.equal(formatUsdc(0n), "0.00");
 });
+
+import { formatAmount, parseAmount, decimalsOf } from "../units.js";
+test("NEAR amounts use 24 decimals", () => {
+  assert.equal(decimalsOf("near"), 24);
+  assert.equal(decimalsOf("USDC"), 6);
+  assert.equal(parseAmount("0.1", 24), 100_000_000_000_000_000_000_000n);
+  assert.equal(parseAmount("1.5", 24), 1_500_000_000_000_000_000_000_000n);
+  assert.equal(parseAmount("0.0000000000000000000000001", 24), null);
+  assert.equal(formatAmount(1_900_000_000_000_000_000_000_000n, 24), "1.90");
+});

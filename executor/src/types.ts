@@ -10,7 +10,7 @@ export type SigningRecord = {
 export type Proposal = {
   id: number;
   mandate_id: number;
-  chain: "Base" | "Solana";
+  chain: "Base" | "Solana" | "Near";
   asset: string;
   amount: string;
   recipient: string;

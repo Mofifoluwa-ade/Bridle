@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Btn, Card, Field, HelpButton, HelpDropdown, HelpGuideMenu, Label, Notice, PageHeader, monoInputCls } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
 import { CHAINS, CONFIG } from "@/lib/config";
-import { duration, formatNearWithUsd, parseNear, parseUnits, usdc, validAddress, validNearAccount } from "@/lib/format";
+import { duration, formatNearWithUsd, money, parseNear, parseUnits, validAddress, validNearAccount } from "@/lib/format";
 import type { Chain } from "@/lib/types";
 import { parsePayment, parseRule } from "@/lib/sentence";
 
@@ -157,6 +157,10 @@ function Form() {
   const [step, setStep] = useState<Step>(0);
   const [agent, setAgent] = useState("");
   const [chains, setChains] = useState<Chain[]>(["Base"]);
+  // A NEAR mandate is NEAR-only: its caps are in NEAR (24 decimals), not USDC (6).
+  const isNear = chains.includes("Near");
+  const unit: "USDC" | "NEAR" = isNear ? "NEAR" : "USDC";
+  const dec = isNear ? 24 : 6;
   const [rows, setRows] = useState<Row[]>([{ chain: "Base", address: "" }]);
   const [perTx, setPerTx] = useState("25");
   const [daily, setDaily] = useState("50");
@@ -222,7 +226,7 @@ function Form() {
     if (!validNearAccount(agent)) e.agent = "Enter a valid NEAR account, such as agent.testnet.";
     else if (agent === accountId) e.agent = "Use a separate account for the agent, not your owner account.";
     if (chains.length === 0) e.chains = "Choose at least one network.";
-    const p = parseUnits(perTx), d = parseUnits(daily), t = parseUnits(threshold);
+    const p = parseUnits(perTx, dec), d = parseUnits(daily, dec), t = parseUnits(threshold, dec);
     if (p === null || p === BigInt(0)) e.perTx = "Enter an amount greater than zero.";
     if (d === null || d === BigInt(0)) e.daily = "Enter a daily limit greater than zero.";
     else if (p !== null && d < p) e.daily = "Daily limit must be at least the per-payment limit.";
@@ -240,15 +244,15 @@ function Form() {
     filled.forEach((r) => {
       if (!chains.includes(r.chain)) e[`row${r.index}`] = `${r.chain} is not selected above.`;
       else if (!validAddress(r.chain, r.address.trim())) {
-        e[`row${r.index}`] = r.chain === "Base" ? "Enter a 0x address with 40 hexadecimal characters." : "Enter a valid Solana address.";
+        e[`row${r.index}`] = r.chain === "Base" ? "Enter a 0x address with 40 hexadecimal characters." : r.chain === "Near" ? "Enter a valid NEAR account, such as friend.testnet." : "Enter a valid Solana address.";
       }
     });
     return { e, p, d, t, w, b, dy, filled };
-  }, [agent, chains, rows, perTx, daily, threshold, windowMin, bond, days, accountId]);
+  }, [agent, chains, rows, perTx, daily, threshold, windowMin, bond, days, accountId, dec]);
 
   const ok = Object.keys(v.e).length === 0;
   const filledAddresses = v.filled.map((r) => ({ chain: r.chain, address: r.address.trim() }));
-  const testValue = parseUnits(testAmount);
+  const testValue = parseUnits(testAmount, dec);
   const testValid = testValue !== null && testValue > BigInt(0);
   const testAllowedRecipient = Boolean(testRecipient.trim()) && filledAddresses.some(
     (r) => r.chain === testChain && r.address.toLowerCase() === testRecipient.trim().toLowerCase()
@@ -313,7 +317,7 @@ function Form() {
         args: {
           agent,
           chains,
-          assets: ["USDC"],
+          assets: [unit],
           allowlist: filledAddresses,
           per_tx_cap: v.p!.toString(),
           daily_cap: v.d!.toString(),
@@ -486,7 +490,7 @@ function Form() {
                 <div className="flex items-center gap-2">
                   <legend className="text-[14.5px] font-semibold text-ink dark:text-white">Enabled networks</legend>
                   <HelpButton
-                    content="USDC only. A recipient must belong to an enabled network. Cross-chain payments on disabled networks are immediately blocked."
+                    content="One asset per mandate: USDC on Base or Solana, or native NEAR on the NEAR network. A recipient must belong to an enabled network. Cross-chain payments on disabled networks are immediately blocked."
                     title="Enabled Networks"
                   />
                 </div>
@@ -504,11 +508,21 @@ function Form() {
                         type="checkbox"
                         className="sr-only"
                         checked={chains.includes(c)}
-                        onChange={() =>
-                          setChains((old) =>
-                            old.includes(c) ? old.filter((x) => x !== c) : [...old, c]
-                          )
-                        }
+                        onChange={() => {
+                          // NEAR is exclusive: its limits are in NEAR, not USDC.
+                          if (c === "Near") {
+                            const on = !chains.includes("Near");
+                            setChains(on ? ["Near"] : ["Base"]);
+                            setRows((old) => old.map((x) => ({ ...x, chain: on ? "Near" : "Base", address: "" })));
+                            setTestChain(on ? "Near" : "Base");
+                            return;
+                          }
+                          setChains((old) => {
+                            const rest = old.filter((x) => x !== "Near");
+                            return rest.includes(c) ? rest.filter((x) => x !== c) : [...rest, c];
+                          });
+                          if (chains.includes("Near")) setRows((old) => old.map((x) => ({ ...x, chain: c, address: "" })));
+                        }}
                       />
                       {c}
                     </label>
@@ -551,7 +565,7 @@ function Form() {
                       aria-label={`Recipient ${i + 1} address`}
                       className={`${monoInputCls} mt-0 min-w-0 flex-1`}
                       value={r.address}
-                      placeholder={r.chain === "Base" ? "0x…" : "Solana address"}
+                      placeholder={r.chain === "Base" ? "0x…" : r.chain === "Near" ? "friend.testnet" : "Solana address"}
                       onChange={(e) =>
                         setRows((old) =>
                           old.map((x, j) => (j === i ? { ...x, address: e.target.value.trim() } : x))
@@ -604,14 +618,14 @@ function Form() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
-                  label="Max per payment (USDC)"
-                  help="The most USDC your agent can send in any single transaction. Requests exceeding this amount are rejected immediately on-chain."
+                  label={`Max per payment (${unit})`}
+                  help={`The most ${unit} your agent can send in any single transaction. Requests exceeding this amount are rejected immediately on-chain.`}
                   error={show("perTx")}
                 >
                   <input className={monoInputCls} inputMode="decimal" value={perTx} onChange={(e) => setPerTx(e.target.value)} />
                 </Field>
                 <Field
-                  label="Max per day (USDC)"
+                  label={`Max per day (${unit})`}
                   help="Cumulative spending limit across all payments in a 24-hour rolling window. Resets automatically every 24 hours."
                   error={show("daily")}
                 >
@@ -633,7 +647,7 @@ function Form() {
                 <Label>04 · Safety & Review time</Label>
               </div>
               <Field
-                label="Pause payments above (USDC)"
+                label={`Pause payments above (${unit})`}
                 help="Transactions larger than this amount will automatically pause in challenge/review status before executing, giving you time to inspect or veto. Set to 0 to review every payment."
                 error={show("threshold")}
               >
@@ -699,7 +713,7 @@ function Form() {
                 {payNote && <p className="mt-2 text-xs text-mute dark:text-dark-mute" role="status">{payNote}</p>}
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Payment amount (USDC)">
+                <Field label={`Payment amount (${unit})`}>
                   <input className={monoInputCls} inputMode="decimal" value={testAmount} onChange={(e) => setTestAmount(e.target.value)} />
                 </Field>
                 <Field label="Network">
@@ -725,9 +739,9 @@ function Form() {
                 <ReviewRow label="Agent" value={agent || "Not set"} />
                 <ReviewRow label="Networks" value={chains.join(", ") || "None selected"} />
                 <ReviewRow label="Approved recipients" value={`${v.filled.length} configured`} />
-                <ReviewRow label="Max per payment" value={v.p !== null ? usdc(v.p) : "Invalid"} />
-                <ReviewRow label="Max per day" value={v.d !== null ? usdc(v.d) : "Invalid"} />
-                <ReviewRow label="Pause payments above" value={v.t !== null ? usdc(v.t) : "Invalid"} />
+                <ReviewRow label="Max per payment" value={v.p !== null ? money(v.p, unit) : "Invalid"} />
+                <ReviewRow label="Max per day" value={v.d !== null ? money(v.d, unit) : "Invalid"} />
+                <ReviewRow label="Pause payments above" value={v.t !== null ? money(v.t, unit) : "Invalid"} />
                 <ReviewRow label="Review pause time" value={Number.isFinite(v.w) ? duration(v.w) : "Invalid"} />
                 <ReviewRow label="Security deposit" value={v.b !== null ? (v.b === BigInt(0) ? "0 NEAR (No deposit required)" : formatNearWithUsd(v.b)) : "Invalid"} />
                 <ReviewRow label="Rule duration" value={v.dy ? `${v.dy} days` : "Invalid"} />
@@ -785,11 +799,11 @@ function Form() {
             <p className="font-mono text-xs uppercase tracking-wider text-dim">Summary of your rule</p>
             <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] uppercase text-amber-300">Testnet mode</span>
           </div>
-          <p className="mt-4 text-lg leading-relaxed text-white"><b>{agent || "Your agent"}</b> can pay <b>USDC</b> on <b>{chains.join(" and ") || "selected chains"}</b>, only to <b>{v.filled.length}</b> approved {v.filled.length === 1 ? "address" : "addresses"}.</p>
+          <p className="mt-4 text-lg leading-relaxed text-white"><b>{agent || "Your agent"}</b> can pay <b>{unit}</b> on <b>{chains.join(" and ") || "selected chains"}</b>, only to <b>{v.filled.length}</b> approved {v.filled.length === 1 ? "address" : "addresses"}.</p>
           <div className="mt-5 space-y-3 border-t border-night pt-5 text-sm leading-relaxed text-dim">
-            <SummaryLine label="Max per payment" value={v.p !== null ? usdc(v.p) : "—"} />
-            <SummaryLine label="Max per day" value={v.d !== null ? usdc(v.d) : "—"} />
-            <SummaryLine label="Pause above" value={v.t !== null ? usdc(v.t) : "—"} />
+            <SummaryLine label="Max per payment" value={v.p !== null ? money(v.p, unit) : "—"} />
+            <SummaryLine label="Max per day" value={v.d !== null ? money(v.d, unit) : "—"} />
+            <SummaryLine label="Pause above" value={v.t !== null ? money(v.t, unit) : "—"} />
             <SummaryLine label="Review pause time" value={Number.isFinite(v.w) ? duration(v.w) : "—"} />
             <SummaryLine label="Security deposit" value={v.b ? formatNearWithUsd(v.b) : "—"} />
             <SummaryLine label="Rule duration" value={v.dy ? `${v.dy} days` : "—"} />

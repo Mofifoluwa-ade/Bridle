@@ -4,7 +4,7 @@
 import type { Config } from "./config.js";
 import { checkPayment, effectiveLimits, remainingToday } from "./policy.js";
 import type { Chain, Mandate, Proposal } from "./types.js";
-import { formatUsdc, parseUsdc } from "./units.js";
+import { decimalsOf, formatAmount, parseAmount } from "./units.js";
 
 export type Deps = {
   cfg: Config;
@@ -34,7 +34,13 @@ async function loadMandate(d: Deps, id: number): Promise<Mandate> {
   return m;
 }
 
+/** A NEAR mandate is NEAR-only (the contract refuses to mix it with USDC chains). */
+const unitOf = (m: Mandate) => (m.chains.includes("Near") ? "NEAR" : "USDC");
+
 function describeMandate(d: Deps, m: Mandate, nowNs: bigint) {
+  const unit = unitOf(m);
+  const k = unit.toLowerCase();
+  const f = (v: bigint | string) => formatAmount(v, decimalsOf(unit));
   const lim = effectiveLimits(m, nowNs);
   const left = remainingToday(m, nowNs);
   const notes: string[] = [];
@@ -47,17 +53,17 @@ function describeMandate(d: Deps, m: Mandate, nowNs: bigint) {
     summary:
       m.state === "Revoked"
         ? `Mandate ${m.id} is revoked. Nothing can be proposed.`
-        : `Mandate ${m.id}: up to ${formatUsdc(lim.daily)} USDC a day, ${formatUsdc(lim.perTx)} per payment, to ${m.allowlist.length} approved recipient${m.allowlist.length === 1 ? "" : "s"}. Payments over ${formatUsdc(lim.threshold)} wait ${Number(lim.windowS) / 60} min for the owner. ${formatUsdc(left)} left today (resets 00:00 UTC).`,
+        : `Mandate ${m.id}: up to ${f(lim.daily)} ${unit} a day, ${f(lim.perTx)} per payment, to ${m.allowlist.length} approved recipient${m.allowlist.length === 1 ? "" : "s"}. Payments over ${f(lim.threshold)} wait ${Number(lim.windowS) / 60} min for the owner. ${f(left)} left today (resets 00:00 UTC).`,
     mandate_id: m.id,
     state: m.state,
     owner: m.owner,
     agent: m.agent,
     chains: m.chains,
     assets: m.assets,
-    per_payment_cap_usdc: formatUsdc(lim.perTx),
-    daily_cap_usdc: formatUsdc(lim.daily),
-    remaining_today_usdc: formatUsdc(left),
-    review_threshold_usdc: formatUsdc(lim.threshold),
+    [`per_payment_cap_${k}`]: f(lim.perTx),
+    [`daily_cap_${k}`]: f(lim.daily),
+    [`remaining_today_${k}`]: f(left),
+    [`review_threshold_${k}`]: f(lim.threshold),
     challenge_window_minutes: Number(lim.windowS) / 60,
     approved_recipients: m.allowlist,
     expires_at: iso(m.expires_at),
@@ -90,16 +96,19 @@ export async function listMandates(d: Deps, a: { account_id?: string }) {
 type PaymentArgs = { mandate_id: number; chain: Chain; asset?: string; amount: string; recipient: string };
 
 function normalise(a: PaymentArgs) {
-  const amount = parseUsdc(a.amount);
-  if (amount === null) throw new ToolError(`Amount "${a.amount}" is not valid. Use a plain decimal in USDC, such as 18.50 (up to 6 decimals).`);
-  return { amount, asset: (a.asset ?? "USDC").toUpperCase(), recipient: a.recipient.trim() };
+  const asset = (a.asset ?? (a.chain === "Near" ? "NEAR" : "USDC")).toUpperCase();
+  const dec = decimalsOf(asset);
+  const amount = parseAmount(a.amount, dec);
+  if (amount === null)
+    throw new ToolError(`Amount "${a.amount}" is not valid. Use a plain decimal in ${asset}, such as ${asset === "NEAR" ? "1.5" : "18.50"} (up to ${dec} decimals).`);
+  return { amount, asset, recipient: a.recipient.trim() };
 }
 
 export async function checkPaymentTool(d: Deps, a: PaymentArgs) {
   const { amount, asset, recipient } = normalise(a);
   const [m, now] = await Promise.all([loadMandate(d, a.mandate_id), d.now()]);
   const v = checkPayment(m, now, { chain: a.chain, asset, amount, recipient });
-  const base = { mandate_id: m.id, chain: a.chain, asset, amount_usdc: formatUsdc(amount), recipient, dry_run: true };
+  const base = { mandate_id: m.id, chain: a.chain, asset, [`amount_${asset.toLowerCase()}`]: formatAmount(amount, decimalsOf(asset)), recipient, dry_run: true };
   const hint =
     v.outcome === "blocked" && v.rule === "recipient"
       ? " The address must match the approved list exactly, including letter case."
@@ -121,7 +130,11 @@ function describeProposal(p: Proposal, cfg: Config) {
   switch (p.status) {
     case "Rejected": summary = `Blocked. ${p.reason ?? "A rule stopped it"}. The attempt is recorded on-chain and visible to the owner.`; break;
     case "Waiting": summary = `Waiting for the owner's review until ${iso(p.executable_at)}. Do not resend it; the owner can veto it.`; break;
-    case "Ready": summary = "Cleared by the mandate. Cross-chain signing is not connected in this version, so no funds have moved."; break;
+    case "Ready":
+      summary = p.chain === "Near"
+        ? "Cleared by the mandate. The payment goes out when anyone triggers execute (the owner's dashboard has a button); no funds have moved yet."
+        : "Cleared by the mandate. Cross-chain signing is not connected in this version, so no funds have moved.";
+      break;
     case "Flagged": summary = "A watcher flagged it. It will not run unless the owner dismisses the flag."; break;
     case "Cancelled": summary = "Cancelled after a confirmed flag."; break;
     case "Vetoed": summary = "The owner vetoed it. Nothing moved."; break;
@@ -138,7 +151,7 @@ function describeProposal(p: Proposal, cfg: Config) {
     reason: p.reason,
     chain: p.chain,
     asset: p.asset,
-    amount_usdc: formatUsdc(p.amount),
+    [`amount_${p.asset.toLowerCase()}`]: formatAmount(p.amount, decimalsOf(p.asset)),
     recipient: p.recipient,
     created_at: iso(p.created_at),
     executable_at: p.status === "Waiting" ? iso(p.executable_at) : null,

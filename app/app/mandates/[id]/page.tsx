@@ -10,7 +10,7 @@ import { Addr, Btn, Card, Empty, Field, Label, LinkBtn, NearAccountLink, Notice,
 import { useWallet } from "@/components/app/WalletProvider";
 import { useNow, usePoll } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
-import { countdown, duration, formatNear, formatNearWithUsd, nsToMs, parseUnits, usdc } from "@/lib/format";
+import { countdown, duration, formatNear, formatNearWithUsd, money, nsToMs, parseNear, parseUnits, unitDecimals, unitOfMandate } from "@/lib/format";
 import { api } from "@/lib/near";
 
 export default function MandatePage() {
@@ -27,6 +27,8 @@ function Body({ id }: { id: number }) {
   const now = useNow();
   const m = usePoll(Number.isInteger(id) ? `m${id}` : null, () => api.mandate(id));
   const props = usePoll(Number.isInteger(id) ? `mp${id}` : null, () => api.proposals(id, 50));
+  const nearBal = usePoll(Number.isInteger(id) ? `mb${id}` : null, () => api.nearBalance(id));
+  const [fundAmt, setFundAmt] = useState("1");
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [edit, setEdit] = useState(false);
@@ -40,6 +42,7 @@ function Body({ id }: { id: number }) {
   const isAgent = accountId === mandate.agent;
   const expired = nsToMs(mandate.expires_at) <= now;
   const pending = mandate.pending_limits;
+  const unit = unitOfMandate(mandate);
   const pendingReady = pending && now >= nsToMs(pending.effective_at);
 
   const act = async (key: string, method: string, args: Record<string, unknown>, deposit?: string) => {
@@ -49,6 +52,7 @@ function Body({ id }: { id: number }) {
       await call({ method, args, deposit });
       m.refresh();
       props.refresh();
+      nearBal.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -107,9 +111,9 @@ function Body({ id }: { id: number }) {
           <Card className="p-5 sm:p-7 md:p-8">
             <Label>Spending rules</Label>
             <dl className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2">
-              <Row k="Max per payment" v={usdc(mandate.per_tx_cap)} />
-              <Row k="Max per day" v={usdc(mandate.daily_cap)} />
-              <Row k="Pause payments above" v={usdc(mandate.cooling_threshold)} />
+              <Row k="Max per payment" v={money(mandate.per_tx_cap, unit)} />
+              <Row k="Max per day" v={money(mandate.daily_cap, unit)} />
+              <Row k="Pause payments above" v={money(mandate.cooling_threshold, unit)} />
               <Row k="Review delay" v={duration(mandate.challenge_window_s)} />
               <Row k="Blockchains" v={mandate.chains.join(", ")} />
               <Row k="Token" v={mandate.assets.join(", ")} />
@@ -136,7 +140,7 @@ function Body({ id }: { id: number }) {
           {pending && (
             <Notice tone="warn" title="Higher limits waiting to take effect">
               <p>
-                New limits: Max {usdc(pending.per_tx_cap)} per payment, {usdc(pending.daily_cap)} per day, pause above {usdc(pending.cooling_threshold)}, review delay {duration(pending.challenge_window_s)}.{" "}
+                New limits: Max {money(pending.per_tx_cap, unit)} per payment, {money(pending.daily_cap, unit)} per day, pause above {money(pending.cooling_threshold, unit)}, review delay {duration(pending.challenge_window_s)}.{" "}
                 {pendingReady ? "The safety wait time has ended." : `Takes effect in ${countdown(nsToMs(pending.effective_at) - now)} (safety delay).`}
               </p>
               {pendingReady && (
@@ -191,6 +195,31 @@ function Body({ id }: { id: number }) {
               <Btn className="mt-4 w-full" variant="outline" busy={busy === "wd"} onClick={() => act("wd", "withdraw_bond", { mandate_id: id })}>Withdraw deposit</Btn>
             </Card>
           )}
+          {unit === "NEAR" && (
+            <Card className="p-5 sm:p-6">
+              <Label>NEAR balance</Label>
+              <p className="mt-3 font-mono text-[22px] font-medium tabular-nums">{nearBal.data ? formatNear(nearBal.data) : "…"}</p>
+              <p className="mt-2 text-xs sm:text-[14px] leading-relaxed text-mute">
+                Payments under this rule are paid from this balance. Only the owner can add to it or take it back; the agent cannot touch it.
+              </p>
+              {isOwner && (() => {
+                const amt = parseNear(fundAmt);
+                const bal = BigInt(nearBal.data ?? "0");
+                const okAmt = amt !== null && amt > BigInt(0);
+                return (
+                  <div className="mt-4 space-y-3">
+                    <Field label="Amount (NEAR)" error={fundAmt && !okAmt ? "Enter an amount above zero" : null}>
+                      <input className={monoInputCls} inputMode="decimal" value={fundAmt} onChange={(e) => setFundAmt(e.target.value)} />
+                    </Field>
+                    <div className="flex flex-wrap gap-3">
+                      <Btn size="sm" disabled={!okAmt} busy={busy === "fund"} onClick={() => act("fund", "fund_mandate", { mandate_id: id }, amt!.toString())}>Add NEAR</Btn>
+                      <Btn size="sm" variant="outline" disabled={!okAmt || amt! > bal} busy={busy === "wnear"} onClick={() => act("wnear", "withdraw_near", { mandate_id: id, amount: amt!.toString() })}>Take back</Btn>
+                    </div>
+                  </div>
+                );
+              })()}
+            </Card>
+          )}
           <Card className="p-6">
             <Label>Contract address</Label>
             <p className="mt-3 break-all"><NearAccountLink id={CONFIG.contractId} /></p>
@@ -211,12 +240,14 @@ function Row({ k, v }: { k: string; v: string }) {
 }
 
 function LimitsForm({ m, busy, onSubmit, onCancel }: { m: import("@/lib/types").Mandate; busy: boolean; onSubmit: (a: Record<string, unknown>) => Promise<void>; onCancel: () => void }) {
-  const toDec = (v: string) => { const n = BigInt(v); const w = n / BigInt(1_000_000); const fr = (n % BigInt(1_000_000)).toString().padStart(6, "0").replace(/0+$/, ""); return fr ? `${w}.${fr}` : `${w}`; };
+  const dec = unitDecimals(unitOfMandate(m));
+  const base = BigInt(10) ** BigInt(dec);
+  const toDec = (v: string) => { const n = BigInt(v); const w = n / base; const fr = (n % base).toString().padStart(dec, "0").replace(/0+$/, ""); return fr ? `${w}.${fr}` : `${w}`; };
   const [perTx, setPerTx] = useState(toDec(m.per_tx_cap));
   const [daily, setDaily] = useState(toDec(m.daily_cap));
   const [th, setTh] = useState(toDec(m.cooling_threshold));
   const [win, setWin] = useState(String(m.challenge_window_s / 60));
-  const p = parseUnits(perTx), d = parseUnits(daily), t = parseUnits(th), w = Number(win) * 60;
+  const p = parseUnits(perTx, dec), d = parseUnits(daily, dec), t = parseUnits(th, dec), w = Number(win) * 60;
   const error = !p || !d || t === null ? "Enter valid amounts" : d < p ? "Daily limit must be at least the per-payment limit" : t > p ? "Pause threshold cannot exceed the per-payment limit" : !(w >= 60 && w <= 86400) ? "Review time must be 1 to 1,440 minutes" : null;
   const loosens = !error && (p! > BigInt(m.per_tx_cap) || d! > BigInt(m.daily_cap) || t! > BigInt(m.cooling_threshold) || w < m.challenge_window_s);
   return (

@@ -18,7 +18,7 @@ import { useWallet } from "@/components/app/WalletProvider";
 import { useMyMandates } from "@/hooks/useMyData";
 import { useNow } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
-import { nsToMs, usdc } from "@/lib/format";
+import { nsToMs, unitOfMandate, usdc } from "@/lib/format";
 import type { Mandate } from "@/lib/types";
 
 export default function MandatesPage() {
@@ -60,13 +60,13 @@ export default function MandatesPage() {
 
   const totalDailyBudget = useMemo(() => {
     return mandates
-      .filter((m) => m.state === "Active" && nsToMs(m.expires_at) > now)
+      .filter((m) => m.state === "Active" && nsToMs(m.expires_at) > now && unitOfMandate(m) === "USDC")
       .reduce((acc, m) => acc + BigInt(m.daily_cap || "0"), BigInt(0));
   }, [mandates, now]);
 
   const totalSpentToday = useMemo(() => {
     return mandates
-      .filter((m) => m.state === "Active")
+      .filter((m) => m.state === "Active" && unitOfMandate(m) === "USDC")
       .reduce((acc, m) => acc + BigInt(m.spent_today || "0"), BigInt(0));
   }, [mandates]);
 

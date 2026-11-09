@@ -36,16 +36,16 @@ const server = new McpServer(
       "Bridle bounds what you may spend. A mandate set by your owner lists the chains, the approved recipients and the caps. " +
       "Call list_mandates to find your mandate, get_mandate to read the limits, and check_payment before propose_payment. " +
       "If a payment is blocked, do not retry it with a different amount or address to get around the rule; tell your owner instead. " +
-      "You cannot change the mandate, and there is deliberately no tool for it. Amounts are decimal USDC, for example 18.50.",
+      "You cannot change the mandate, and there is deliberately no tool for it. Amounts are decimals in the mandate's asset: USDC for Base, for example 18.50, or NEAR for the Near chain, for example 1.5.",
   },
 );
 
 const mandateId = z.number().int().nonnegative().describe("The mandate id, from list_mandates");
 const payment = {
   mandate_id: mandateId,
-  chain: z.enum(["Base", "Solana"]).describe("Destination chain"),
-  asset: z.string().optional().describe("Asset symbol. Only USDC is supported. Defaults to USDC"),
-  amount: z.string().describe("Decimal USDC, for example 18.50. Not smallest units"),
+  chain: z.enum(["Base", "Solana", "Near"]).describe("Destination chain. Near pays native NEAR to a NEAR account"),
+  asset: z.string().optional().describe("Asset symbol: USDC on Base, NEAR on Near. Defaults to the chain's asset"),
+  amount: z.string().describe("Decimal amount in the asset, for example 18.50 USDC or 1.5 NEAR. Not smallest units"),
   recipient: z.string().describe("Destination address. Must match an approved recipient exactly, including letter case"),
 };
 
@@ -83,7 +83,7 @@ server.registerTool("check_payment", {
 
 server.registerTool("propose_payment", {
   title: "Propose a payment",
-  description: "Propose a stablecoin payment. The contract decides: it may be blocked (recorded with the rule), held for the owner's review, or cleared. This does not move money by itself. Needs BRIDLE_AGENT_ACCOUNT and BRIDLE_AGENT_KEY. Never resend a blocked or waiting payment.",
+  description: "Propose a payment (USDC on Base, or native NEAR on the Near chain). The contract decides: it may be blocked (recorded with the rule), held for the owner's review, or cleared. This does not move money by itself. Needs BRIDLE_AGENT_ACCOUNT and BRIDLE_AGENT_KEY. Never resend a blocked or waiting payment.",
   inputSchema: payment,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
 }, (a) => run(() => t.proposePayment(deps, a)));

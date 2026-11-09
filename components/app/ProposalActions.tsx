@@ -37,7 +37,7 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
   const canExecute = (p.status === "Ready" || (p.status === "Waiting" && !windowOpen)) && m.state === "Active";
   const canFlag = p.status === "Waiting" && windowOpen && accountId !== m.owner && accountId !== m.agent;
   const canExpire = p.status === "Flagged" && !windowOpen;
-  const canTimeout = p.status === "Signing" && now >= execAt + 3600_000;
+  const canTimeout = p.status === "Signing" && p.chain !== "Near" && now >= execAt + 3600_000;
 
   if (!canVeto && !canResolve && !canExecute && !canFlag && !canExpire && !canTimeout) return null;
   if (!accountId)

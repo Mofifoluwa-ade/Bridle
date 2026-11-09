@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { nsToMs, shortAddr, timeAgo, usdc } from "@/lib/format";
+import { nsToMs, shortAddr, timeAgo, amountOf } from "@/lib/format";
 import type { Proposal } from "@/lib/types";
 import { STATUS, StatusPill } from "./ui";
 
@@ -94,7 +94,7 @@ export function ProposalRow({
                 : "text-ink dark:text-white"
             }`}
           >
-            {usdc(p.amount)}
+            {amountOf(p)}
           </span>
           <span className="block text-[11px] text-mute dark:text-dark-mute">
             {timeAgo(nsToMs(p.created_at), now)}
@@ -162,7 +162,7 @@ export function ProposalRow({
                 : "text-ink dark:text-white"
             }`}
           >
-            {usdc(p.amount)}
+            {amountOf(p)}
           </span>
           <span className="block text-[11.5px] text-mute dark:text-dark-mute">
             {timeAgo(nsToMs(p.created_at), now)}

@@ -1,4 +1,4 @@
-export type Chain = "Base" | "Solana";
+export type Chain = "Base" | "Solana" | "Near";
 export type MandateState = "Active" | "Revoked";
 export type ProposalStatus =
   | "Rejected"

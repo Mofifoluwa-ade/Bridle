@@ -283,6 +283,10 @@ impl Bridle {
     ) -> Mandate {
         require!(!chains.is_empty(), "choose at least one chain");
         require!(!assets.is_empty(), "choose at least one asset");
+        require!(
+            !chains.contains(&Chain::Near) || chains.len() == 1,
+            "a NEAR mandate cannot be combined with other chains: the caps are in one asset's units"
+        );
         require!(allowlist.len() <= MAX_ALLOWLIST, "allowlist too long");
         require!(per_tx_cap.0 > 0 && daily_cap.0 >= per_tx_cap.0, "daily cap must be at least the per-payment cap");
         require!(cooling_threshold.0 <= per_tx_cap.0, "threshold must not exceed the per-payment cap");
@@ -1296,6 +1300,25 @@ mod tests {
     fn propose_near(c: &mut Bridle, id: u64, amt: u128, to: &str) -> Proposal {
         ctx("agent.testnet", 0, T0);
         c.propose_payment(id, Chain::Near, "NEAR".into(), U128(amt), to.into())
+    }
+
+    #[test]
+    #[should_panic(expected = "cannot be combined with other chains")]
+    fn near_mandates_are_near_only() {
+        ctx("owner.testnet", 0, T0);
+        let mut c = Bridle::new(acct("exec.testnet"));
+        c.create_mandate(
+            acct("agent.testnet"),
+            vec![Chain::Base, Chain::Near],
+            vec!["usdc".into(), "near".into()],
+            vec![],
+            U128(5 * NEAR),
+            U128(8 * NEAR),
+            U128(3 * NEAR),
+            600,
+            U128(0),
+            7,
+        );
     }
 
     #[test]

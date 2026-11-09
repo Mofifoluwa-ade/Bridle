@@ -22,6 +22,16 @@ export function formatUnits(v: string | bigint, decimals: number = ASSET.decimal
 
 export const usdc = (v: string | bigint) => `${formatUnits(v)} ${ASSET.symbol}`;
 
+export type Unit = "USDC" | "NEAR";
+export const unitOfAsset = (asset: string): Unit => (asset.toUpperCase() === "NEAR" ? "NEAR" : "USDC");
+/** A NEAR mandate is NEAR-only; everything else is USDC. */
+export const unitOfMandate = (m: { chains: string[] }): Unit => (m.chains.includes("Near") ? "NEAR" : "USDC");
+export const unitDecimals = (u: Unit) => (u === "NEAR" ? 24 : 6);
+
+/** Show an amount in the mandate's asset: native NEAR has 24 decimals, USDC has 6. */
+export const money = (v: string | bigint, unit: Unit) => (unit === "NEAR" ? formatNear(v) : usdc(v));
+export const amountOf = (p: { asset: string; amount: string | bigint }) => money(p.amount, unitOfAsset(p.asset));
+
 export function parseNear(text: string): bigint | null {
   const v = parseUnits(text, 24);
   return v;
@@ -83,7 +93,8 @@ export function countdown(ms: number): string {
 }
 
 /** Light address checks. The contract stores the string as given, so catch typos here. */
-export function validAddress(chain: "Base" | "Solana", a: string): boolean {
+export function validAddress(chain: "Base" | "Solana" | "Near", a: string): boolean {
+  if (chain === "Near") return validNearAccount(a);
   if (chain === "Base") return /^0x[0-9a-fA-F]{40}$/.test(a);
   return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a);
 }
