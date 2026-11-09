@@ -12,6 +12,7 @@ const links = [
   { href: "/#questions", label: "FAQ" },
   { href: "/docs", label: "Docs" },
   { href: "/brand", label: "Brand" },
+  { href: "/brand", label: "Brand" },
 ];
 
 export function Nav() {
