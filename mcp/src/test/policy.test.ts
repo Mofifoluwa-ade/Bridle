@@ -62,3 +62,19 @@ test("queued limits only apply once due", () => {
   assert.equal(effectiveLimits(m, NOW_NS + 1000n).perTx, 5_000_000n);
   assert.equal(rule(checkPayment(m, NOW_NS + 1000n, pay(10_000_000n))), "per_tx_cap");
 });
+
+import { isNearAccount } from "../policy.js";
+test("NEAR chain: asset and account are checked before the allowlist", () => {
+  const NEAR_ACCT = "bridled.testnet";
+  const m = mandate({ chains: ["Near"], assets: ["NEAR"], allowlist: [{ chain: "Near", address: NEAR_ACCT }], per_tx_cap: "1000000000000000000000000", daily_cap: "2000000000000000000000000", cooling_threshold: "500000000000000000000000", spent_today: "0" });
+  const p = (over: object = {}) => ({ chain: "Near" as const, asset: "NEAR", amount: 100_000_000_000_000_000_000_000n, recipient: NEAR_ACCT, ...over });
+  assert.equal(rule(checkPayment(m, NOW_NS, p())), "ready");
+  assert.equal(rule(checkPayment(m, NOW_NS, p({ recipient: "mallory.testnet" }))), "recipient");
+  assert.equal(rule(checkPayment(m, NOW_NS, p({ recipient: "NOT VALID" }))), "recipient");
+  assert.equal(rule(checkPayment(m, NOW_NS, p({ amount: 1_500_000_000_000_000_000_000_000n }))), "per_tx_cap");
+  assert.equal(rule(checkPayment(m, NOW_NS, p({ amount: 700_000_000_000_000_000_000_000n }))), "review");
+  assert.equal(isNearAccount("ade.testnet"), true);
+  assert.equal(isNearAccount("a"), false);
+  assert.equal(isNearAccount("Ade.testnet"), false);
+  assert.equal(isNearAccount("ade..testnet"), false);
+});

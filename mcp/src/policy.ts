@@ -15,6 +15,11 @@ export type Verdict =
   | { outcome: "review"; reason: string; executableAtNs: bigint }
   | { outcome: "ready"; reason: string };
 
+/** NEAR account ids: 2-64 chars of a-z 0-9 - _ . with no leading, trailing or doubled separators. */
+export function isNearAccount(id: string): boolean {
+  return id.length >= 2 && id.length <= 64 && /^([a-z\d]+[-_])*[a-z\d]+(\.([a-z\d]+[-_])*[a-z\d]+)*$/.test(id);
+}
+
 export type PaymentInput = { chain: Chain; asset: string; amount: bigint; recipient: string };
 
 /** The limits that apply at `now`: pending limits take over once their time has passed. */
@@ -53,6 +58,8 @@ export function checkPayment(m: Mandate, nowNs: bigint, input: PaymentInput): Ve
   if (BigInt(m.bond_posted) < BigInt(m.bond)) return blocked("bond", "The agent bond is not fully posted");
   if (!m.chains.includes(input.chain)) return blocked("chain", "Chain is not allowed by the mandate");
   if (!m.assets.includes(asset)) return blocked("asset", "Asset is not allowed by the mandate");
+  if (input.chain === "Near" && asset !== "NEAR") return blocked("asset", "Native NEAR payments use the NEAR asset");
+  if (input.chain === "Near" && !isNearAccount(input.recipient)) return blocked("recipient", "Recipient is not a valid NEAR account");
   if (!m.allowlist.some((r) => r.chain === input.chain && r.address === input.recipient))
     return blocked("recipient", "Recipient is not on the allowlist");
   if (input.amount === 0n) return blocked("zero_amount", "Amount must be above zero");
