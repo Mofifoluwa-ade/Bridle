@@ -7,7 +7,7 @@ import { Btn, Card, Field, Label, LinkBtn, Notice, PageHeader, Skeleton, monoInp
 import { useWallet } from "@/components/app/WalletProvider";
 import { useMyMandates } from "@/hooks/useMyData";
 import { CONFIG } from "@/lib/config";
-import { formatNear, formatNearWithUsd, parseUnits, usdc, validAddress } from "@/lib/format";
+import { formatNear, formatNearWithUsd, money, parseUnits, unitDecimals, unitOfMandate, validAddress } from "@/lib/format";
 import type { Chain } from "@/lib/types";
 
 export default function Agent() {
@@ -38,6 +38,10 @@ function Body() {
   useEffect(() => {
     if (mid === null && mine.length) setMid(mine[0].id);
   }, [mine, mid]);
+  const sel = mine.find((x) => x.id === mid) ?? mine[0];
+  useEffect(() => {
+    if (sel && !sel.chains.includes(chain)) setChain(sel.chains[0]);
+  }, [sel, chain]);
 
   if (accountId && mandates.loading) return <Skeleton className="h-72" />;
   if (accountId && mandates.error) return <Notice tone="bad" title="Could not read the contract">{mandates.error}</Notice>;
@@ -51,7 +55,8 @@ function Body() {
 
   const m = mine.find((x) => x.id === mid) ?? mine[0];
   const need = m ? BigInt(m.bond) - BigInt(m.bond_posted) : BigInt(0);
-  const amt = parseUnits(amount);
+  const unit = m ? unitOfMandate(m) : "USDC";
+  const amt = parseUnits(amount, unitDecimals(unit));
   const addrOk = validAddress(chain, recipient);
   const canSend = Boolean(accountId && amt !== null && amt > BigInt(0) && addrOk && need <= BigInt(0));
 
@@ -69,7 +74,7 @@ function Body() {
   };
 
   const snippet = `near contract call-function as-transaction ${CONFIG.contractId || "bridle.testnet"} propose_payment \\
-  json-args '{"mandate_id":${m?.id ?? 1},"chain":"${chain}","asset":"USDC","amount":"${amt ?? "15000000"}","recipient":"${recipient || (chain === "Base" ? "0x71C...b87" : "9Wz...4b8")}"}' \\
+  json-args '{"mandate_id":${m?.id ?? 1},"chain":"${chain}","asset":"${unit}","amount":"${amt ?? (unit === "NEAR" ? "1000000000000000000000000" : "15000000")}","recipient":"${recipient || (chain === "Base" ? "0x71C...b87" : chain === "Near" ? "friend.testnet" : "9Wz...4b8")}"}' \\
   prepaid-gas '100 Tgas' attached-deposit '0 NEAR' \\
   sign-as ${accountId || "your-agent.testnet"} network-config testnet sign-with-keychain send`;
 
@@ -136,17 +141,17 @@ function Body() {
                 </select>
               </Field>
               <Field label="Recipient address" hint="Try entering an address not on your approved list to see it get blocked." error={recipient && !addrOk ? "Not a valid address for this chain" : null}>
-                <input className={monoInputCls} value={recipient} onChange={(e) => setRecipient(e.target.value.trim())} spellCheck={false} placeholder={chain === "Base" ? "0x71C...b87" : "9Wz...4b8"} list="allow" />
+                <input className={monoInputCls} value={recipient} onChange={(e) => setRecipient(e.target.value.trim())} spellCheck={false} placeholder={chain === "Base" ? "0x71C...b87" : chain === "Near" ? "friend.testnet" : "9Wz...4b8"} list="allow" />
                 <datalist id="allow">{m ? m.allowlist.filter((r) => r.chain === chain).map((r) => <option key={r.address} value={r.address} />) : null}</datalist>
               </Field>
             </div>
-            <Field label="Amount (Testnet USDC)" hint={m ? `Limits: Up to ${usdc(m.per_tx_cap)} per payment, ${usdc(m.daily_cap)} per day. Pauses above ${usdc(m.cooling_threshold)}.` : "Limits configured by the rule owner (e.g. 25 USDC per payment, 50 USDC daily cap)."} error={amount && amt === null ? "Enter a number like 12.5" : null}>
+            <Field label={`Amount (Testnet ${unit})`} hint={m ? `Limits: Up to ${money(m.per_tx_cap, unit)} per payment, ${money(m.daily_cap, unit)} per day. Pauses above ${money(m.cooling_threshold, unit)}.` : "Limits configured by the rule owner (e.g. 25 USDC per payment, 50 USDC daily cap)."} error={amount && amt === null ? "Enter a number like 12.5" : null}>
               <input className={monoInputCls} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </Field>
             {err && <Notice tone="bad" title="That did not go through">{err}</Notice>}
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               {accountId ? (
-                <Btn size="lg" disabled={!canSend} busy={busy === "send"} onClick={() => run("send", () => call({ method: "propose_payment", args: { mandate_id: m.id, chain, asset: "USDC", amount: amt!.toString(), recipient } }))}>
+                <Btn size="lg" disabled={!canSend} busy={busy === "send"} onClick={() => run("send", () => call({ method: "propose_payment", args: { mandate_id: m.id, chain, asset: unit, amount: amt!.toString(), recipient } }))}>
                   Send test payment
                 </Btn>
               ) : (
@@ -173,8 +178,8 @@ function Body() {
             <Label>Tool for AI models</Label>
             <p className="mt-2 text-xs sm:text-[14px] leading-relaxed text-mute">Give your AI agent this simple tool. Bridle handles the security and limits automatically, so your agent never has access to private keys or direct funds.</p>
             <pre className="mt-3 overflow-x-auto font-mono text-[11.5px] sm:text-[12px] leading-relaxed text-ink dark:text-white p-3.5 rounded-xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border max-w-full">{`propose_payment(
-  chain: "Base" | "Solana",
-  asset: "USDC",
+  chain: "Base" | "Solana" | "Near",
+  asset: "USDC" | "NEAR",
   amount: string,   // testnet amount
   recipient: string
 )`}</pre>

@@ -16,7 +16,7 @@ import { useWallet } from "@/components/app/WalletProvider";
 import { useMyMandates, useProposalsFor } from "@/hooks/useMyData";
 import { useNow } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
-import { nsToMs, timeAgo, usdc } from "@/lib/format";
+import { amountOf, nsToMs, timeAgo, unitOfMandate, usdc } from "@/lib/format";
 import { useAccountBalance } from "@/hooks/useNearBalance";
 import type { Proposal, Mandate } from "@/lib/types";
 import { MandatePolicySummary } from "@/components/app/MandateCard";
@@ -92,7 +92,7 @@ export default function Dashboard() {
         id: `proposal-${p.id}`,
         timestamp: nsToMs(p.created_at),
         href: `/app/proposals/${p.id}`,
-        title: `Payment request · ${usdc(p.amount)}`,
+        title: `Payment request · ${amountOf(p)}`,
         detail: `${p.chain} · to ${p.recipient}${mandate ? ` · Rule #${mandate.id}` : ""}${detail ? ` · ${detail}` : ""}`,
         status: p.status,
         kind: "proposal" as const,
@@ -112,11 +112,13 @@ export default function Dashboard() {
   const mineToDecide = displayProposals.filter(
     (p) => p.status === "Waiting" || p.status === "Flagged"
   );
-  const spent = activeMandates.reduce(
+  // Dashboard totals are USDC only; a NEAR rule has its own unit.
+  const usdcMandates = activeMandates.filter((m) => unitOfMandate(m) === "USDC");
+  const spent = usdcMandates.reduce(
     (a, m) => a + BigInt(m.spent_today || "0"),
     BigInt(0)
   );
-  const cap = activeMandates.reduce(
+  const cap = usdcMandates.reduce(
     (a, m) => a + BigInt(m.daily_cap || "0"),
     BigInt(0)
   );

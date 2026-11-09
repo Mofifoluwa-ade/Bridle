@@ -6,7 +6,7 @@ import { ProposalActions } from "@/components/app/ProposalActions";
 import { Addr, Card, Empty, Label, Notice, PageHeader, Skeleton, StatusPill } from "@/components/app/ui";
 import { useNow, usePoll } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
-import { countdown, nsToMs, usdc } from "@/lib/format";
+import { countdown, nsToMs, amountOf } from "@/lib/format";
 import { api } from "@/lib/near";
 import type { Mandate, Proposal } from "@/lib/types";
 
@@ -76,7 +76,7 @@ function Body() {
                   <Link href={`/app/proposals/${p.id}`} className="font-mono text-[14px] underline">#{p.id}</Link>
                   <span className="font-mono text-xs sm:text-[13px] text-mute truncate max-w-[200px] sm:max-w-none">Rule #{m.id} · Agent: {m.agent}</span>
                 </div>
-                <span className="font-mono text-base sm:text-[18px] flex-none">{usdc(p.amount)} <span className="text-xs sm:text-[13px] text-mute">on {p.chain}</span></span>
+                <span className="font-mono text-base sm:text-[18px] flex-none">{amountOf(p)} <span className="text-xs sm:text-[13px] text-mute">on {p.chain}</span></span>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-1 text-xs sm:text-[14px] text-mute">
                 <span>to <Addr value={p.recipient} chars={10} /></span>

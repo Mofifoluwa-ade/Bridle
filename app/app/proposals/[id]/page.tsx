@@ -8,7 +8,7 @@ import { TxBanner } from "@/components/app/TxBanner";
 import { Addr, Card, Empty, Label, LinkBtn, Notice, PageHeader, Skeleton, STATUS, StatusPill } from "@/components/app/ui";
 import { useNow, usePoll } from "@/hooks/usePoll";
 import { CHAIN_EXPLORER } from "@/lib/config";
-import { countdown, nsToMs, usdc } from "@/lib/format";
+import { countdown, nsToMs, amountOf } from "@/lib/format";
 import { api } from "@/lib/near";
 import type { Mandate, Proposal } from "@/lib/types";
 
@@ -49,7 +49,7 @@ function Body({ id }: { id: number }) {
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6 min-w-0">
           <Card className="p-5 sm:p-7 md:p-8">
-            <p className="font-mono text-[30px] sm:text-[44px] font-medium leading-tight break-all">{usdc(p.amount)}</p>
+            <p className="font-mono text-[30px] sm:text-[44px] font-medium leading-tight break-all">{amountOf(p)}</p>
             <p className="mt-2.5 sm:mt-3 text-sm sm:text-[15px] text-mute flex flex-wrap items-center gap-1.5">on {p.chain} to <Addr value={p.recipient} chars={12} /></p>
 
             {(p.status === "Waiting" || p.status === "Flagged") && (
