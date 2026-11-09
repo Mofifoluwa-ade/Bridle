@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Container } from "./Container";
 import { Logo, LogoMark } from "./Logo";
 
-const columns = [
+const columns: { title: string; links: { href: string; label: string; external?: boolean }[] }[] = [
   {
     title: "Explore",
     links: [
