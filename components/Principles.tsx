@@ -21,8 +21,8 @@ function Icon({ children }: { children: ReactNode }) {
 
 const principles: { title: string; body: string; icon: ReactNode }[] = [
   {
-    title: "No key to steal",
-    body: "The agent never holds a key. Signing authority lives in a contract that follows only your mandate.",
+    title: "No key that can spend",
+    body: "The agent uses a restricted function-call key to submit proposals. It cannot transfer funds or rewrite the mandate.",
     icon: (
       <Icon>
         <circle cx="8" cy="15" r="4" />
@@ -31,8 +31,8 @@ const principles: { title: string; body: string; icon: ReactNode }[] = [
     ),
   },
   {
-    title: "The contract builds every transaction",
-    body: "The agent cannot slip in extra instructions, because it never writes the transaction itself.",
+    title: "Rules live on-chain",
+    body: "Every proposal is checked against the mandate by the contract — not by a prompt, a dashboard or the agent itself.",
     icon: (
       <Icon>
         <path d="M8 7l-5 5 5 5M16 7l5 5-5 5" />
@@ -41,7 +41,7 @@ const principles: { title: string; body: string; icon: ReactNode }[] = [
   },
   {
     title: "You keep the veto",
-    body: "Large payments wait. A watcher can flag them, and nothing flagged moves unless you say so.",
+    body: "Payments over your threshold wait. Watchers can flag a proposal, and you keep the final say.",
     icon: (
       <Icon>
         <circle cx="12" cy="12" r="9" />
@@ -50,8 +50,8 @@ const principles: { title: string; body: string; icon: ReactNode }[] = [
     ),
   },
   {
-    title: "Anyone can execute",
-    body: "Once a payment is approved, anyone can send it. Nothing depends on one operator staying online.",
+    title: "Execution stays open",
+    body: "Once a proposal is ready, execution does not depend on one operator staying online.",
     icon: (
       <Icon>
         <path d="M5 12h14M13 6l6 6-6 6" />
@@ -62,31 +62,35 @@ const principles: { title: string; body: string; icon: ReactNode }[] = [
 
 export function Principles() {
   return (
-    <div className="bg-ink text-[#F3F4F6]">
-      <Container className="pb-28 pt-[104px]">
+    <section className="relative overflow-hidden bg-ink text-[#F3F4F6]">
+      <div aria-hidden className="pointer-events-none absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full border border-white/[0.06]" />
+      <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 h-[360px] w-[360px] rounded-full border border-white/[0.06]" />
+      <Container className="relative pb-20 sm:pb-28 pt-16 sm:pt-24">
         <section id="principles" aria-labelledby="principles-title">
-          <Eyebrow tone="dark">Principles</Eyebrow>
+          <Eyebrow tone="dark">The design principle</Eyebrow>
           <h2
             id="principles-title"
-            className="max-w-[720px] text-[clamp(30px,4.2vw,46px)] font-semibold leading-[1.08] tracking-heading text-white"
+            className="max-w-[760px] text-[clamp(30px,4.5vw,50px)] font-semibold leading-[1.06] tracking-heading text-white"
           >
-            Built so the agent can&apos;t talk its way out.
+            Give the agent a job.
+            <br />
+            Keep the authority somewhere else.
           </h2>
-          <div className="mt-12 sm:mt-14 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 lg:gap-7">
+          <div className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-9">
             {principles.map((p) => (
-              <div key={p.title} className="flex flex-col">
-                <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-night text-[#F3F4F6] transition-transform hover:scale-105">
+              <div key={p.title} className="group flex flex-col">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#2A313C] text-[#46D9A4] transition-all duration-300 group-hover:border-[#46D9A4]/50 group-hover:bg-[#46D9A4]/[0.08]">
                   {p.icon}
                 </div>
-                <h3 className="mb-2 mt-4 text-[17px] sm:text-[18px] font-semibold tracking-[-0.02em] text-white leading-snug">
+                <h3 className="mb-2 mt-5 text-[17px] sm:text-[18px] font-semibold tracking-[-0.02em] text-white leading-snug">
                   {p.title}
                 </h3>
-                <p className="text-[13.5px] sm:text-[14px] leading-[1.58] text-dim">{p.body}</p>
+                <p className="text-[13.5px] sm:text-[14px] leading-[1.7] text-[#A3ABB8]">{p.body}</p>
               </div>
             ))}
           </div>
         </section>
       </Container>
-    </div>
+    </section>
   );
 }
