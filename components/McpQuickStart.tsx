@@ -58,7 +58,7 @@ export function McpQuickStart() {
             </div>
             <span className="rounded-full border border-[#46D9A4]/20 bg-[#46D9A4]/10 px-3 py-1 font-mono text-[10px] text-[#46D9A4]">stdio</span>
           </div>
-          <div className="mt-4 [&_>_div]:border-white/10 [&_>_div]:bg-[#0B0E14] [&_>_div_div]:border-white/10 [&_pre]:text-[#DCE2E9]">
+          <div className="dark mt-4">
             <CodeBlock code={config} label="mcp.json" />
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
