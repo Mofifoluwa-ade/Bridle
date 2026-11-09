@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     q: "Which networks and assets are supported?",
-    a: "NEAR-native payments are made from a balance funded by the mandate owner. Base USDC transfers have been verified on Base Sepolia through NEAR Chain Signatures and the executor. Solana support is planned, not implemented. Each mandate uses one network so its spending limits stay in a single unit.",
+    a: "NEAR-native payments are made from a balance funded by the mandate owner. Base USDC transfers have been verified on Base Sepolia through NEAR Chain Signatures and the executor. Solana support is planned, not implemented. NEAR-native mandates are NEAR-only so their spending limits stay denominated in NEAR.",
   },
   {
     q: "What happens when a payment is outside the rules?",
