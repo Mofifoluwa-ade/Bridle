@@ -3,90 +3,67 @@ import { Container, Eyebrow } from "./Container";
 
 function Icon({ children }: { children: ReactNode }) {
   return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {children}
     </svg>
   );
 }
 
-const principles: { title: string; body: string; icon: ReactNode }[] = [
+const principles: { number: string; title: string; body: string; icon: ReactNode }[] = [
   {
-    title: "No key to steal",
-    body: "The agent never holds a key. Signing authority lives in a contract that follows only your mandate.",
-    icon: (
-      <Icon>
-        <circle cx="8" cy="15" r="4" />
-        <path d="M11 12l9-9M17 6l3 3M4 4l16 16" />
-      </Icon>
-    ),
+    number: "01",
+    title: "Policy before payment",
+    body: "Every proposal is checked by the NEAR contract against the mandate — not by an agent prompt or a dashboard-side rule.",
+    icon: <Icon><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" /><path d="M8.5 12l2.2 2.2 4.8-5" /></Icon>,
   },
   {
-    title: "The contract builds every transaction",
-    body: "The agent cannot slip in extra instructions, because it never writes the transaction itself.",
-    icon: (
-      <Icon>
-        <path d="M8 7l-5 5 5 5M16 7l5 5-5 5" />
-      </Icon>
-    ),
+    number: "02",
+    title: "Authority stays bounded",
+    body: "The agent's function-call key is restricted to proposing payments. It cannot edit the mandate or move funds directly.",
+    icon: <Icon><circle cx="8" cy="15" r="4" /><path d="M11 12l9-9M17 6l3 3" /></Icon>,
   },
   {
-    title: "You keep the veto",
-    body: "Large payments wait. A watcher can flag them, and nothing flagged moves unless you say so.",
-    icon: (
-      <Icon>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M10 9v6M14 9v6" />
-      </Icon>
-    ),
+    number: "03",
+    title: "Tighten immediately",
+    body: "Owners can reduce limits or revoke access at once. Looser limits and expanded permissions wait through a challenge window.",
+    icon: <Icon><path d="M12 3v18M5 10l7-7 7 7" /><path d="M5 21h14" /></Icon>,
   },
   {
-    title: "Anyone can execute",
-    body: "Once a payment is approved, anyone can send it. Nothing depends on one operator staying online.",
-    icon: (
-      <Icon>
-        <path d="M5 12h14M13 6l6 6-6 6" />
-      </Icon>
-    ),
+    number: "04",
+    title: "Keep a human veto",
+    body: "Threshold payments can wait for review. Watchers can flag suspicious proposals, and the owner keeps the final say.",
+    icon: <Icon><circle cx="12" cy="12" r="9" /><path d="M10 9v6M14 9v6" /></Icon>,
   },
 ];
 
 export function Principles() {
   return (
-    <div className="bg-ink text-[#F3F4F6]">
-      <Container className="pb-28 pt-[104px]">
-        <section id="principles" aria-labelledby="principles-title">
-          <Eyebrow tone="dark">Principles</Eyebrow>
-          <h2
-            id="principles-title"
-            className="max-w-[720px] text-[clamp(30px,4.2vw,46px)] font-semibold leading-[1.08] tracking-heading text-white"
-          >
-            Built so the agent can&apos;t talk its way out.
-          </h2>
-          <div className="mt-12 sm:mt-14 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 lg:gap-7">
+    <section className="bg-ink text-[#F3F4F6]">
+      <Container className="py-16 sm:py-24">
+        <div id="principles" aria-labelledby="principles-title">
+          <Eyebrow tone="dark">Design principles</Eyebrow>
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <h2 id="principles-title" className="max-w-[650px] text-[clamp(30px,4.3vw,48px)] font-semibold leading-[1.07] tracking-heading text-white">
+              Autonomy, without handing over the keys.
+            </h2>
+            <p className="max-w-[330px] text-sm leading-[1.7] text-[#A3ABB8]">
+              The agent can ask. The mandate decides what is allowed.
+            </p>
+          </div>
+          <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
             {principles.map((p) => (
-              <div key={p.title} className="flex flex-col">
-                <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-night text-[#F3F4F6] transition-transform hover:scale-105">
+              <article key={p.number} className="border-t border-white/15 pt-5">
+                <div className="flex items-center justify-between text-[#46D9A4]">
+                  <span className="font-mono text-[11px]">{p.number}</span>
                   {p.icon}
                 </div>
-                <h3 className="mb-2 mt-4 text-[17px] sm:text-[18px] font-semibold tracking-[-0.02em] text-white leading-snug">
-                  {p.title}
-                </h3>
-                <p className="text-[13.5px] sm:text-[14px] leading-[1.58] text-dim">{p.body}</p>
-              </div>
+                <h3 className="mt-6 text-[18px] font-semibold tracking-[-0.02em] text-white">{p.title}</h3>
+                <p className="mt-3 text-[14px] leading-[1.7] text-[#A3ABB8]">{p.body}</p>
+              </article>
             ))}
           </div>
-        </section>
+        </div>
       </Container>
-    </div>
+    </section>
   );
 }
