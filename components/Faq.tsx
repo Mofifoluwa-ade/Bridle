@@ -6,8 +6,8 @@ const mail = (subject: string, body: string) =>
 
 const faqs = [
   {
-    q: "Why does the agent not hold a key?",
-    a: "An agent with a key is one prompt injection away from an empty wallet. With Bridle the agent sends four fields: chain, asset, amount and recipient. The contract checks them against the mandate you signed, builds the transaction itself and asks for the signature. Signing for Base and Solana is still being connected in this version.",
+    q: "What can the agent's key actually do?",
+    a: "The MCP agent uses a restricted NEAR function-call key to submit propose_payment calls. That key cannot transfer funds or change the mandate. Bridle checks each proposal against the rules you signed. The contract is running on NEAR testnet; Base signing is built but not yet verified end to end, and Solana is not built.",
   },
   {
     q: "What can the agent actually do?",
