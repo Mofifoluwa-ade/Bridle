@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { NeedsContract } from "@/components/app/Gate";
 import { TxBanner } from "@/components/app/TxBanner";
 import { Addr, Btn, Card, Label, LinkBtn, Notice, PageHeader, Skeleton } from "@/components/app/ui";
@@ -20,7 +20,9 @@ export default function PayPage() {
     <>
       <PageHeader title="Payment request" lead="Someone asked you to pay them NEAR. Check the details, then pay under one of your spending rules." />
       <NeedsContract>
-        <Body />
+        <Suspense fallback={null}>
+          <Body />
+        </Suspense>
       </NeedsContract>
     </>
   );

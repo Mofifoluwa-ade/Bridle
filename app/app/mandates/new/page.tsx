@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Btn, Card, Field, HelpButton, HelpDropdown, HelpGuideMenu, Label, Notice, PageHeader, monoInputCls } from "@/components/app/ui";
@@ -146,7 +146,9 @@ export default function NewMandate() {
           You can configure and test a draft below. On-chain creation is unavailable until NEXT_PUBLIC_BRIDLE_CONTRACT is configured.
         </Notice>
       )}
-      <Form />
+      <Suspense fallback={null}>
+        <Form />
+      </Suspense>
     </>
   );
 }
