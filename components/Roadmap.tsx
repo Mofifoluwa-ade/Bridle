@@ -22,10 +22,11 @@ const stages: Stage[] = [
   },
   {
     tag: "Next",
-    title: "Harden it",
+    title: "Auditing",
     state: "next",
     items: [
-      "Independent contract audit",
+      "Contract audit, done by the author in the open",
+      "Findings and fixes published in the docs",
       "A separate executor account",
       "On-chain payment requests",
     ],
