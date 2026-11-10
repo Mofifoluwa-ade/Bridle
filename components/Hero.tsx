@@ -1,10 +1,12 @@
 import { Container, Eyebrow, PrimaryButton, SecondaryButton } from "./Container";
+import { HeroGrid } from "./HeroGrid";
 import { MandateCard } from "./MandateCard";
 
 export function Hero() {
   return (
     <Container className="relative pb-20 sm:pb-28 pt-8 sm:pt-16">
       <div aria-hidden className="hero-grid pointer-events-none absolute inset-x-0 -top-24 h-[640px]" />
+      <HeroGrid />
       <div aria-hidden className="hero-glow pointer-events-none absolute -right-24 top-0 h-[420px] w-[420px] rounded-full bg-accent/[0.07] blur-3xl dark:bg-accent-dark/[0.08]" />
       <div id="top" className="relative grid items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:gap-16">
         <div className="min-w-0">
