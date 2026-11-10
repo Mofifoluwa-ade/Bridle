@@ -471,6 +471,24 @@ export default function BrandPage() {
                 </p>
               </div>
             </section>
+
+            <div className="rounded-[24px] bg-ink p-7 text-white sm:p-10">
+              <div className="flex items-center gap-3">
+                <LogoMark size={34} strokeWidth={4.5} />
+                <Wordmark className="text-[20px]" />
+              </div>
+              <p className="mt-8 max-w-2xl text-[clamp(28px,4vw,40px)] font-semibold leading-[1.1] tracking-heading">
+                Steer your agents,
+                <br />
+                don’t trust them.
+              </p>
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-5">
+                <p className="text-[12px] text-white/50">Bridle brand guidelines · Last updated November 2026</p>
+                <Link href="/" className="text-[14px] font-medium text-white transition-colors hover:text-accent-dark">
+                  Back to Bridle <span aria-hidden>↗</span>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </Container>
