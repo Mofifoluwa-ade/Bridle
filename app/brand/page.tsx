@@ -191,7 +191,7 @@ export default function BrandPage() {
                   ["What it is", "A NEAR contract that lets an AI agent spend across chains without holding a key, inside a mandate the owner signs once."],
                   ["Who it is for", "Developers and teams who want agents to move money and need to cap the downside, and anyone who must grasp the idea in one glance."],
                   ["The promise", "You set the limits once, the contract enforces them, and you keep the veto."],
-                  ["Why “Bridle”", "A leash only restrains, but a bridle steers. Humans are the steering wheel and the agent is the engine. It was also chosen over “Leash” because an established LEASH token already exists."],
+                  ["What “Bridle” means", "A bridle does not stop a horse. It lets the rider set the direction while the horse does the work. Here the agent does the work, and your rules set where it can go."],
                 ].map(([k, v]) => (
                   <div key={k} className={card}>
                     <p className={`${micro} text-accent dark:text-accent-dark`}>{k}</p>
