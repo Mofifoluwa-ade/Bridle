@@ -205,7 +205,8 @@ const NAV_SECTIONS = [
   {
     title: "Reference & FAQ",
     items: [
-      { id: "threat-model", label: "Safety Guarantees" },
+      { id: "status", label: "Status & Limits" },
+      { id: "threat-model", label: "What You Still Trust" },
       { id: "error-codes", label: "Error Messages & Fixes" },
       { id: "faq", label: "Frequently Asked Questions" },
     ],
@@ -1153,6 +1154,57 @@ export default function DocsPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </section>
+
+            {/* STATUS & LIMITS */}
+            <section id="status" className="scroll-mt-24 space-y-6">
+              <div className="space-y-1">
+                <p className="font-mono text-xs uppercase tracking-wider text-accent dark:text-[#46D9A4] font-semibold">
+                  Status &amp; Limits
+                </p>
+                <h2 className="text-2xl font-semibold text-ink dark:text-white">
+                  What works today, and what does not.
+                </h2>
+                <p className="text-sm text-mute dark:text-dark-mute leading-relaxed max-w-2xl">
+                  Bridle claims only what it does. Anything that runs on a testnet, is planned, or rests on a trust assumption is labelled here. Plans are on the <Link href="/#roadmap" className="underline text-accent dark:text-[#46D9A4]">roadmap</Link>.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="p-5 rounded-2xl border border-accent/25 bg-white dark:bg-dark-card space-y-3">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-accent dark:text-[#46D9A4] font-semibold">Works today</p>
+                  <ul className="space-y-2.5 text-xs text-ink dark:text-white leading-relaxed">
+                    <li>A NEAR contract that enforces recipients, caps, review thresholds and a veto.</li>
+                    <li>Native NEAR payments from a balance the owner funds and can take back.</li>
+                    <li>USDC on Base Sepolia through NEAR Chain Signatures, verified end to end.</li>
+                    <li>Payment-request links and one-click Pay for native NEAR.</li>
+                    <li>bridle-mcp on npm: read-only without a key, proposals with a restricted one.</li>
+                  </ul>
+                </div>
+                <div className="p-5 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card space-y-3">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-mute dark:text-dark-mute font-semibold">Not yet, or not claimed</p>
+                  <ul className="space-y-2.5 text-xs text-mute dark:text-dark-mute leading-relaxed">
+                    <li>Solana signing. It is planned, not built.</li>
+                    <li>Mainnet. Everything runs on testnets with test assets.</li>
+                    <li>An audit. The contract has not been audited.</li>
+                    <li>Arbitrary contract calls. Every payment is a plain transfer.</li>
+                    <li>Mixed assets in one rule. A NEAR rule is NEAR-only, and caps are set in that asset&apos;s units.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div id="threat-model" className="p-5 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card space-y-3">
+                <h3 className="text-sm font-semibold text-ink dark:text-white">What you still trust</h3>
+                <p className="text-xs text-mute dark:text-dark-mute leading-relaxed">
+                  Bridle removes the agent&apos;s access to your keys. It does not remove every trust assumption.
+                </p>
+                <ul className="space-y-2 text-xs text-mute dark:text-dark-mute leading-relaxed list-disc pl-4">
+                  <li>For payments on other chains, the NEAR Chain Signatures network signs the transaction, and Bridle does not remove that trust.</li>
+                  <li>An executor account broadcasts the signed transaction. It cannot change the payment, but it can delay it.</li>
+                  <li>The contract is the only enforcement point, and it has not been audited yet.</li>
+                  <li>The approved recipients are fixed when you sign the rule. Paying a new recipient needs a new rule.</li>
+                </ul>
               </div>
             </section>
 

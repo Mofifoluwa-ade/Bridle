@@ -3,7 +3,7 @@ import { Cta } from "@/components/Cta";
 import { Faq } from "@/components/Faq";
 import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/Hero";
-import { HonestEdges } from "@/components/HonestEdges";
+import { Roadmap } from "@/components/Roadmap";
 import { HowSticky } from "@/components/HowSticky";
 import { McpQuickStart } from "@/components/McpQuickStart";
 import { Nav } from "@/components/Nav";
@@ -20,7 +20,7 @@ export default function Home() {
       <ScrollReveal><Compare /></ScrollReveal>
       <HowSticky />
       <ScrollReveal stagger><Principles /></ScrollReveal>
-      <ScrollReveal stagger><HonestEdges /></ScrollReveal>
+      <ScrollReveal stagger><Roadmap /></ScrollReveal>
       <ScrollReveal delay={60}><McpQuickStart /></ScrollReveal>
       <ScrollReveal><Faq /></ScrollReveal>
       <ScrollReveal delay={40}><Cta /></ScrollReveal>
