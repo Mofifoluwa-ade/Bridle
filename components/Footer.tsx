@@ -17,6 +17,9 @@ export function Footer() {
           <Link href="/mcp" className="hover:text-ink dark:hover:text-white transition-colors">
             For agents
           </Link>
+          <Link href="/brand" className="hover:text-ink dark:hover:text-white transition-colors">
+            Brand guidelines
+          </Link>
           <Link href="/app" className="hover:text-ink dark:hover:text-white transition-colors">
             Launch App
           </Link>
