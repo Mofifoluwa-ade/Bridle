@@ -39,6 +39,7 @@ export const api = {
   proposal: (id: number) => view<Proposal | null>("get_proposal", { proposal_id: id }),
   proposals: (mandateId: number | null, limit = 50) =>
     view<Proposal[]>("list_proposals", { mandate_id: mandateId, from: 0, limit }),
+  counts: async () => ({ mandates: await view<number>("count_mandates"), proposals: await view<number>("count_proposals") }),
   nearBalance: (id: number) => view<string>("get_near_balance", { mandate_id: id }),
   config: () => view<{ executor: string; flag_bond_divisor: number }>("get_config"),
 };

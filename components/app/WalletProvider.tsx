@@ -25,6 +25,8 @@ type WalletCtx = {
   signOut: () => Promise<void>;
   /** Sign and send a function call to the Bridle contract. Throws a readable Error. */
   call: (c: CallArgs) => Promise<string | null>;
+  /** Several calls to the Bridle contract in ONE transaction: one approval, and all of them succeed or none do. */
+  callBatch: (calls: CallArgs[]) => Promise<string | null>;
 };
 
 const Ctx = createContext<WalletCtx | null>(null);
@@ -123,9 +125,30 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     [accountId, ready],
   );
 
+  const callBatch = useCallback(
+    async (calls: CallArgs[]) => {
+      if (!connector.current || !ready) throw new Error("Wallet connector is still loading. Try again in a second.");
+      if (!accountId) throw new Error("Connect your NEAR wallet before submitting this transaction.");
+      if (!CONFIG.contractId) throw new Error("NEXT_PUBLIC_BRIDLE_CONTRACT is not set.");
+      try {
+        const wallet = await connector.current.wallet();
+        const out = await wallet.signAndSendTransaction({
+          receiverId: CONFIG.contractId,
+          actions: calls.map((c) =>
+            actionCreators.functionCall(c.method, c.args, BigInt(c.gas ?? "100000000000000"), BigInt(c.deposit ?? "0")),
+          ),
+        });
+        return out && "transaction" in out ? (out.transaction.hash as string) : null;
+      } catch (error) {
+        throw new Error(explainError(error));
+      }
+    },
+    [accountId, ready],
+  );
+
   const value = useMemo<WalletCtx>(
-    () => ({ ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call }),
-    [ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call],
+    () => ({ ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call, callBatch }),
+    [ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call, callBatch],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

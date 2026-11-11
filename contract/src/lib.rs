@@ -1321,6 +1321,35 @@ mod tests {
         );
     }
 
+    /// The web app's one-click Pay sends these four calls in one transaction, as the same account.
+    #[test]
+    fn one_click_pay_batch_works_end_to_end() {
+        ctx("owner.testnet", 0, T0);
+        let mut c = Bridle::new(acct("exec.testnet"));
+        let amt = 2 * NEAR;
+        let m = c.create_mandate(
+            acct("owner.testnet"),
+            vec![Chain::Near],
+            vec!["NEAR".into()],
+            vec![Recipient { chain: Chain::Near, address: ADE.into() }],
+            U128(amt),
+            U128(amt),
+            U128(amt),
+            60,
+            U128(0),
+            1,
+        );
+        ctx("owner.testnet", amt, T0);
+        c.fund_mandate(m.id);
+        ctx("owner.testnet", 0, T0);
+        let p = c.propose_payment(m.id, Chain::Near, "NEAR".into(), U128(amt), ADE.into());
+        assert_eq!(p.status, ProposalStatus::Ready);
+        c.execute(p.id);
+        assert_eq!(c.get_near_balance(m.id).0, 0);
+        c.on_near_paid(p.id, Ok(()));
+        assert_eq!(c.get_proposal(p.id).unwrap().status, ProposalStatus::Executed);
+    }
+
     #[test]
     fn near_payment_pays_from_the_mandate_balance() {
         let (mut c, id) = setup_near();

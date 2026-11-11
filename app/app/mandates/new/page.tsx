@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Btn, Card, Field, HelpButton, HelpDropdown, HelpGuideMenu, Label, Notice, PageHeader, monoInputCls } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
 import { CHAINS, CONFIG } from "@/lib/config";
@@ -146,7 +146,9 @@ export default function NewMandate() {
           You can configure and test a draft below. On-chain creation is unavailable until NEXT_PUBLIC_BRIDLE_CONTRACT is configured.
         </Notice>
       )}
-      <Form />
+      <Suspense fallback={null}>
+        <Form />
+      </Suspense>
     </>
   );
 }
@@ -154,22 +156,29 @@ export default function NewMandate() {
 function Form() {
   const { accountId, call, signIn, ready, connecting, connectionError } = useWallet();
   const router = useRouter();
+  // A payment-request link can open this page with a NEAR recipient and amount filled in.
+  const sp = useSearchParams();
+  const preNear = (() => {
+    const to = sp.get("near")?.trim() ?? "";
+    const amt = sp.get("amount")?.trim() ?? "";
+    return validNearAccount(to) && (parseNear(amt) ?? BigInt(0)) > BigInt(0) ? { to, amt } : null;
+  })();
   const [step, setStep] = useState<Step>(0);
   const [agent, setAgent] = useState("");
-  const [chains, setChains] = useState<Chain[]>(["Base"]);
+  const [chains, setChains] = useState<Chain[]>(preNear ? ["Near"] : ["Base"]);
   // A NEAR mandate is NEAR-only: its caps are in NEAR (24 decimals), not USDC (6).
   const isNear = chains.includes("Near");
   const unit: "USDC" | "NEAR" = isNear ? "NEAR" : "USDC";
   const dec = isNear ? 24 : 6;
-  const [rows, setRows] = useState<Row[]>([{ chain: "Base", address: "" }]);
-  const [perTx, setPerTx] = useState("25");
-  const [daily, setDaily] = useState("50");
-  const [threshold, setThreshold] = useState("20");
+  const [rows, setRows] = useState<Row[]>([preNear ? { chain: "Near", address: preNear.to } : { chain: "Base", address: "" }]);
+  const [perTx, setPerTx] = useState(preNear ? preNear.amt : "25");
+  const [daily, setDaily] = useState(preNear ? preNear.amt : "50");
+  const [threshold, setThreshold] = useState(preNear ? preNear.amt : "20");
   const [windowMin, setWindowMin] = useState("10");
   const [bond, setBond] = useState("0");
   const [days, setDays] = useState("7");
   const [testAmount, setTestAmount] = useState("10");
-  const [testChain, setTestChain] = useState<Chain>("Base");
+  const [testChain, setTestChain] = useState<Chain>(preNear ? "Near" : "Base");
   const [testRecipient, setTestRecipient] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
