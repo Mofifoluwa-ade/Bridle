@@ -112,8 +112,8 @@ body {
     linear-gradient(to right, rgba(14, 17, 22, 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(14, 17, 22, 0.05) 1px, transparent 1px);
   background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 95% 62% at 50% 0%, #000 35%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 95% 62% at 50% 0%, #000 35%, transparent 80%);
 }
 .dark .hero-grid {
   background-image:

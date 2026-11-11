@@ -5,10 +5,11 @@ import { MandateCard } from "./MandateCard";
 
 export function Hero() {
   return (
-    <Container className="relative pb-20 sm:pb-28 pt-8 sm:pt-16">
+    <div className="relative overflow-x-clip">
       <div aria-hidden className="hero-grid pointer-events-none absolute inset-x-0 -top-24 h-[640px]" />
       <HeroGrid />
-      <div aria-hidden className="hero-glow pointer-events-none absolute -right-24 top-0 h-[420px] w-[420px] rounded-full bg-accent/[0.07] blur-3xl dark:bg-accent-dark/[0.08]" />
+      <div aria-hidden className="hero-glow pointer-events-none absolute right-[-6rem] top-0 h-[420px] w-[420px] rounded-full bg-accent/[0.07] blur-3xl dark:bg-accent-dark/[0.08]" />
+    <Container className="relative pb-20 sm:pb-28 pt-8 sm:pt-16">
       <div id="top" className="relative grid items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:gap-16">
         <div className="min-w-0">
           <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-line bg-white/80 px-3.5 py-2 shadow-sm dark:border-dark-border dark:bg-dark-card/80">
@@ -53,5 +54,6 @@ export function Hero() {
         </div>
       </div>
     </Container>
+    </div>
   );
 }
