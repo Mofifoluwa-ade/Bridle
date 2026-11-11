@@ -17,7 +17,7 @@ export function Cta() {
             Start with a testnet mandate. Keep the rules, approvals and revocation in your hands.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <PrimaryButton href="/app/mandates/new" large>Create a mandate</PrimaryButton>
+            <PrimaryButton href="/app" large>Open app</PrimaryButton>
             <SecondaryButton href="/mcp">Set up MCP</SecondaryButton>
           </div>
           <Link href="/how-it-works" className="mt-6 inline-flex text-[13px] font-medium text-mute underline underline-offset-4 decoration-rule hover:text-ink dark:text-dark-mute dark:decoration-dark-border dark:hover:text-white">

@@ -42,7 +42,7 @@ export function Principles() {
     <section className="bg-ink text-[#F3F4F6]">
       <Container className="py-16 sm:py-24">
         <div id="principles" aria-labelledby="principles-title">
-          <Eyebrow tone="dark">Design principles</Eyebrow>
+          <Eyebrow tone="dark">Principles</Eyebrow>
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <h2 id="principles-title" className="max-w-[650px] text-[clamp(30px,4.3vw,48px)] font-semibold leading-[1.07] tracking-heading text-white">
               Autonomy, without handing over the keys.
@@ -54,11 +54,10 @@ export function Principles() {
           <SpotlightGrid className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {principles.map((p) => (
               <article key={p.number} data-reveal-item data-spot style={{ "--i": Number(p.number) - 1 } as React.CSSProperties} className="spot rounded-2xl border border-white/10 bg-white/[0.025] p-5 sm:p-6">
-                <div className="flex items-center justify-between text-[#46D9A4]">
-                  <span className="font-mono text-[11px]">{p.number}</span>
+                <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-white/15 bg-white/[0.04] text-white">
                   {p.icon}
                 </div>
-                <h3 className="mt-6 text-[18px] font-semibold tracking-[-0.02em] text-white">{p.title}</h3>
+                <h3 className="mt-7 text-[18px] font-semibold tracking-[-0.02em] text-white">{p.title}</h3>
                 <p className="mt-3 text-[14px] leading-[1.7] text-[#A3ABB8]">{p.body}</p>
               </article>
             ))}

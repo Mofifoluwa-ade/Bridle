@@ -1,4 +1,5 @@
 import { Container, Eyebrow, PrimaryButton, SecondaryButton } from "./Container";
+import { ChainLogo } from "./ChainLogo";
 import { HeroGrid } from "./HeroGrid";
 import { MandateCard } from "./MandateCard";
 
@@ -11,9 +12,10 @@ export function Hero() {
       <div id="top" className="relative grid items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] lg:gap-16">
         <div className="min-w-0">
           <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-line bg-white/80 px-3.5 py-2 shadow-sm dark:border-dark-border dark:bg-dark-card/80">
-            <span className="h-2 w-2 rounded-full bg-accent dark:bg-accent-dark" />
+            <ChainLogo chain="near" size={18} />
+            <ChainLogo chain="base" size={18} className="-ml-0.5" />
             <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.12em] text-mute dark:text-dark-mute">
-              NEAR testnet · Base Sepolia
+              Testnet
             </span>
           </div>
           <Eyebrow>Policy-bound payments for autonomous agents</Eyebrow>
@@ -41,9 +43,9 @@ export function Hero() {
             Your agent proposes payments with a restricted NEAR function-call key. It cannot change the mandate or move funds directly.
           </p>
           <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 border-t border-line pt-5 font-mono text-[10px] uppercase tracking-[0.1em] text-mute dark:border-dark-border dark:text-dark-mute">
-            <span>NEAR native payments</span>
-            <span>Base USDC via Chain Signatures</span>
-            <span>Solana planned</span>
+            <span className="inline-flex items-center gap-2"><ChainLogo chain="near" size={16} />Native payments</span>
+            <span className="inline-flex items-center gap-2"><ChainLogo chain="base" size={16} /><ChainLogo chain="usdc" size={16} className="-ml-1" />Via Chain Signatures</span>
+            <span className="inline-flex items-center gap-2"><ChainLogo chain="solana" size={16} />Planned</span>
           </div>
         </div>
         <div className="w-full min-w-0 lg:pl-2">
