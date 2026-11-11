@@ -11,6 +11,7 @@ const groups = [
       { href: "/#principles", label: "Principles" },
       { href: "/#questions", label: "FAQ" },
       { href: "/docs", label: "Documentation" },
+      { href: "/brand", label: "Brand guidelines" },
     ],
   },
   {
