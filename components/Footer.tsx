@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChainLogo } from "./ChainLogo";
 import { Container } from "./Container";
 import { Logo } from "./Logo";
 
@@ -50,8 +51,9 @@ export function Footer() {
               Policy-bound payments for AI agents. Define the authority once; keep control when it matters.
             </p>
             <div className="mt-7 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3.5 py-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#46D9A4]" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#A3ABB8]">NEAR testnet · Base Sepolia</span>
+              <ChainLogo chain="near" size={16} />
+              <ChainLogo chain="base" size={16} className="-ml-0.5" />
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#A3ABB8]">Testnet</span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-x-7 gap-y-10 sm:grid-cols-3 sm:gap-x-8">

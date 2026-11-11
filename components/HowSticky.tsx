@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChainLogo } from "./ChainLogo";
 import { Container, Eyebrow } from "./Container";
 
 const steps = [
   {
     n: "01",
     title: "You set the mandate",
-    body: "Choose a network and an asset, approve recipients, and set per-payment, daily and review limits. You sign the rules once, on NEAR.",
+    body: "Choose a network and an asset, approve recipients, and set per-payment, daily and review limits. Set them as low or as high as you like. You sign the rules once, on NEAR.",
     note: "Owner-defined authority",
   },
   {
@@ -38,23 +39,47 @@ function Row({ k, v }: { k: string; v: ReactNode }) {
   );
 }
 
+const presets = [
+  { name: "Personal", day: "$50", each: "$25", review: "$20", who: "three" },
+  { name: "Team", day: "$2,000", each: "$500", review: "$250", who: "ten" },
+  { name: "Treasury", day: "$50,000", each: "$10,000", review: "$5,000", who: "twenty" },
+];
+
 function Visual({ i }: { i: number }) {
+  const [pi, setPi] = useState(0);
+  const pr = presets[pi];
   if (i === 0)
     return (
       <div className={panel}>
         <div className="flex items-center justify-between">
-          <span className={label}>Mandate</span>
+          <span className={label}>Example rule</span>
           <span className="rounded-full bg-[#E7F2EE] px-2.5 py-1 font-mono text-[10px] font-medium text-[#0A7C59] dark:bg-accent-tint dark:text-[#46D9A4]">Active</span>
         </div>
+        <div role="group" aria-label="Example rules" className="mt-4 inline-flex rounded-full border border-line p-1 dark:border-dark-border">
+          {presets.map((p, k) => (
+            <button
+              key={p.name}
+              type="button"
+              onClick={() => setPi(k)}
+              aria-pressed={pi === k}
+              className={`min-h-[32px] rounded-full px-3.5 text-[12.5px] font-medium transition-colors ${
+                pi === k ? "bg-ink text-white dark:bg-white dark:text-ink" : "text-mute hover:text-ink dark:text-dark-mute dark:hover:text-white"
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
         <p className="mt-4 text-[20px] font-medium leading-[1.3] tracking-[-0.02em] text-ink dark:text-white">
-          Up to $50 a day, to three approved recipients.
+          Up to {pr.day} a day, to {pr.who} approved recipients.
         </p>
         <div className="mt-4">
-          <Row k="Network" v="Base" />
-          <Row k="Per payment" v="up to $25" />
-          <Row k="Per day" v="$50" />
-          <Row k="Review above" v="$20" />
+          <Row k="Network" v={<span className="inline-flex items-center gap-2"><ChainLogo chain="base" size={16} label={false} />Base</span>} />
+          <Row k="Per payment" v={`up to ${pr.each}`} />
+          <Row k="Per day" v={pr.day} />
+          <Row k="Review above" v={pr.review} />
         </div>
+        <p className="mt-3 text-[12px] leading-[1.5] text-mute dark:text-dark-mute">You choose every number. These are examples.</p>
         <p className="mt-3 flex items-center gap-2 font-mono text-[11px] text-accent dark:text-accent-dark">
           <span aria-hidden>✓</span> Signed on NEAR
         </p>
