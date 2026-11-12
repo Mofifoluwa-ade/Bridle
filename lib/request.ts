@@ -16,7 +16,7 @@ export function buildRequestLink(origin: string, r: PayRequest): string {
   if (r.amount.trim()) q.set("amount", r.amount.trim());
   const memo = cleanMemo(r.memo);
   if (memo) q.set("memo", memo);
-  return `${origin}/app/pay?${q.toString()}`;
+  return `${origin}/pay?${q.toString()}`;
 }
 
 export type ParsedRequest =

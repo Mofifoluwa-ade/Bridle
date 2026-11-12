@@ -75,6 +75,7 @@ export function PaySteps({ amount, to }: { amount: string; to: string }) {
     { t: "Get your receipt", d: "The payment settles on NEAR and you see a receipt you can keep." },
   ];
   return (
+    <>
     <ol className="mt-8 space-y-5">
       {steps.map((s, i) => (
         <li key={s.t} className="flex gap-4">
@@ -86,5 +87,9 @@ export function PaySteps({ amount, to }: { amount: string; to: string }) {
         </li>
       ))}
     </ol>
+    <p className="mt-7 rounded-2xl border border-line p-4 text-[13.5px] leading-relaxed text-mute dark:border-dark-border dark:text-dark-mute">
+      You need a NEAR testnet wallet to pay. If you do not have one yet, create a testnet account in any NEAR wallet, then come back to this page.
+    </p>
+    </>
   );
 }
