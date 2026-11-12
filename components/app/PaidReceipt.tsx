@@ -23,6 +23,9 @@ export function PaidReceipt({
   memo,
   hash,
   oneOff = true,
+  heading = "Payment sent",
+  actions,
+  extra,
 }: {
   yocto: bigint | null;
   to: string;
@@ -30,6 +33,11 @@ export function PaidReceipt({
   memo?: string;
   hash: string;
   oneOff?: boolean;
+  heading?: string;
+  /** Replaces the default buttons. */
+  actions?: React.ReactNode;
+  /** Shown between the receipt and the buttons. */
+  extra?: React.ReactNode;
 }) {
   const [copied, setCopied] = useState(false);
   const [when] = useState(() => new Date());
@@ -71,7 +79,7 @@ export function PaidReceipt({
             <path className="paid-check" d="m5 12.5 4.5 4.5L19 7.5" />
           </svg>
         </div>
-        <p className="paid-fade mt-6 font-mono text-xs uppercase tracking-label text-accent dark:text-accent-dark" style={{ animationDelay: "0.25s" }}>Payment sent</p>
+        <p className="paid-fade mt-6 font-mono text-xs uppercase tracking-label text-accent dark:text-accent-dark" style={{ animationDelay: "0.25s" }}>{heading}</p>
         <p className="paid-fade mt-2 font-mono text-[44px] font-medium leading-none sm:text-[56px]" style={{ animationDelay: "0.3s" }}>
           {shown.toFixed(decimals)} <span className="text-[22px] text-mute dark:text-dark-mute sm:text-[26px]">NEAR</span>
         </p>
@@ -103,9 +111,15 @@ export function PaidReceipt({
         </div>
       </div>
 
+      {extra && <div className="paid-fade mt-6" style={{ animationDelay: "0.55s" }}>{extra}</div>}
+
       <div className="paid-fade mt-7 flex flex-wrap justify-center gap-3" style={{ animationDelay: "0.6s" }}>
-        <LinkBtn href="/app/send" variant="primary">Send another payment</LinkBtn>
-        <LinkBtn href="/app">Back to dashboard</LinkBtn>
+        {actions ?? (
+          <>
+            <LinkBtn href="/app/send" variant="primary">Send another payment</LinkBtn>
+            <LinkBtn href="/app">Back to dashboard</LinkBtn>
+          </>
+        )}
       </div>
       <p className="paid-fade mt-5 text-center text-[12.5px] text-mute dark:text-dark-mute" style={{ animationDelay: "0.65s" }}>Testnet tokens. No real funds moved.</p>
     </div>
