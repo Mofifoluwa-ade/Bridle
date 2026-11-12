@@ -103,6 +103,8 @@ body {
   .paid-check { animation: none; stroke-dashoffset: 0; }
   .paid-ring { animation: none; }
   .paid-fade { animation: none; opacity: 1; transform: none; }
+}
+
 /* Staggered reveal: children marked data-reveal-item rise in one after another. */
 .scroll-stagger[data-reveal-ready="true"][data-revealed="false"] [data-reveal-item] {
   opacity: 0;
