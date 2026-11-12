@@ -103,6 +103,17 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    href: "/app/send",
+    label: "Send a payment",
+    id: "tour-nav-send",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="m22 2-7 20-4-9-9-4Z" />
+        <path d="M22 2 11 13" />
+      </svg>
+    ),
+  },
+  {
     href: "/app/request",
     label: "Request a payment",
     id: "tour-nav-request",

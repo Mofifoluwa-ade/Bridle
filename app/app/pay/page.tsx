@@ -1,15 +1,15 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { NeedsContract } from "@/components/app/Gate";
 import { TxBanner } from "@/components/app/TxBanner";
-import { Addr, Btn, Card, Label, LinkBtn, Notice, PageHeader, Skeleton } from "@/components/app/ui";
+import { Addr, Btn, Card, Field, Label, LinkBtn, Notice, PageHeader, Skeleton, monoInputCls } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
 import { useMyMandates } from "@/hooks/useMyData";
-import { api } from "@/lib/near";
+import { accountExists, api } from "@/lib/near";
 import { useNow } from "@/hooks/usePoll";
-import { formatNear, nsToMs, unitOfMandate } from "@/lib/format";
+import { formatNear, nsToMs, parseNear, unitOfMandate } from "@/lib/format";
 import { parseRequest } from "@/lib/request";
 import type { Mandate } from "@/lib/types";
 
@@ -18,7 +18,7 @@ const DAY_MS = 86_400_000;
 export default function PayPage() {
   return (
     <>
-      <PageHeader title="Payment request" lead="Someone asked you to pay them NEAR. Check the details, then pay under one of your spending rules." />
+      <PageHeader title="Payment request" lead="You are about to pay someone NEAR. Check the details, then pay under one of your spending rules." />
       <NeedsContract>
         <Suspense fallback={null}>
           <Body />
@@ -51,10 +51,29 @@ function Body() {
   const [paying, setPaying] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [typed, setTyped] = useState("");
+  const [exists, setExists] = useState<boolean | null>(null);
   const req = parseRequest((k) => sp.get(k));
+  const toId = req.ok ? req.to : "";
+
+  useEffect(() => {
+    setExists(null);
+    if (!toId) return;
+    let live = true;
+    accountExists(toId).then((v) => live && setExists(v));
+    return () => {
+      live = false;
+    };
+  }, [toId]);
 
   if (!req.ok) return <Notice tone="bad" title="This payment request is not valid">{req.error}</Notice>;
-  const { to, amount, yocto, memo } = req;
+  const { to, memo } = req;
+  // A link without an amount lets the payer choose; a link with one fixes it.
+  const open = req.yocto === null;
+  const typedYocto = parseNear(typed.trim());
+  const yocto: bigint = req.yocto ?? (typedYocto !== null && typedYocto > BigInt(0) ? typedYocto : BigInt(0));
+  const amount = req.amount ?? typed.trim();
+  const ready = yocto > BigInt(0);
 
   const nearRules = (mandates.data ?? []).filter((m) => unitOfMandate(m) === "NEAR");
   const rows = nearRules.map((m) => ({ m, f: fit(m, to, yocto, now) }));
@@ -122,14 +141,22 @@ function Body() {
     }
   };
 
-  const createHref = `/app/mandates/new?near=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}`;
+  const createHref = `/app/mandates/new?near=${encodeURIComponent(to)}${amount ? `&amount=${encodeURIComponent(amount)}` : ""}`;
 
   return (
     <>
       <TxBanner what="Payment request" />
       <Card className="p-5 sm:p-7 md:p-8">
-        <Label>Request</Label>
-        <p className="mt-3 font-mono text-[30px] font-medium leading-tight sm:text-[40px]">{formatNear(yocto)}</p>
+        <Label>{open ? "Pay" : "Request"}</Label>
+        {open ? (
+          <div className="mt-3 max-w-sm">
+            <Field label="Amount (NEAR)" error={typed && !ready ? "Enter an amount above zero" : null}>
+              <input className={monoInputCls} inputMode="decimal" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="1.5" />
+            </Field>
+          </div>
+        ) : (
+          <p className="mt-3 font-mono text-[30px] font-medium leading-tight sm:text-[40px]">{formatNear(yocto)}</p>
+        )}
         <dl className="mt-5 space-y-3 text-[15px]">
           <div>
             <dt className="text-mute">To</dt>
@@ -143,6 +170,7 @@ function Body() {
           )}
         </dl>
         <p className="mt-5 text-[13px] leading-relaxed text-mute">
+          {exists === false && <span className="mb-2 block font-medium text-bad">This account does not exist on this network. Do not pay it.</span>}
           Anyone can make a link like this. Check that the account is the one you mean before you pay. Payments on NEAR cannot be reversed.
         </p>
       </Card>
@@ -168,7 +196,7 @@ function Body() {
             </Notice>
           ) : (
             <Card className="p-5 sm:p-6">
-              <Btn size="lg" busy={paying} onClick={payNow}>Pay {formatNear(yocto)} now</Btn>
+              <Btn size="lg" busy={paying} disabled={!ready || exists === false} onClick={payNow}>{ready ? `Pay ${formatNear(yocto)} now` : "Enter an amount"}</Btn>
               <p className="mt-3 text-[13px] leading-relaxed text-mute">
                 One approval. It makes a one-off rule that can pay only {to}, only this amount, expires in a day, and sends the payment. You need {formatNear(yocto)} plus network fees in your wallet.
               </p>
@@ -194,7 +222,7 @@ function Body() {
                         : `Cannot pay this: ${f.why}.`}
                     </p>
                   </div>
-                  {f.ok && isAgent && (
+                  {ready && f.ok && isAgent && (
                     <Btn busy={busy === m.id} onClick={() => send(m)}>Propose this payment</Btn>
                   )}
                 </div>

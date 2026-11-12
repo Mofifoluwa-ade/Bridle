@@ -54,3 +54,30 @@ export function explainError(e: unknown): string {
     return "No contract is deployed at that account. Check NEXT_PUBLIC_BRIDLE_CONTRACT.";
   return raw.length > 220 ? raw.slice(0, 220) + "…" : raw;
 }
+
+/**
+ * Whether a NEAR account exists. Returns null when the network cannot tell us, so a flaky
+ * connection never blocks a payment by itself.
+ */
+export async function accountExists(accountId: string): Promise<boolean | null> {
+  try {
+    const res = await fetch(CONFIG.rpc, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "bridle",
+        method: "query",
+        params: { request_type: "view_account", finality: "optimistic", account_id: accountId },
+      }),
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    if (body.result && !body.result.error) return true;
+    const text = JSON.stringify(body.error ?? body.result ?? "");
+    if (/UnknownAccount|does not exist|doesn't exist/i.test(text)) return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
