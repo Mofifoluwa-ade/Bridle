@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import { ChainLogo } from "./ChainLogo";
 
 /**
  * Hero card. A ~13 second loop that shows the whole product:
@@ -14,7 +15,10 @@ import { Fragment, useEffect, useRef, useState } from "react";
 
 const HEADLINE =
   "Up to $50 a day, to three approved recipients. Pause anything over $20.".split(" ");
-const CHIPS = ["Base", "Solana", "USDC"];
+const CHIPS = [
+  { label: "Base", chain: "base" as const },
+  { label: "USDC", chain: "usdc" as const },
+];
 
 // 0 empty · 1 approved · 2 blocked · 3 waiting · 4 cursor arrives · 5 vetoed · 6 fading out
 type Feed = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -145,8 +149,8 @@ export function MandateCard() {
           <div className="mt-4 sm:mt-5 flex flex-wrap gap-2">
             {CHIPS.map((c, i) => (
               <span
-                key={c}
-                className="rounded-full border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-3 py-1.5 text-[13px] text-mute dark:text-dark-mute font-medium transition-all duration-500"
+                key={c.label}
+                className="inline-flex items-center gap-2 rounded-full border border-line dark:border-dark-border bg-paper dark:bg-dark-bg px-3 py-1.5 text-[13px] text-mute dark:text-dark-mute font-medium transition-all duration-500"
                 style={{
                   opacity: intro >= 2 ? 1 : 0,
                   transform: intro >= 2 ? "scale(1)" : "scale(.8)",
@@ -154,7 +158,8 @@ export function MandateCard() {
                   transitionTimingFunction: "cubic-bezier(.34,1.56,.64,1)",
                 }}
               >
-                {c}
+                <ChainLogo chain={c.chain} size={16} label={false} />
+                {c.label}
               </span>
             ))}
           </div>

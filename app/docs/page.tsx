@@ -158,6 +158,15 @@ near contract call-function as-transaction bridle.testnet propose_payment \\
 };
 
 // --- Navigation Items ---
+const AUDIT_STEPS: { label: string; state: "Done" | "Next" }[] = [
+  { label: "Contract test suite: 32 tests, all passing, including native NEAR payments", state: "Done" },
+  { label: "Negative checks on testnet: the cases that should be refused were refused", state: "Done" },
+  { label: "Mixed-asset gap found and closed: one rule can no longer mix NEAR with other chains", state: "Done" },
+  { label: "Line-by-line review of the contract", state: "Next" },
+  { label: "Review of the signing path and the executor", state: "Next" },
+  { label: "Publish findings and the fixes here", state: "Next" },
+];
+
 const NAV_SECTIONS = [
   {
     title: "Getting Started",
@@ -205,7 +214,9 @@ const NAV_SECTIONS = [
   {
     title: "Reference & FAQ",
     items: [
-      { id: "threat-model", label: "Safety Guarantees" },
+      { id: "status", label: "Status & Limits" },
+      { id: "audit", label: "Audit Progress" },
+      { id: "threat-model", label: "What You Still Trust" },
       { id: "error-codes", label: "Error Messages & Fixes" },
       { id: "faq", label: "Frequently Asked Questions" },
     ],
@@ -1153,6 +1164,74 @@ export default function DocsPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </section>
+
+            {/* STATUS & LIMITS */}
+            <section id="status" className="scroll-mt-24 space-y-6">
+              <div className="space-y-1">
+                <p className="font-mono text-xs uppercase tracking-wider text-accent dark:text-[#46D9A4] font-semibold">
+                  Status &amp; Limits
+                </p>
+                <h2 className="text-2xl font-semibold text-ink dark:text-white">
+                  What works today, and what does not.
+                </h2>
+                <p className="text-sm text-mute dark:text-dark-mute leading-relaxed max-w-2xl">
+                  Bridle claims only what it does. Anything that runs on a testnet, is planned, or rests on a trust assumption is labelled here. Plans are on the <Link href="/#roadmap" className="underline text-accent dark:text-[#46D9A4]">roadmap</Link>.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="p-5 rounded-2xl border border-accent/25 bg-white dark:bg-dark-card space-y-3">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-accent dark:text-[#46D9A4] font-semibold">Works today</p>
+                  <ul className="space-y-2.5 text-xs text-ink dark:text-white leading-relaxed">
+                    <li>A NEAR contract that enforces recipients, caps, review thresholds and a veto.</li>
+                    <li>Native NEAR payments from a balance the owner funds and can take back.</li>
+                    <li>USDC on Base Sepolia through NEAR Chain Signatures, verified end to end.</li>
+                    <li>Payment-request links and one-click Pay for native NEAR.</li>
+                    <li>bridle-mcp on npm: read-only without a key, proposals with a restricted one.</li>
+                  </ul>
+                </div>
+                <div className="p-5 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card space-y-3">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-mute dark:text-dark-mute font-semibold">Not yet, or not claimed</p>
+                  <ul className="space-y-2.5 text-xs text-mute dark:text-dark-mute leading-relaxed">
+                    <li>Solana signing. It is planned, not built.</li>
+                    <li>Mainnet. Everything runs on testnets with test assets.</li>
+                    <li>A finished audit. The contract is still being audited. See audit progress below.</li>
+                    <li>Arbitrary contract calls. Every payment is a plain transfer.</li>
+                    <li>Mixed assets in one rule. A NEAR rule is NEAR-only, and caps are set in that asset&apos;s units.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div id="threat-model" className="p-5 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card space-y-3">
+                <h3 className="text-sm font-semibold text-ink dark:text-white">What you still trust</h3>
+                <p className="text-xs text-mute dark:text-dark-mute leading-relaxed">
+                  Bridle removes the agent&apos;s access to your keys. It does not remove every trust assumption.
+                </p>
+                <ul className="space-y-2 text-xs text-mute dark:text-dark-mute leading-relaxed list-disc pl-4">
+                  <li>For payments on other chains, the NEAR Chain Signatures network signs the transaction, and Bridle does not remove that trust.</li>
+                  <li>An executor account broadcasts the signed transaction. It cannot change the payment, but it can delay it.</li>
+                  <li>The contract is the only enforcement point, and its audit is not finished. It is done by the author, with no paid auditor.</li>
+                  <li>The approved recipients are fixed when you sign the rule. Paying a new recipient needs a new rule.</li>
+                </ul>
+              </div>
+
+              <div id="audit" className="p-5 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold text-ink dark:text-white">Audit progress</h3>
+                  <p className="text-xs text-mute dark:text-dark-mute leading-relaxed">
+                    The contract is being audited by its author, alone and in the open. No audit firm is involved and no one is being paid for it. That is a weaker assurance than an independent audit, and you should weigh it that way. Findings and the commits that fix them will be listed here as they are found.
+                  </p>
+                </div>
+                <ul className="divide-y divide-line dark:divide-dark-border">
+                  {AUDIT_STEPS.map((a) => (
+                    <li key={a.label} className="flex items-start justify-between gap-4 py-2.5 text-xs">
+                      <span className="text-ink dark:text-white leading-relaxed">{a.label}</span>
+                      <span className={`flex-none font-mono text-[10px] uppercase tracking-wider ${a.state === "Done" ? "text-accent dark:text-[#46D9A4]" : "text-mute dark:text-dark-mute"}`}>{a.state}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </section>
 
