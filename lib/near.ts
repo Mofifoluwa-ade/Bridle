@@ -81,3 +81,26 @@ export async function accountExists(accountId: string): Promise<boolean | null> 
     return null;
   }
 }
+
+/**
+ * Did this transaction succeed? Reads its outcome over RPC. "unknown" means the network could not
+ * tell us (not found yet, or RPC trouble), so callers should not claim success or failure.
+ */
+export async function txOutcome(hash: string, signer: string): Promise<"ok" | "failed" | "unknown"> {
+  try {
+    const res = await fetch(CONFIG.rpc, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: "bridle", method: "tx", params: { tx_hash: hash, sender_account_id: signer, wait_until: "EXECUTED_OPTIMISTIC" } }),
+    });
+    if (!res.ok) return "unknown";
+    const body = await res.json();
+    if (body.error || !body.result) return "unknown";
+    const r = body.result;
+    const failed = (s: unknown) => !!s && typeof s === "object" && "Failure" in (s as object);
+    if (failed(r.status) || (r.receipts_outcome ?? []).some((o: { outcome?: { status?: unknown } }) => failed(o.outcome?.status))) return "failed";
+    return r.status && "SuccessValue" in r.status ? "ok" : "unknown";
+  } catch {
+    return "unknown";
+  }
+}

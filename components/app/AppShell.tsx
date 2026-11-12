@@ -159,7 +159,7 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-function WalletButton() {
+export function WalletButton() {
   const { ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut } = useWallet();
   const balance = useAccountBalance(accountId);
 

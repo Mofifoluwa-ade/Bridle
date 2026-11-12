@@ -85,6 +85,26 @@ body {
   background: theme("colors.mute");
 }
 
+/* Payment screens */
+.pay-hero-glow { background: radial-gradient(circle, rgba(70, 217, 164, 0.28), transparent 65%); }
+.pay-hero-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 80% 0%, #000, transparent 75%);
+  mask-image: radial-gradient(ellipse 80% 60% at 80% 0%, #000, transparent 75%);
+}
+.paid-check { stroke-dasharray: 26; stroke-dashoffset: 26; animation: paidDraw 0.45s 0.25s ease-out forwards; }
+.paid-ring { animation: paidPop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both; box-shadow: 0 0 0 0 rgba(10, 124, 89, 0.4); }
+.paid-fade { opacity: 0; transform: translateY(8px); animation: paidFade 0.5s ease-out forwards; }
+@keyframes paidDraw { to { stroke-dashoffset: 0; } }
+@keyframes paidPop { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes paidFade { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .paid-check { animation: none; stroke-dashoffset: 0; }
+  .paid-ring { animation: none; }
+  .paid-fade { animation: none; opacity: 1; transform: none; }
+}
+
 /* Staggered reveal: children marked data-reveal-item rise in one after another. */
 .scroll-stagger[data-reveal-ready="true"][data-revealed="false"] [data-reveal-item] {
   opacity: 0;
