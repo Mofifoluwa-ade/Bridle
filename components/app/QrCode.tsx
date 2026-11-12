@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Btn } from "@/components/app/ui";
 
 /** A QR code for a link, drawn in the browser. The link never leaves the page. */
-export function QrCode({ value, label = "Scan to pay" }: { value: string; label?: string }) {
+export function QrCode({ value, label = "Scan to pay", filename = "bridle-pay-me.png" }: { value: string; label?: string; filename?: string }) {
   const [src, setSrc] = useState<string | null>(null);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function QrCode({ value, label = "Scan to pay" }: { value: string; label?
       <Btn variant="outline" size="sm" onClick={() => {
         const a = document.createElement("a");
         a.href = src;
-        a.download = "bridle-pay-me.png";
+        a.download = filename;
         a.click();
       }}>Download QR</Btn>
     </div>
