@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ogMeta } from "@/lib/og";
 import Link from "next/link";
 import { CodeBlock, CopyPromptButton } from "@/components/CopyButton";
 import { Container, Eyebrow } from "@/components/Container";
@@ -6,11 +7,12 @@ import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import { AGENT_PROMPT } from "@/lib/agentPrompt";
 
-export const metadata: Metadata = {
-  title: "Bridle MCP server",
-  description:
-    "Let an AI agent read its spending limits, check a payment and propose one through MCP. Owner actions are deliberately not exposed.",
-};
+export const metadata: Metadata = ogMeta({
+  kind: "MCP server",
+  title: "Give your agent a spending rule over MCP",
+  sub: "Read limits, check a payment, propose one. Owner actions are never exposed.",
+  description: "Let an AI agent read its spending limits, check a payment and propose one through MCP. Owner actions are deliberately not exposed.",
+});
 
 const tools = [
   ["list_mandates", "Find the mandates that name you as the agent."],

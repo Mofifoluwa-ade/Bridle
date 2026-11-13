@@ -1,5 +1,6 @@
 "use client";
 
+import { ChainSelect, ChainTag } from "@/components/app/ChainSelect";
 import { useEffect, useState } from "react";
 import { NeedsContract } from "@/components/app/Gate";
 import { TxBanner } from "@/components/app/TxBanner";
@@ -136,9 +137,7 @@ function Body() {
             <Label>Send a test payment</Label>
             <div className="grid gap-4 sm:gap-6 sm:grid-cols-[160px_1fr]">
               <Field label="Blockchain">
-                <select className={monoInputCls} value={chain} onChange={(e) => setChain(e.target.value as Chain)}>
-                  {m?.chains ? m.chains.map((c) => <option key={c}>{c}</option>) : <> <option value="Base">Base</option><option value="Solana">Solana</option> </>}
-                </select>
+                <ChainSelect options={m?.chains ?? ["Base", "Solana"]} value={chain} onChange={setChain} />
               </Field>
               <Field label="Recipient address" hint="Try entering an address not on your approved list to see it get blocked." error={recipient && !addrOk ? "Not a valid address for this chain" : null}>
                 <input className={monoInputCls} value={recipient} onChange={(e) => setRecipient(e.target.value.trim())} spellCheck={false} placeholder={chain === "Base" ? "0x71C...b87" : chain === "Near" ? "friend.testnet" : "9Wz...4b8"} list="allow" />

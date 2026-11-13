@@ -1,5 +1,6 @@
 "use client";
 
+import { ChainSelect, ChainTag } from "@/components/app/ChainSelect";
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -507,7 +508,7 @@ function Form() {
                   {CHAINS.map((c) => (
                     <label
                       key={c}
-                      className={`cursor-pointer rounded-full border px-4 py-2.5 text-sm font-semibold transition-all ${
+                      className={`cursor-pointer rounded-full border px-4 py-2.5 text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-accent ${
                         chains.includes(c)
                           ? "border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink shadow-2xs"
                           : "border-line bg-white text-mute hover:text-ink dark:border-dark-border dark:bg-dark-card dark:text-dark-mute dark:hover:text-white"
@@ -533,7 +534,7 @@ function Form() {
                           if (chains.includes("Near")) setRows((old) => old.map((x) => ({ ...x, chain: c, address: "" })));
                         }}
                       />
-                      {c}
+                      <ChainTag chain={c} size={18} />
                     </label>
                   ))}
                 </div>
@@ -554,22 +555,13 @@ function Form() {
               {rows.map((r, i) => (
                 <div key={i} className="space-y-1.5">
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <select
-                      aria-label={`Recipient ${i + 1} network`}
-                      className="rounded-xl border border-rule bg-white px-3 py-3 text-sm text-ink dark:border-dark-border dark:bg-dark-card dark:text-white"
-                      value={r.chain}
-                      onChange={(e) =>
-                        setRows((old) =>
-                          old.map((x, j) => (j === i ? { ...x, chain: e.target.value as Chain } : x))
-                        )
-                      }
-                    >
-                      {CHAINS.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="sm:w-40 sm:flex-none">
+                      <ChainSelect
+                        options={CHAINS}
+                        value={r.chain}
+                        onChange={(c) => setRows((old) => old.map((x, j) => (j === i ? { ...x, chain: c } : x)))}
+                      />
+                    </div>
                     <input
                       aria-label={`Recipient ${i + 1} address`}
                       className={`${monoInputCls} mt-0 min-w-0 flex-1`}
@@ -726,9 +718,7 @@ function Form() {
                   <input className={monoInputCls} inputMode="decimal" value={testAmount} onChange={(e) => setTestAmount(e.target.value)} />
                 </Field>
                 <Field label="Network">
-                  <select className={monoInputCls} value={testChain} onChange={(e) => setTestChain(e.target.value as Chain)}>
-                    {CHAINS.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <ChainSelect options={CHAINS} value={testChain} onChange={setTestChain} />
                 </Field>
               </div>
               <Field

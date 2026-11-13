@@ -1,5 +1,6 @@
 "use client";
 
+import { ChainSelect, ChainTag } from "@/components/app/ChainSelect";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { NeedsContract } from "@/components/app/Gate";
@@ -10,7 +11,7 @@ import { useNow, usePoll } from "@/hooks/usePoll";
 import { CHAIN_EXPLORER } from "@/lib/config";
 import { countdown, nsToMs, amountOf } from "@/lib/format";
 import { api } from "@/lib/near";
-import type { Mandate, Proposal } from "@/lib/types";
+import type { Chain, Mandate, Proposal } from "@/lib/types";
 
 export default function ProposalPage() {
   const id = Number(useParams<{ id: string }>().id);
@@ -50,7 +51,7 @@ function Body({ id }: { id: number }) {
         <div className="space-y-6 min-w-0">
           <Card className="p-5 sm:p-7 md:p-8">
             <p className="font-mono text-[30px] sm:text-[44px] font-medium leading-tight break-all">{amountOf(p)}</p>
-            <p className="mt-2.5 sm:mt-3 text-sm sm:text-[15px] text-mute flex flex-wrap items-center gap-1.5">on {p.chain} to <Addr value={p.recipient} chars={12} /></p>
+            <p className="mt-2.5 sm:mt-3 text-sm sm:text-[15px] text-mute flex flex-wrap items-center gap-1.5">on <ChainTag chain={p.chain as Chain} size={16} /> to <Addr value={p.recipient} chars={12} /></p>
 
             {(p.status === "Waiting" || p.status === "Flagged") && (
               <div className={`mt-6 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 ${p.status === "Flagged" ? "bg-warn-tint" : "bg-paper"}`}>

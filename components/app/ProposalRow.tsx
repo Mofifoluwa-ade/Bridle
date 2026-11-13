@@ -1,5 +1,7 @@
 "use client";
 
+import type { Chain } from "@/lib/types";
+import { ChainSelect, ChainTag } from "@/components/app/ChainSelect";
 import Link from "next/link";
 import { nsToMs, shortAddr, timeAgo, amountOf } from "@/lib/format";
 import type { Proposal } from "@/lib/types";
@@ -76,7 +78,7 @@ export function ProposalRow({
                 #{p.id}
               </span>
               <span className="rounded-full bg-paper dark:bg-dark-bg border border-line dark:border-dark-border px-1.5 py-0.2 font-mono text-[10px] text-mute dark:text-dark-mute">
-                {p.chain}
+                <ChainTag chain={p.chain as Chain} size={12} name={false} />
               </span>
             </div>
             <p className="block truncate text-[12.5px] text-mute dark:text-dark-mute">
@@ -140,7 +142,7 @@ export function ProposalRow({
               {showMandate && ` • Rule #${p.mandate_id}`}
             </span>
             <span className="rounded-full bg-paper dark:bg-dark-bg border border-line dark:border-dark-border px-2 py-0.5 font-mono text-[10.5px] text-mute dark:text-dark-mute sm:hidden">
-              {p.chain}
+              <ChainTag chain={p.chain as Chain} size={12} name={false} />
             </span>
           </div>
           <p className="mt-0.5 block truncate text-[13px] sm:text-[13.5px] text-mute dark:text-dark-mute leading-relaxed">
@@ -152,7 +154,7 @@ export function ProposalRow({
       {/* Right: Chain chip & Amount Display */}
       <div className="flex items-center sm:flex-col sm:items-end justify-between sm:justify-center gap-1.5 flex-none pl-14 sm:pl-0">
         <span className="hidden sm:inline-block rounded-full bg-paper dark:bg-dark-bg border border-line dark:border-dark-border px-2 py-0.5 font-mono text-[11px] text-mute dark:text-dark-mute">
-          {p.chain}
+          <ChainTag chain={p.chain as Chain} size={14} name={false} />
         </span>
         <div className="text-right">
           <span

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ogMeta } from "@/lib/og";
 import Link from "next/link";
 import { BrandSwatch } from "@/components/BrandSwatch";
 import { Container } from "@/components/Container";
@@ -7,9 +8,12 @@ import { LogoMark, Wordmark } from "@/components/Logo";
 import { Nav } from "@/components/Nav";
 
 export const metadata: Metadata = {
-  title: "Brand guidelines",
-  description:
-    "How Bridle looks and sounds: the line, the mark, the colours, the type and the voice. Steer your agents, don't trust them.",
+  ...ogMeta({
+    kind: "Brand",
+    title: "How Bridle looks and sounds",
+    sub: "The line, the mark, the colours, the type and the voice.",
+    description: "How Bridle looks and sounds: the line, the mark, the colours, the type and the voice. Steer your agents, don't trust them.",
+  }),
   alternates: { canonical: "/brand" },
 };
 
@@ -164,6 +168,10 @@ export default function BrandPage() {
                   The contract enforces them.
                 </p>
                 <p className="mt-4 max-w-xs text-[14px] leading-[1.6] text-white/60">You keep the veto.</p>
+                <div className="mt-10 flex items-center justify-between border-t border-white/10 pt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">
+                  <span>Bridle</span>
+                  <span>Identity 01 — 08</span>
+                </div>
               </div>
             </div>
           </div>
@@ -180,6 +188,7 @@ export default function BrandPage() {
                 </a>
               ))}
             </nav>
+            <p className="mt-6 hidden max-w-[170px] text-[12.5px] leading-[1.6] text-mute dark:text-dark-mute lg:block">Use this page as the source of truth for Bridle brand decisions.</p>
           </aside>
 
           <div className="min-w-0 space-y-24 sm:space-y-28">
@@ -323,6 +332,21 @@ export default function BrandPage() {
                   <p className="mt-5 text-[14px] leading-[1.65] text-mute dark:text-dark-mute">Use a heavier stroke as the mark gets small, so the rings stay open.</p>
                 </div>
               </div>
+              <h3 className={`mt-16 ${sub}`}>Signature</h3>
+              <p className="mt-3 max-w-[640px] text-[15px] leading-[1.65] text-mute dark:text-dark-mute">The mark and the name, locked together. Use one of these arrangements rather than building your own.</p>
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                <div className="grid h-44 place-items-center rounded-[22px] border border-line bg-white text-ink">
+                  <div className="flex items-center gap-3"><LogoMark size={34} strokeWidth={4.5} /><Wordmark className="text-[26px]" /></div>
+                </div>
+                <div className="grid h-44 place-items-center rounded-[22px] bg-ink text-white">
+                  <div className="flex flex-col items-center gap-3"><LogoMark size={44} strokeWidth={4.5} /><Wordmark className="text-[24px]" /></div>
+                </div>
+                <div className="grid h-44 place-items-center rounded-[22px] bg-accent text-white">
+                  <div className="flex items-center gap-3"><LogoMark size={34} strokeWidth={4.5} /><Wordmark className="text-[26px]" /></div>
+                </div>
+              </div>
+              <p className="mt-3 text-[13px] text-mute dark:text-dark-mute">Horizontal on light, stacked on ink, horizontal on emerald.</p>
+
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <div className={card}>
                   <p className={`${micro} text-accent dark:text-accent-dark`}>Do</p>
