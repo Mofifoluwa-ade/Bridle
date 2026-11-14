@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { ogMeta } from "@/lib/og";
 import Link from "next/link";
 import { Container, Eyebrow, PrimaryButton } from "@/components/Container";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 
-export const metadata: Metadata = {
-  title: "How Bridle works",
-  description:
-    "One mandate, four fields, no keys. How an owner-signed mandate bounds what an AI agent can spend, and what happens to every payment it proposes.",
-};
+export const metadata: Metadata = ogMeta({
+  kind: "How it works",
+  title: "One rule. Four fields. No keys.",
+  sub: "How an owner-signed mandate bounds what an AI agent can spend.",
+  description: "One mandate, four fields, no keys. How an owner-signed mandate bounds what an AI agent can spend, and what happens to every payment it proposes.",
+});
 
 const steps = [
   {

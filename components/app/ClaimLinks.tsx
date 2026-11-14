@@ -52,7 +52,7 @@ export function ClaimLinks({ accountId, refreshKey }: { accountId: string | null
   };
 
   return (
-    <section className="mt-10">
+    <section>
       <Label>Your claim links</Label>
       <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-white dark:divide-dark-border dark:border-dark-border dark:bg-dark-card">
         {rows.map((d) => (

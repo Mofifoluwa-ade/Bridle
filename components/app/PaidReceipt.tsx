@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CONFIG } from "@/lib/config";
 import { formatNear } from "@/lib/format";
 import { AccountAvatar } from "./AccountAvatar";
@@ -41,25 +41,29 @@ export function PaidReceipt({
 }) {
   const [copied, setCopied] = useState(false);
   const [when] = useState(() => new Date());
-  const [shown, setShown] = useState(0);
+  const figure = useRef<HTMLSpanElement>(null);
 
   // Count the amount up once, so it lands rather than just appearing.
+  // It writes straight to the DOM, so no React render happens per frame, which keeps it smooth on slow devices.
   const target = yocto === null ? 0 : Number(formatNear(yocto).replace(/ NEAR$/, ""));
+  const decimals = target % 1 === 0 ? 0 : Math.min(4, (String(target).split(".")[1] ?? "").length);
   useEffect(() => {
+    const el = figure.current;
+    if (!el) return;
     if (!target || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setShown(target);
+      el.textContent = target.toFixed(decimals);
       return;
     }
     const t0 = performance.now();
     let raf = 0;
     const tick = (t: number) => {
       const p = Math.min(1, (t - t0) / 700);
-      setShown(target * (1 - Math.pow(1 - p, 3)));
+      el.textContent = (target * (1 - Math.pow(1 - p, 3))).toFixed(decimals);
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [target]);
+  }, [target, decimals]);
 
   const url = `${CONFIG.explorer}/txns/${hash}`;
   const copy = async () => {
@@ -69,7 +73,6 @@ export function PaidReceipt({
       setTimeout(() => setCopied(false), 1800);
     } catch {}
   };
-  const decimals = target % 1 === 0 ? 0 : Math.min(4, (String(target).split(".")[1] ?? "").length);
 
   return (
     <div className="mx-auto w-full max-w-[520px]">
@@ -81,7 +84,7 @@ export function PaidReceipt({
         </div>
         <p className="paid-fade mt-6 font-mono text-xs uppercase tracking-label text-accent dark:text-accent-dark" style={{ animationDelay: "0.25s" }}>{heading}</p>
         <p className="paid-fade mt-2 font-mono text-[44px] font-medium leading-none sm:text-[56px]" style={{ animationDelay: "0.3s" }}>
-          {shown.toFixed(decimals)} <span className="text-[22px] text-mute dark:text-dark-mute sm:text-[26px]">NEAR</span>
+          <span ref={figure} className="tabular-nums">{target.toFixed(decimals)}</span> <span className="text-[22px] text-mute dark:text-dark-mute sm:text-[26px]">NEAR</span>
         </p>
         <p className="paid-fade mt-4 inline-flex items-center gap-2 text-[15px] text-mute dark:text-dark-mute" style={{ animationDelay: "0.4s" }}>
           to <AccountAvatar id={to} size={22} /> <span className="font-mono text-ink dark:text-white">{to}</span>

@@ -1,7 +1,9 @@
 "use client";
 
+import { ChainSelect, ChainTag } from "@/components/app/ChainSelect";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { NeedsContract } from "@/components/app/Gate";
 import { MandatePolicySummary, MandateStatePill } from "../../../../components/app/MandateCard";
 import { ProposalRow } from "../../../../components/app/ProposalRow";
@@ -12,6 +14,7 @@ import { useNow, usePoll } from "@/hooks/usePoll";
 import { CONFIG } from "@/lib/config";
 import { countdown, duration, formatNear, formatNearWithUsd, money, nsToMs, parseNear, parseUnits, unitDecimals, unitOfMandate } from "@/lib/format";
 import { api } from "@/lib/near";
+import type { Chain } from "@/lib/types";
 
 export default function MandatePage() {
   const id = Number(useParams<{ id: string }>()?.id);
@@ -32,6 +35,7 @@ function Body({ id }: { id: number }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [edit, setEdit] = useState(false);
+  const [confirmStop, setConfirmStop] = useState(false);
 
   if (m.error) return <Notice tone="bad" title="Could not read the contract">{m.error}</Notice>;
   if (m.loading) return <Skeleton className="h-96" />;
@@ -128,7 +132,7 @@ function Body({ id }: { id: number }) {
                 <ul className="space-y-2">
                   {mandate.allowlist.map((r, i) => (
                     <li key={i} className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm sm:text-[15px]">
-                      <span className="w-16 rounded-full border border-line px-3 py-0.5 text-center font-mono text-[12px] text-mute">{r.chain}</span>
+                      <span className="flex w-16 justify-center rounded-full border border-line px-3 py-1"><ChainTag chain={r.chain as Chain} size={16} name={false} /></span>
                       <Addr value={r.address} chars={10} />
                     </li>
                   ))}
@@ -183,9 +187,21 @@ function Body({ id }: { id: number }) {
             <Card className="p-5 sm:p-6">
               <Label>Emergency freeze</Label>
               <p className="mt-2 text-xs sm:text-[15px] leading-relaxed text-mute">Stopping this rule immediately blocks your agent from making any more payments. This cannot be undone.</p>
-              <Btn variant="danger" className="mt-4 w-full" busy={busy === "revoke"} onClick={() => { if (window.confirm("Stop this rule? This cannot be undone.")) act("revoke", "revoke", { mandate_id: id }); }}>
+              <Btn variant="danger" className="mt-4 w-full" busy={busy === "revoke"} onClick={() => setConfirmStop(true)}>
                 Stop and freeze rule
               </Btn>
+              <ConfirmDialog
+                open={confirmStop}
+                destructive
+                title="Stop and freeze this rule?"
+                confirmLabel="Stop and freeze"
+                cancelLabel="Keep it running"
+                busy={busy === "revoke"}
+                onCancel={() => setConfirmStop(false)}
+                onConfirm={async () => { await act("revoke", "revoke", { mandate_id: id }); setConfirmStop(false); }}
+              >
+                Your agent will be blocked from making any more payments right away. This cannot be undone.
+              </ConfirmDialog>
             </Card>
           )}
           {isAgent && (mandate.state === "Revoked" || expired) && BigInt(mandate.bond_posted) > BigInt(0) && (

@@ -77,11 +77,13 @@ export default function SendPage() {
   const tab = (m: "account" | "link", label: string) => (
     <button
       type="button"
+      role="tab"
+      aria-selected={mode === m}
       onClick={() => {
         setMode(m);
         setErr(null);
       }}
-      className={`flex-1 rounded-full px-4 py-2 text-[14px] font-medium transition-colors ${mode === m ? "bg-ink text-white dark:bg-white dark:text-ink" : "text-mute hover:text-ink dark:text-dark-mute dark:hover:text-white"}`}
+      className={`relative z-10 flex-1 rounded-full px-4 py-2 text-[14px] font-medium transition-colors duration-200 ${mode === m ? "text-white dark:text-ink" : "text-mute hover:text-ink dark:text-dark-mute dark:hover:text-white"}`}
     >
       {label}
     </button>
@@ -94,8 +96,15 @@ export default function SendPage() {
         lead="Pay someone with only their NEAR account name, or send a claim link to anyone, even if they have no account yet."
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <Card className="space-y-6 p-5 sm:p-7 md:p-8 lg:self-start">
-          <div className="flex gap-1 rounded-full border border-line p-1 dark:border-dark-border" role="tablist">
+        <div className="min-w-0 space-y-6 lg:self-start">
+        <Card className="space-y-6 p-5 sm:p-7 md:p-8">
+          <div className="relative flex gap-1 rounded-full border border-line p-1 dark:border-dark-border" role="tablist">
+              {/* The pill only moves with a transform, so switching never reflows the page. */}
+              <span
+                aria-hidden
+                className="tab-pill absolute inset-y-1 left-1 w-[calc(50%-6px)] rounded-full bg-ink dark:bg-white"
+                style={{ transform: mode === "link" ? "translateX(calc(100% + 4px))" : "translateX(0)" }}
+              />
             {tab("account", "To a NEAR account")}
             {tab("link", "To anyone (claim link)")}
           </div>
@@ -128,6 +137,8 @@ export default function SendPage() {
             </div>
           )}
         </Card>
+        <ClaimLinks accountId={accountId} refreshKey={refresh} />
+        </div>
         <aside className="min-w-0 space-y-6 lg:sticky lg:top-6 lg:self-start">
           {made && (
             <Card className="p-5 sm:p-6">
@@ -153,7 +164,6 @@ export default function SendPage() {
           )}
         </aside>
       </div>
-      <ClaimLinks accountId={accountId} refreshKey={refresh} />
     </>
   );
 }

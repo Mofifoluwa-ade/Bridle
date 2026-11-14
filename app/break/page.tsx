@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { ogMeta } from "@/lib/og";
 import { BreakDemo } from "@/components/BreakDemo";
 import { Container, Eyebrow } from "@/components/Container";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = ogMeta({
+  kind: "Live on testnet",
   title: "Break the Bridle",
-  description:
-    "Play a rogue AI agent against a real Bridle spending rule on testnet. Try to overspend, pay a stranger or switch chains, and watch the contract refuse.",
-};
+  sub: "Play a rogue agent. Try to overspend, pay a stranger or switch chains.",
+  description: "Play a rogue AI agent against a real Bridle spending rule on testnet. Try to overspend, pay a stranger or switch chains, and watch the contract refuse.",
+});
 
 export default function BreakPage() {
   return (
