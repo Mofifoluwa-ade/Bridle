@@ -113,8 +113,8 @@ export default function HowItWorksPage() {
             ))}
           </ul>
           <p className="mt-6 max-w-[640px] text-[15px] leading-[1.65] text-mute dark:text-dark-mute">
-            Today Bridle runs on NEAR testnet. A ready payment is marked for signing; connecting cross-chain signing for
-            Base and Solana is still in progress, and nothing here moves real funds yet.
+            Today Bridle runs on NEAR testnet. A ready payment is marked for signing; cross-chain signing is built for Base
+            and Solana is planned, and nothing here moves real funds yet.
           </p>
         </section>
 

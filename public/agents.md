@@ -67,4 +67,4 @@ The MCP takes decimal USDC: `18.50`. The raw contract call takes the smallest un
 
 ## Without MCP
 
-Call `propose_payment` on the contract directly with `mandate_id`, `chain` (`Base` or `Solana`), `asset` (`USDC`), `amount` (smallest units, string) and `recipient`. See https://bridle-agent.vercel.app/docs.
+Call `propose_payment` on the contract directly with `mandate_id`, `chain` (`Base` or `Near`), `asset` (`USDC`), `amount` (smallest units, string) and `recipient`. See https://bridle-agent.vercel.app/docs.

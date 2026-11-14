@@ -3,7 +3,7 @@
 // Nothing here is sent anywhere: the result only fills in the form fields,
 // and the existing validation and contract rules still decide what is allowed.
 
-export type SentenceChain = "Base" | "Solana";
+export type SentenceChain = "Base";
 
 export type RuleDraft = {
   perTx?: string;
@@ -32,12 +32,9 @@ const first = (t: string, patterns: RegExp[]): string | undefined => {
 };
 
 function chainsIn(t: string): SentenceChain[] {
-  if (/\bboth (?:chains|networks)\b/.test(t)) return ["Base", "Solana"];
   const found: { c: SentenceChain; i: number }[] = [];
   const b = t.search(/\bbase\b/);
-  const s = t.search(/\bsolana\b|\bsol\b/);
   if (b >= 0) found.push({ c: "Base", i: b });
-  if (s >= 0) found.push({ c: "Solana", i: s });
   return found.sort((x, y) => x.i - y.i).map((f) => f.c);
 }
 
@@ -96,15 +93,13 @@ export function parseRule(input: string): { draft: RuleDraft; understood: Unders
 
 export type PaymentDraft = { amount?: string; chain?: SentenceChain; recipient?: string };
 
-/** "Pay $240 to 0xAbc… on Solana" */
+/** "Pay $240 to 0xAbc… on Base" */
 export function parsePayment(input: string): PaymentDraft {
   const out: PaymentDraft = {};
   const text = input.trim();
   const lower = text.toLowerCase();
   const evm = text.match(/\b0x[a-fA-F0-9]{40}\b/);
-  const sol = text.match(/\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/);
   if (evm) out.recipient = evm[0];
-  else if (sol) out.recipient = sol[0];
   const withoutAddr = lower.replace(/0x[a-f0-9]{40}/g, " ").replace(/\b[1-9a-hj-np-za-km-z]{32,44}\b/g, " ");
   const amt =
     first(withoutAddr, [new RegExp(`(?:pay|send|transfer|wire)\\s*${AMT}`), /\$\s?(\d[\d,]*(?:\.\d+)?)/, new RegExp(`${AMT}\\s*(?:usdc|usd|dollars?)\\b`)]);
@@ -112,6 +107,5 @@ export function parsePayment(input: string): PaymentDraft {
   const chains = chainsIn(withoutAddr);
   if (chains.length) out.chain = chains[0];
   else if (evm) out.chain = "Base";
-  else if (sol) out.chain = "Solana";
   return out;
 }

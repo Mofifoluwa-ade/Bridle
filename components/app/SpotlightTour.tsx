@@ -51,7 +51,7 @@ export const TOUR_STEPS: TourStep[] = [
     fallbackTargetId: "tour-nav-agent",
     title: "Check agent addresses",
     description:
-      "See the multi-chain addresses your agent uses to send payments on Base and Solana without touching private keys.",
+      "See the multi-chain addresses your agent uses to send payments on Base without touching private keys.",
     actionText: "View agent",
     route: "/app",
   },

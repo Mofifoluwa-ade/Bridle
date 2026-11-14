@@ -85,7 +85,7 @@ A **Mandate** is the primary governance object the owner signs on NEAR. Every pr
 | --- | --- | --- | --- |
 | `owner` | NEAR Account | Signer | Must sign creation and manual veto calls. |
 | `agent` | NEAR Account | Required | Designated agent identifier. One agent per mandate in v1. |
-| `chains` | List | `Base`, `Solana` | Target execution chains with adapter support. |
+| `chains` | List | `Base`, `Near` | Target execution chains with adapter support. |
 | `assets` | Per-chain list | `USDC` | Stablecoins only, matched by contract address or mint. |
 | `recipients` | Per-chain allowlist | Deny all | Non-empty allowlist. Address format checked per target chain. |
 | `per_tx_cap` | Amount | 25 USDC | Maximum allowed spend per individual proposal. Must be $\le$ daily cap. |
@@ -148,7 +148,7 @@ The agent never constructs raw blockchain transactions, signs payloads, or inter
   "input_schema": {
     "type": "object",
     "properties": {
-      "chain": { "type": "string", "enum": ["base", "solana"] },
+      "chain": { "type": "string", "enum": ["base", "near"] },
       "asset": { "type": "string", "enum": ["USDC"] },
       "amount": { "type": "string", "description": "Integer in the token's smallest unit" },
       "recipient": { "type": "string", "description": "Recipient address on the destination chain" }
