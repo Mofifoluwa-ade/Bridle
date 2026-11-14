@@ -128,7 +128,7 @@ export function BreakDemo() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="text-[13px] text-mute dark:text-dark-mute">Chain
               <select className={`${inputCls} mt-1`} value={form.chain} onChange={(e) => setForm({ ...form, chain: e.target.value })}>
-                <option>Near</option><option>Base</option><option>Solana</option>
+                <option>Near</option><option>Base</option>
               </select>
             </label>
             <label className="text-[13px] text-mute dark:text-dark-mute">Asset

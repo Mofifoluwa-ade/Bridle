@@ -7,7 +7,7 @@ import { TxBanner } from "@/components/app/TxBanner";
 import { Btn, Card, Field, Label, LinkBtn, Notice, PageHeader, Skeleton, monoInputCls } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
 import { useMyMandates } from "@/hooks/useMyData";
-import { CONFIG } from "@/lib/config";
+import { CHAINS, CONFIG } from "@/lib/config";
 import { formatNear, formatNearWithUsd, money, parseUnits, unitDecimals, unitOfMandate, validAddress } from "@/lib/format";
 import type { Chain } from "@/lib/types";
 
@@ -137,7 +137,7 @@ function Body() {
             <Label>Send a test payment</Label>
             <div className="grid gap-4 sm:gap-6 sm:grid-cols-[160px_1fr]">
               <Field label="Blockchain">
-                <ChainSelect options={m?.chains ?? ["Base", "Solana"]} value={chain} onChange={setChain} />
+                <ChainSelect options={(m?.chains ?? CHAINS).filter((c) => c !== "Solana")} value={chain} onChange={setChain} />
               </Field>
               <Field label="Recipient address" hint="Try entering an address not on your approved list to see it get blocked." error={recipient && !addrOk ? "Not a valid address for this chain" : null}>
                 <input className={`${monoInputCls} !h-12 !py-0`} value={recipient} onChange={(e) => setRecipient(e.target.value.trim())} spellCheck={false} placeholder={chain === "Base" ? "0x71C...b87" : chain === "Near" ? "friend.testnet" : "9Wz...4b8"} list="allow" />

@@ -7,7 +7,8 @@ export const CONFIG = {
   pollMs: 8000,
 };
 
-export const CHAINS = ["Base", "Solana", "Near"] as const;
+/** Networks offered in the app. Solana is planned and not offered yet. */
+export const CHAINS = ["Base", "Near"] as const;
 export const ASSET = { symbol: "USDC", decimals: 6 } as const;
 
 export const CHAIN_EXPLORER: Record<string, (hash: string) => string> = {
