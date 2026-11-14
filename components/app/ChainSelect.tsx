@@ -18,7 +18,7 @@ export function ChainTag({ chain, size = 18, name = true, className = "" }: { ch
 }
 
 /** Replaces the browser's own select so networks show their logos. Arrow keys, Enter, Esc and typing all work. */
-export function ChainSelect({ value, options, onChange, id }: { value: Chain; options: readonly Chain[]; onChange: (c: Chain) => void; id?: string }) {
+export function ChainSelect({ value, options, onChange, id, className = "mt-2" }: { value: Chain; options: readonly Chain[]; onChange: (c: Chain) => void; id?: string; className?: string }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
@@ -48,7 +48,7 @@ export function ChainSelect({ value, options, onChange, id }: { value: Chain; op
   };
 
   return (
-    <div ref={root} className="relative">
+    <div ref={root} className={`relative ${className}`}>
       <button
         id={id}
         type="button"

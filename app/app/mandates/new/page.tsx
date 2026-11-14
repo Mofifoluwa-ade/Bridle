@@ -557,6 +557,7 @@ function Form() {
                   <div className="flex flex-col sm:flex-row gap-2">
                     <div className="sm:w-40 sm:flex-none">
                       <ChainSelect
+                        className="mt-0"
                         options={CHAINS}
                         value={r.chain}
                         onChange={(c) => setRows((old) => old.map((x, j) => (j === i ? { ...x, chain: c } : x)))}
@@ -564,7 +565,7 @@ function Form() {
                     </div>
                     <input
                       aria-label={`Recipient ${i + 1} address`}
-                      className={`${monoInputCls} mt-0 min-w-0 flex-1`}
+                      className={`${monoInputCls} !mt-0 !h-12 !py-0 min-w-0 flex-1`}
                       value={r.address}
                       placeholder={r.chain === "Base" ? "0x…" : r.chain === "Near" ? "friend.testnet" : "Solana address"}
                       onChange={(e) =>
@@ -702,7 +703,7 @@ function Form() {
               <Field label="Or describe a payment" help="For example: Pay $240 to 0x… on Solana. This fills the three fields below, so you can test a blocked or allowed case in one line.">
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <input
-                    className={`${monoInputCls} mt-0 min-w-0 flex-1`}
+                    className={`${monoInputCls} !mt-0 !h-12 !py-0 min-w-0 flex-1`}
                     value={payText}
                     onChange={(e) => { setPayText(e.target.value); setPayNote(null); }}
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPayment(); } }}
@@ -715,7 +716,7 @@ function Form() {
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label={`Payment amount (${unit})`}>
-                  <input className={monoInputCls} inputMode="decimal" value={testAmount} onChange={(e) => setTestAmount(e.target.value)} />
+                  <input className={`${monoInputCls} !h-12 !py-0`} inputMode="decimal" value={testAmount} onChange={(e) => setTestAmount(e.target.value)} />
                 </Field>
                 <Field label="Network">
                   <ChainSelect options={CHAINS} value={testChain} onChange={setTestChain} />

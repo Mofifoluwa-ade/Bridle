@@ -140,7 +140,7 @@ function Body() {
                 <ChainSelect options={m?.chains ?? ["Base", "Solana"]} value={chain} onChange={setChain} />
               </Field>
               <Field label="Recipient address" hint="Try entering an address not on your approved list to see it get blocked." error={recipient && !addrOk ? "Not a valid address for this chain" : null}>
-                <input className={monoInputCls} value={recipient} onChange={(e) => setRecipient(e.target.value.trim())} spellCheck={false} placeholder={chain === "Base" ? "0x71C...b87" : chain === "Near" ? "friend.testnet" : "9Wz...4b8"} list="allow" />
+                <input className={`${monoInputCls} !h-12 !py-0`} value={recipient} onChange={(e) => setRecipient(e.target.value.trim())} spellCheck={false} placeholder={chain === "Base" ? "0x71C...b87" : chain === "Near" ? "friend.testnet" : "9Wz...4b8"} list="allow" />
                 <datalist id="allow">{m ? m.allowlist.filter((r) => r.chain === chain).map((r) => <option key={r.address} value={r.address} />) : null}</datalist>
               </Field>
             </div>
