@@ -55,7 +55,7 @@ Tools take decimal USDC (`18.50`). The contract takes smallest units (`"18500000
 
 ## Honest limits
 
-- Base signing is built but not yet verified end to end, and Solana is not built, so the tools say "cleared", never "paid".
+- Base signing has been verified end to end on testnet and Solana is planned, but a separate executor signs and broadcasts each payment, so the tools say "cleared" until the proposal shows it was executed.
 - Tested against a mock NEAR RPC, including a signed `propose_payment`. Not yet run against a live testnet contract with a real agent key.
 
 ## Develop

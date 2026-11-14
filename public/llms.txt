@@ -1,6 +1,6 @@
 # Bridle
 
-> Bridle lets an AI agent spend within limits its owner signs once. A NEAR contract checks every payment: the agent proposes, the contract decides, and the owner keeps a veto. NEAR testnet, v0.1. Base signing through NEAR Chain Signatures is built but not yet verified end to end, and Solana is not built, so report payments as "cleared", not "paid".
+> Bridle lets an AI agent spend within limits its owner signs once. A NEAR contract checks every payment: the agent proposes, the contract decides, and the owner keeps a veto. NEAR testnet, v0.1. Base signing through NEAR Chain Signatures has been verified end to end on testnet (a USDC transfer on Base Sepolia, 2026-11-07), and Solana is planned, not built. Report payments as "cleared" unless the proposal shows it was executed.
 
 ## For agents
 
@@ -19,5 +19,5 @@
 
 - Transfers only. No arbitrary contract calls.
 - Caps are in stablecoin amounts, so no price oracle is needed.
-- Base signing is built but not yet verified end to end on testnet. Solana signing is not built.
+- Base signing has been verified end to end on testnet (a USDC transfer on Base Sepolia, 2026-11-07). Solana signing is planned, not built.
 - Trusts the NEAR Chain Signatures network for signing once connected. Bridle does not remove that trust.

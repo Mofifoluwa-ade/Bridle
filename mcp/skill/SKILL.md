@@ -25,4 +25,4 @@ Your owner has signed a mandate: the chains, approved recipients and caps you ma
 
 ## Honest limits of this version
 
-Cross-chain signing is not verified end to end yet. Base signing is built but untested live, and Solana is not built. A proposal can be cleared by the mandate, but do not assume funds moved. Report it as "cleared", never as "paid".
+Base signing has been verified end to end on testnet (a USDC transfer on Base Sepolia, 2026-11-07), and Solana is planned, not built. A proposal can be cleared by the mandate without funds having moved yet, because a separate executor signs and broadcasts it. Report it as "cleared" unless the proposal shows it was executed.

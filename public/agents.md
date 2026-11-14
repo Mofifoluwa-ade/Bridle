@@ -2,7 +2,7 @@
 
 Bridle lets an AI agent spend within limits its owner signs once. A NEAR contract checks every payment. The agent proposes, the contract decides, and the owner keeps a veto.
 
-Status: NEAR testnet, version 0.1. Base signing through NEAR Chain Signatures is built but not yet verified end to end, and Solana is not built. Report "cleared", never "paid".
+Status: NEAR testnet, version 0.1. Base signing through NEAR Chain Signatures has been verified end to end on testnet (a USDC transfer on Base Sepolia, 2026-11-07), and Solana is planned, not built. Report "cleared" unless the proposal shows it was executed.
 
 - App: https://bridle-agent.vercel.app
 - Repo: https://github.com/Mofifoluwa-ade/Bridle
