@@ -34,7 +34,7 @@ const STEP_GUIDES = [
       title: "Enabled networks",
       description: (
         <p>
-          Select which blockchain networks (e.g. Base, Solana, Ethereum) your agent can route USDC to. Any disabled chain is automatically blocked.
+          Select which blockchain networks (for now Base and NEAR) your agent can route USDC to. Any disabled chain is automatically blocked.
         </p>
       ),
     },
@@ -222,7 +222,7 @@ function Form() {
   const applyPayment = () => {
     const d = parsePayment(payText);
     if (!d.amount && !d.chain && !d.recipient) {
-      setPayNote("Nothing recognised. Try: Pay $240 to 0x… on Solana");
+      setPayNote("Nothing recognised. Try: Pay $240 to 0x… on Base");
       return;
     }
     if (d.amount) setTestAmount(d.amount);
@@ -500,7 +500,7 @@ function Form() {
                 <div className="flex items-center gap-2">
                   <legend className="text-[14.5px] font-semibold text-ink dark:text-white">Enabled networks</legend>
                   <HelpButton
-                    content="One asset per mandate: USDC on Base or Solana, or native NEAR on the NEAR network. A recipient must belong to an enabled network. Cross-chain payments on disabled networks are immediately blocked."
+                    content="One asset per mandate: USDC on Base, or native NEAR on the NEAR network. A recipient must belong to an enabled network. Cross-chain payments on disabled networks are immediately blocked."
                     title="Enabled Networks"
                   />
                 </div>
@@ -700,14 +700,14 @@ function Form() {
                   title="Simulation Preview"
                 />
               </div>
-              <Field label="Or describe a payment" help="For example: Pay $240 to 0x… on Solana. This fills the three fields below, so you can test a blocked or allowed case in one line.">
+              <Field label="Or describe a payment" help="For example: Pay $240 to 0x… on Base. This fills the three fields below, so you can test a blocked or allowed case in one line.">
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <input
                     className={`${monoInputCls} !mt-0 !h-12 !py-0 min-w-0 flex-1`}
                     value={payText}
                     onChange={(e) => { setPayText(e.target.value); setPayNote(null); }}
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyPayment(); } }}
-                    placeholder="Pay $240 to 0x… on Solana"
+                    placeholder="Pay $240 to 0x… on Base"
                     spellCheck={false}
                   />
                   <Btn size="sm" variant="outline" onClick={applyPayment} disabled={!payText.trim()}>Test payment</Btn>

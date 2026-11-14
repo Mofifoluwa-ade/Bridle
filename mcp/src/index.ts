@@ -43,7 +43,7 @@ const server = new McpServer(
 const mandateId = z.number().int().nonnegative().describe("The mandate id, from list_mandates");
 const payment = {
   mandate_id: mandateId,
-  chain: z.enum(["Base", "Solana", "Near"]).describe("Destination chain. Near pays native NEAR to a NEAR account"),
+  chain: z.enum(["Base", "Near"]).describe("Destination chain. Near pays native NEAR to a NEAR account"),
   asset: z.string().optional().describe("Asset symbol: USDC on Base, NEAR on Near. Defaults to the chain's asset"),
   amount: z.string().describe("Decimal amount in the asset, for example 18.50 USDC or 1.5 NEAR. Not smallest units"),
   recipient: z.string().describe("Destination address. Must match an approved recipient exactly, including letter case"),

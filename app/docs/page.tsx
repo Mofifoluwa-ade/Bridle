@@ -19,7 +19,7 @@ const CODE_SNIPPETS = {
       },
       "chain": {
         "type": "string",
-        "enum": ["Base", "Solana"],
+        "enum": ["Base", "Near"],
         "description": "The destination blockchain network"
       },
       "asset": {
@@ -87,7 +87,7 @@ export async function proposePayment({
   agentAccountId: string;
   agentPrivateKey: string;
   mandateId: number;
-  chain: "Base" | "Solana";
+  chain: "Base" | "Near";
   amountUsdc: number;
   recipient: string;
 }) {
@@ -138,7 +138,7 @@ export const bridlePaymentTool = new DynamicStructuredTool({
     "Sends a payment through Bridle. Safe to call: contract enforces spending limits and allowlists.",
   schema: z.object({
     mandate_id: z.number().describe("Your assigned rule ID"),
-    chain: z.enum(["Base", "Solana"]).describe("Target chain"),
+    chain: z.enum(["Base", "Near"]).describe("Target chain"),
     amount_usdc: z.number().describe("Dollar amount in USDC, e.g. 10.5"),
     recipient: z.string().describe("Approved destination address"),
   }),
@@ -541,7 +541,7 @@ export default function DocsPage() {
                 <div className="p-4 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card">
                   <p className="font-mono text-xs uppercase text-accent dark:text-[#46D9A4] font-semibold">Multi-Chain Signing</p>
                   <p className="mt-1 text-xs text-mute dark:text-dark-mute">
-                    Executes transfers to Base (EVM) and Solana using NEAR Chain Signatures MPC.
+                    Executes transfers to Base (EVM) using NEAR Chain Signatures MPC, and pays native NEAR directly.
                   </p>
                 </div>
               </div>
@@ -586,7 +586,7 @@ export default function DocsPage() {
                     </h3>
                   </div>
                   <p className="text-xs text-mute dark:text-dark-mute pl-9">
-                    Navigate to <Link href="/app/mandates/new" className="underline text-accent dark:text-[#46D9A4]">New Rule</Link>. Enter your agent&apos;s NEAR address (e.g. agent.testnet), specify approved recipient addresses on Base or Solana, and choose daily and per-payment caps (e.g. $25 per payment, $50 per day).
+                    Navigate to <Link href="/app/mandates/new" className="underline text-accent dark:text-[#46D9A4]">New Rule</Link>. Enter your agent&apos;s NEAR address (e.g. agent.testnet), specify approved recipient addresses on Base or NEAR, and choose daily and per-payment caps (e.g. $25 per payment, $50 per day).
                   </p>
                 </div>
 
@@ -705,7 +705,7 @@ export default function DocsPage() {
                   <div className="p-4 rounded-xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border space-y-1">
                     <p className="font-mono font-semibold text-accent dark:text-[#46D9A4]">3. MPC Signatures</p>
                     <p className="text-mute dark:text-dark-mute">
-                      NEAR Chain Signatures threshold network signs the raw transaction bytes and broadcasts them to Base or Solana.
+                      NEAR Chain Signatures threshold network signs the raw transaction bytes and broadcasts them to Base.
                     </p>
                   </div>
                 </div>
@@ -1337,7 +1337,7 @@ export default function DocsPage() {
                     Which blockchains are supported?
                   </h3>
                   <p className="text-xs text-mute dark:text-dark-mute leading-relaxed">
-                    Bridle coordinates payments on NEAR Testnet and signs transactions for Base Sepolia (EVM) and Solana Devnet using NEAR Chain Signatures MPC.
+                    Bridle coordinates payments on NEAR Testnet and signs transactions for Base Sepolia (EVM) using NEAR Chain Signatures MPC. Solana is planned.
                   </p>
                 </div>
               </div>

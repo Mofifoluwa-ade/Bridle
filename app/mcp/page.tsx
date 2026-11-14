@@ -166,7 +166,7 @@ export default function McpPage() {
           <p className={`mt-3 max-w-[680px] ${body}`}>
             Bridle runs on NEAR testnet. The server is tested against a mock chain and has not yet been run with a
             real agent key against the live contract. A cleared payment is reported as &quot;cleared&quot;, not
-            &quot;paid&quot;: Base signing is built but not yet verified end to end, and Solana is not built.
+            &quot;paid&quot;: Base signing is built and Solana is planned.
           </p>
         </section>
 
