@@ -177,8 +177,21 @@ Because the adapter on NEAR builds the destination calldata directly, prompt-inj
 
 ### Trust Assumptions Stated Plainly
 1. **NEAR Consensus:** Settlement, mandate storage, and timekeeper for UTC daily cap resets and challenge windows.
-2. **Chain Signatures MPC Network:** Threshold ECDSA / Ed25519 signing for derived addresses on Base and Solana.
-3. **Destination RPC Broadcasters:** Broadcast liveness for signed transactions (cannot alter payloads or divert funds).
+2. **Chain Signatures MPC Network:** Threshold ECDSA signing for the derived Base address. Ed25519 signing for Solana is not built yet.
+3. **The executor:** The executor account asks for the signature, broadcasts the transaction and reports the result. It cannot change the payload or the recipient, because the contract builds the transaction. It can, however, delay a payment or report it wrongly (see the first limitation below).
+4. **Destination RPC broadcasters:** Broadcast liveness for signed transactions (cannot alter payloads or divert funds).
+
+### Known Limitations (v1)
+Bridle is a testnet project and has not been audited. Do not put real funds behind it.
+
+* **Testnet only.** The signer, the Base chain ID (Base Sepolia), the USDC address and the gas caps are fixed in the contract.
+* **Transfers only.** Base USDC and native NEAR payments are supported. Solana proposals are checked against the rule, but Solana signing is not built, so they cannot be executed.
+* **A false "failed" report from the executor refunds the daily cap.** If the executor reports a signed payment as failed, the amount returns to the day's budget while the transaction may still land. The planned fix is to stop refunding once a signature exists.
+* **The allowlist is an exact string match.** An EVM address written in a different case from the one on the rule is blocked. This fails closed.
+* **The daily cap resets on the UTC day**, not on a rolling window. Payments that pass the rule count toward the cap even if they are never executed.
+* **Caps are in token units**, not dollars. There is no price oracle.
+* **Claim links use the standard NEAR linkdrop contract.** It keeps a fixed 1 NEAR reserve from every link to pay for the claim. Bridle does not receive it and cannot change it.
+* **The executor is a single account.** A separate, monitored executor is the intended setup. There is no redundancy yet.
 
 ---
 
