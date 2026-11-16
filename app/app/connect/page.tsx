@@ -1,0 +1,242 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { ConfirmDialog } from "@/components/app/ConfirmDialog";
+import { NeedsWallet } from "@/components/app/Gate";
+import { Btn, Card, Label, Notice, PageHeader } from "@/components/app/ui";
+import { useWallet } from "@/components/app/WalletProvider";
+import { type AgentIdentity, agentLink, loadAgent, newAgent, saveAgent } from "@/lib/agentLink";
+import { parseNear } from "@/lib/format";
+import { accountExists, api } from "@/lib/near";
+
+const FUND = "0.1";
+
+function Step({ n, title, done, children }: { n: number; title: string; done?: boolean; children: React.ReactNode }) {
+  return (
+    <Card className="p-5 sm:p-6">
+      <div className="flex items-start gap-4">
+        <div className={`mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-[13px] font-semibold ${done ? "bg-accent text-white dark:bg-accent-dark dark:text-ink" : "border border-line text-mute dark:border-dark-border dark:text-dark-mute"}`}>
+          {done ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="m5 12 5 5 9-10" /></svg>
+          ) : (
+            n
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[16px] font-semibold tracking-tight">{title}</h2>
+          <div className="mt-3 space-y-3 text-[14.5px] leading-relaxed text-mute dark:text-dark-mute">{children}</div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function Connect() {
+  const { accountId, transfer } = useWallet();
+  const [agent, setAgent] = useState<AgentIdentity | null>(null);
+  const [funded, setFunded] = useState<boolean | null>(null);
+  const [rules, setRules] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [show, setShow] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [confirmNew, setConfirmNew] = useState(false);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  useEffect(() => {
+    setAgent(accountId ? loadAgent(accountId) : null);
+    setShow(false);
+  }, [accountId]);
+
+  const refresh = useCallback(async () => {
+    if (!agent) return;
+    setFunded(await accountExists(agent.account));
+    try {
+      setRules((await api.mandatesFor(agent.account)).filter((m) => m.agent === agent.account).length);
+    } catch {
+      setRules(null);
+    }
+  }, [agent]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const create = () => {
+    if (!accountId) return;
+    const a = newAgent();
+    saveAgent(accountId, a);
+    setAgent(a);
+    setFunded(false);
+    setRules(0);
+  };
+
+  const fund = async () => {
+    if (!agent) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const y = parseNear(FUND);
+      await transfer(agent.account, (y ?? BigInt(0)).toString());
+      // A wallet can return before the chain has the account; check a few times.
+      for (let i = 0; i < 6; i++) {
+        if ((await accountExists(agent.account)) === true) break;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      await refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "The transfer did not go through.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const link = agent && origin ? agentLink(origin, agent) : "";
+  const masked = link ? link.replace(/(\/mcp\/bk_).+$/, "$1••••••••••••••••") : "";
+
+  const copy = async (what: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(what);
+      setTimeout(() => setCopied(null), 1800);
+    } catch {
+      /* clipboard can be blocked; the text is on screen for manual copy */
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <Step n={1} title="Create your agent" done={!!agent}>
+        {agent ? (
+          <>
+            <p>Your agent has its own account. It was made in this browser, so Bridle did not choose or see it until you use the link.</p>
+            <p className="break-all font-mono text-[12.5px] text-ink dark:text-white">{agent.account}</p>
+            <button type="button" onClick={() => setConfirmNew(true)} className="text-[13.5px] underline underline-offset-2 hover:text-ink dark:hover:text-white">
+              Make a new agent
+            </button>
+          </>
+        ) : (
+          <>
+            <p>One click makes a personal agent for your rules. You do not need to type an account or a key.</p>
+            <Btn onClick={create}>Create my agent</Btn>
+          </>
+        )}
+      </Step>
+
+      <Step n={2} title="Give it a little gas" done={funded === true}>
+        {!agent ? (
+          <p>Create your agent first.</p>
+        ) : funded ? (
+          <p>The agent account is live on testnet and can pay for its own proposals.</p>
+        ) : (
+          <>
+            <p>The account starts empty. Send it {FUND} NEAR once so it can pay the small fee to submit a proposal. This is test NEAR.</p>
+            <Btn onClick={fund} busy={busy}>Send {FUND} NEAR</Btn>
+          </>
+        )}
+        {err && <Notice tone="bad">{err}</Notice>}
+      </Step>
+
+      <Step n={3} title="Copy your agent link" done={false}>
+        {!agent ? (
+          <p>Create your agent first.</p>
+        ) : (
+          <>
+            <p>Paste this into your AI app as a connector. It carries your agent key, so treat it like a password.</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <code className="min-w-0 flex-1 break-all rounded-xl border border-line bg-paper px-3.5 py-3 font-mono text-[12.5px] text-ink dark:border-dark-border dark:bg-white/5 dark:text-white">{show ? link : masked}</code>
+              <div className="flex gap-2">
+                <Btn variant="outline" onClick={() => setShow((s) => !s)}>{show ? "Hide" : "Show"}</Btn>
+                <Btn onClick={() => copy("link", link)}>{copied === "link" ? "Copied" : "Copy link"}</Btn>
+              </div>
+            </div>
+            <div className="space-y-2 pt-1">
+              <Label>How to use it</Label>
+              <ul className="list-disc space-y-1.5 pl-5">
+                <li>In Claude: Settings, then Connectors, add a custom connector, and paste the link. The names can differ by plan and version.</li>
+                <li>
+                  In Claude Code, run:{" "}
+                  <button type="button" onClick={() => copy("cmd", `claude mcp add --transport http bridle ${link}`)} className="rounded-md border border-line px-2 py-0.5 font-mono text-[12px] text-ink hover:bg-paper dark:border-dark-border dark:text-white dark:hover:bg-white/5">
+                    {copied === "cmd" ? "Copied" : "copy the command"}
+                  </button>
+                </li>
+                <li>Any app that supports remote MCP servers over HTTP can use the same link.</li>
+              </ul>
+              <p>
+                Prefer to run it yourself? See{" "}
+                <Link href="/mcp" className="underline underline-offset-2">the local server</Link>.
+              </p>
+            </div>
+          </>
+        )}
+      </Step>
+
+      {agent && (
+        <Card className="p-5 sm:p-6">
+          <h2 className="text-[16px] font-semibold tracking-tight">What this link can do</h2>
+          <div className="mt-3 grid gap-4 text-[14.5px] leading-relaxed text-mute dark:text-dark-mute sm:grid-cols-2">
+            <div>
+              <Label>It can</Label>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                <li>Find the rules where it is the agent</li>
+                <li>Read their limits and what is left today</li>
+                <li>Check a payment before sending it</li>
+                <li>Propose a payment. The contract decides.</li>
+              </ul>
+            </div>
+            <div>
+              <Label>It cannot</Label>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                <li>Create, change, fund or stop a rule</li>
+                <li>Approve or veto a held payment</li>
+                <li>Move money outside a rule&apos;s limits</li>
+              </ul>
+            </div>
+          </div>
+          <p className="mt-4 text-[13.5px] text-mute dark:text-dark-mute">
+            {rules === null ? "" : rules === 0 ? "No rules use this agent yet. " : `${rules} rule${rules === 1 ? "" : "s"} use this agent. `}
+            New rules pick it automatically. <Link href="/app/mandates/new" className="underline underline-offset-2">Create a rule</Link>
+          </p>
+        </Card>
+      )}
+
+      <Notice tone="warn" title="If the link leaks">
+        Anyone with it can propose payments on the rules that use this agent, but only inside their limits. Make a new agent, then create new rules with it. Bridle&apos;s server sees the key whenever the link is used. This is testnet and unaudited.
+      </Notice>
+
+      <ConfirmDialog
+        open={confirmNew}
+        destructive
+        title="Make a new agent?"
+        confirmLabel="Make a new agent"
+        cancelLabel="Keep this one"
+        onCancel={() => setConfirmNew(false)}
+        onConfirm={() => {
+          setConfirmNew(false);
+          create();
+          setShow(false);
+        }}
+      >
+        Your current link keeps working for the rules that already use this agent, but Bridle will stop showing it here. New rules will use the new agent. Copy the old link first if you still need it.
+      </ConfirmDialog>
+    </div>
+  );
+}
+
+export default function ConnectPage() {
+  return (
+    <>
+      <PageHeader title="Connect your agent" lead="One link lets an AI app act as your agent. It can only work inside the rules you sign." />
+      <div className="mx-auto max-w-[760px]">
+        <NeedsWallet why="Connect your wallet to make an agent that belongs to you.">
+          <Connect />
+        </NeedsWallet>
+      </div>
+    </>
+  );
+}

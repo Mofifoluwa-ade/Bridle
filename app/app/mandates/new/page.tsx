@@ -1,11 +1,12 @@
 "use client";
 
 import { ChainSelect, ChainTag } from "@/components/app/ChainSelect";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Btn, Card, Field, HelpButton, HelpDropdown, HelpGuideMenu, Label, Notice, PageHeader, monoInputCls } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
+import { loadAgent } from "@/lib/agentLink";
 import { CHAINS, CONFIG } from "@/lib/config";
 import { duration, formatNearWithUsd, money, parseNear, parseUnits, validAddress, validNearAccount } from "@/lib/format";
 import type { Chain } from "@/lib/types";
@@ -166,6 +167,13 @@ function Form() {
   })();
   const [step, setStep] = useState<Step>(0);
   const [agent, setAgent] = useState("");
+  const [ownAgent, setOwnAgent] = useState<string | null>(null);
+  // Use the agent made on the Connect page, unless the owner has typed their own.
+  useEffect(() => {
+    const a = accountId ? loadAgent(accountId) : null;
+    setOwnAgent(a?.account ?? null);
+    if (a) setAgent((cur) => cur || a.account);
+  }, [accountId]);
   const [chains, setChains] = useState<Chain[]>(preNear ? ["Near"] : ["Base"]);
   // A NEAR mandate is NEAR-only: its caps are in NEAR (24 decimals), not USDC (6).
   const isNear = chains.includes("Near");
@@ -484,7 +492,7 @@ function Form() {
               </div>
               <Field
                 label="Agent NEAR address"
-                help="The NEAR testnet account your AI agent uses. It can only request payments that satisfy your configured rules."
+                help={ownAgent && agent === ownAgent ? "This is your Bridle agent, made on the Connect page. Its link works for this rule automatically." : "The NEAR testnet account your AI agent uses. It can only request payments that satisfy your configured rules."}
                 error={show("agent")}
               >
                 <input

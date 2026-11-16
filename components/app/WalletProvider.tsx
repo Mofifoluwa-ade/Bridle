@@ -27,6 +27,8 @@ type WalletCtx = {
   signOut: () => Promise<void>;
   /** Sign and send a function call to the Bridle contract. Throws a readable Error. */
   call: (c: CallArgs) => Promise<string | null>;
+  /** A plain NEAR transfer from the connected wallet. */
+  transfer: (to: string, yocto: string) => Promise<string | null>;
   /** Several calls to the Bridle contract in ONE transaction: one approval, and all of them succeed or none do. */
   callBatch: (calls: CallArgs[]) => Promise<string | null>;
 };
@@ -128,6 +130,21 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     [accountId, ready],
   );
 
+  const transfer = useCallback(
+    async (to: string, yocto: string) => {
+      if (!connector.current || !ready) throw new Error("Wallet connector is still loading. Try again in a second.");
+      if (!accountId) throw new Error("Connect your NEAR wallet before submitting this transaction.");
+      try {
+        const wallet = await connector.current.wallet();
+        const out = await wallet.signAndSendTransaction({ receiverId: to, actions: [actionCreators.transfer(BigInt(yocto))] });
+        return out && "transaction" in out ? (out.transaction.hash as string) : null;
+      } catch (error) {
+        throw new Error(explainError(error));
+      }
+    },
+    [accountId, ready],
+  );
+
   const callBatch = useCallback(
     async (calls: CallArgs[]) => {
       if (!connector.current || !ready) throw new Error("Wallet connector is still loading. Try again in a second.");
@@ -150,8 +167,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<WalletCtx>(
-    () => ({ ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call, callBatch }),
-    [ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call, callBatch],
+    () => ({ ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call, transfer, callBatch }),
+    [ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call, transfer, callBatch],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

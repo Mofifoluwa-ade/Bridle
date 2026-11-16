@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test:sentence": "node --experimental-strip-types scripts/sentence.test.mts"
+    "test:sentence": "node --experimental-strip-types scripts/sentence.test.mts",
+    "sync:mcp": "node scripts/sync-mcp.mjs"
   },
   "dependencies": {
     "@hot-labs/near-connect": "^0.11.4",

@@ -147,7 +147,7 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    href: "/mcp",
+    href: "/app/connect",
     label: "Connect an agent",
     id: "tour-nav-mcp",
     icon: (
