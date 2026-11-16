@@ -181,6 +181,11 @@ Because the adapter on NEAR builds the destination calldata directly, prompt-inj
 3. **The executor:** The executor account asks for the signature, broadcasts the transaction and reports the result. It cannot change the payload or the recipient, because the contract builds the transaction. It can, however, delay a payment or report it wrongly (see the first limitation below).
 4. **Destination RPC broadcasters:** Broadcast liveness for signed transactions (cannot alter payloads or divert funds).
 
+### Hosted agent link
+Instead of running `bridle-mcp` locally, an owner can press **Connect an agent** in the app. The browser creates a personal agent key, the owner sends the agent account 0.1 NEAR for gas, and the app shows one link (`/mcp/<token>`) to paste into an AI app that supports remote MCP servers. The link exposes only the agent tools (list rules, read limits, check a payment, propose a payment). Creating, changing, funding, stopping and vetoing rules stay in the owner's wallet.
+
+The link carries the agent key, so it is a secret, and Bridle's server sees the key whenever the link is used. A leaked link can only propose payments inside the limits of the rules that name that agent. The tool logic is copied from `mcp/src` into `lib/agentmcp` by `npm run sync:mcp`.
+
 ### Known Limitations (v1)
 Bridle is a testnet project and has not been audited. Do not put real funds behind it.
 
