@@ -27,6 +27,8 @@ type WalletCtx = {
   signOut: () => Promise<void>;
   /** Sign and send a function call to the Bridle contract. Throws a readable Error. */
   call: (c: CallArgs) => Promise<string | null>;
+  /** Ask the wallet to sign a message (NEP-413). Returns the signature. Moves no funds. */
+  signMessage: (message: string, recipient: string, nonce: Uint8Array) => Promise<string>;
   /** A plain NEAR transfer from the connected wallet. */
   transfer: (to: string, yocto: string) => Promise<string | null>;
   /** Several calls to the Bridle contract in ONE transaction: one approval, and all of them succeed or none do. */
@@ -130,6 +132,22 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     [accountId, ready],
   );
 
+  const signMessage = useCallback(
+    async (message: string, recipient: string, nonce: Uint8Array) => {
+      if (!connector.current || !ready) throw new Error("Wallet connector is still loading. Try again in a second.");
+      if (!accountId) throw new Error("Connect your NEAR wallet first.");
+      try {
+        const wallet = await connector.current.wallet();
+        const out = await wallet.signMessage({ message, recipient, nonce, network: CONFIG.network, signerId: accountId });
+        if (!out?.signature) throw new Error("The wallet did not return a signature.");
+        return out.signature;
+      } catch (error) {
+        throw new Error(explainError(error));
+      }
+    },
+    [accountId, ready],
+  );
+
   const transfer = useCallback(
     async (to: string, yocto: string) => {
       if (!connector.current || !ready) throw new Error("Wallet connector is still loading. Try again in a second.");
@@ -167,8 +185,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<WalletCtx>(
-    () => ({ ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call, transfer, callBatch }),
-    [ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call, transfer, callBatch],
+    () => ({ ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call, signMessage, transfer, callBatch }),
+    [ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut, call, signMessage, transfer, callBatch],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
