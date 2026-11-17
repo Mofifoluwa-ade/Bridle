@@ -181,10 +181,15 @@ Because the adapter on NEAR builds the destination calldata directly, prompt-inj
 3. **The executor:** The executor account asks for the signature, broadcasts the transaction and reports the result. It cannot change the payload or the recipient, because the contract builds the transaction. It can, however, delay a payment or report it wrongly (see the first limitation below).
 4. **Destination RPC broadcasters:** Broadcast liveness for signed transactions (cannot alter payloads or divert funds).
 
-### Hosted agent link
-Instead of running `bridle-mcp` locally, an owner can press **Connect an agent** in the app. The browser creates a personal agent key, the owner sends the agent account 0.1 NEAR for gas, and the app shows one link (`/mcp/<token>`) to paste into an AI app that supports remote MCP servers. The link exposes only the agent tools (list rules, read limits, check a payment, propose a payment). Creating, changing, funding, stopping and vetoing rules stay in the owner's wallet.
+### Hosted agent connector
+Instead of running `bridle-mcp` locally, an owner can press **Connect an agent** in the app. Signing one wallet message creates a personal agent (the same wallet makes the same agent on any computer). The owner sends it 0.1 NEAR for gas, then adds `https://<host>/mcp` as a connector in an AI app. The app opens Bridle's approval page (OAuth 2.1 with PKCE and dynamic client registration), the owner approves, and the app gets a one-hour token it refreshes for up to 90 days. There is no key to copy. The connector exposes only the agent tools (list rules, read limits, check a payment, propose a payment). Creating, changing, funding, stopping and vetoing rules stay in the owner's wallet.
 
-The link carries the agent key, so it is a secret, and Bridle's server sees the key whenever the link is used. A leaked link can only propose payments inside the limits of the rules that name that agent. The tool logic is copied from `mcp/src` into `lib/agentmcp` by `npm run sync:mcp`.
+Notes on the design:
+* **Stateless.** Codes and tokens are AES-GCM sealed with `MCP_TOKEN_SECRET`; Bridle keeps no sign-in list. To cut an app off, make a new agent, or rotate the secret to sign everyone out.
+* **Redirects are allowlisted** to Claude, ChatGPT and local tools. Other apps cannot register.
+* **Bridle's server sees the agent key** whenever the connector is used. A leaked token can only propose payments inside the limits of the rules that name that agent. The agent is derived from a signature of a fixed message, so never sign that message on a site you do not trust.
+* **Advanced:** `/mcp/<token>` is a personal link that carries the key and never expires, for apps that cannot sign in.
+* The tool logic is copied from `mcp/src` into `lib/agentmcp` by `npm run sync:mcp`.
 
 ### Known Limitations (v1)
 Bridle is a testnet project and has not been audited. Do not put real funds behind it.

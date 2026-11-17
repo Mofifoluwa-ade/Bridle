@@ -1,28 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { NeedsWallet } from "@/components/app/Gate";
 import { Btn, Card, Label, Notice, PageHeader } from "@/components/app/ui";
-import { useWallet } from "@/components/app/WalletProvider";
-import {
-  type AgentIdentity,
-  type AgentKind,
-  WALLET_AGENT_NONCE,
-  WALLET_AGENT_RECIPIENT,
-  agentFromSignature,
-  agentLink,
-  loadAgent,
-  loadAgentKind,
-  newAgent,
-  saveAgent,
-  walletAgentMessage,
-} from "@/lib/agentLink";
-import { parseNear } from "@/lib/format";
-import { accountExists, api } from "@/lib/near";
+import { agentLink } from "@/lib/agentLink";
+import { FUND, useWalletAgent } from "@/components/app/useWalletAgent";
 
-const FUND = "0.1";
+
+const TRY_PROMPT = "Use Bridle. List my rules, then check a small payment to one of the approved recipients and tell me whether it would clear, wait for review or be blocked. Do not send anything.";
 
 function Step({ n, title, done, children }: { n: number; title: string; done?: boolean; children: React.ReactNode }) {
   return (
@@ -45,13 +32,7 @@ function Step({ n, title, done, children }: { n: number; title: string; done?: b
 }
 
 function Connect() {
-  const { accountId, transfer, signMessage } = useWallet();
-  const [agent, setAgent] = useState<AgentIdentity | null>(null);
-  const [kind, setKind] = useState<AgentKind>("browser");
-  const [funded, setFunded] = useState<boolean | null>(null);
-  const [rules, setRules] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const { agent, kind, funded, rules, busy, err, createFromWallet, createInBrowser, fund } = useWalletAgent();
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [confirmNew, setConfirmNew] = useState(false);
@@ -60,78 +41,6 @@ function Connect() {
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
-
-  useEffect(() => {
-    setAgent(accountId ? loadAgent(accountId) : null);
-    setKind(accountId ? loadAgentKind(accountId) : "browser");
-    setShow(false);
-  }, [accountId]);
-
-  const refresh = useCallback(async () => {
-    if (!agent) return;
-    setFunded(await accountExists(agent.account));
-    try {
-      setRules((await api.mandatesFor(agent.account)).filter((m) => m.agent === agent.account).length);
-    } catch {
-      setRules(null);
-    }
-  }, [agent]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
-
-  const adopt = (a: AgentIdentity, k: AgentKind) => {
-    if (!accountId) return;
-    saveAgent(accountId, a, k);
-    setAgent(a);
-    setKind(k);
-    setFunded(null);
-    setRules(null);
-    setShow(false);
-  };
-
-  // The agent is a function of a wallet signature, so the same wallet gets the same agent in any browser.
-  const createFromWallet = async () => {
-    if (!accountId) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      const msg = walletAgentMessage(accountId);
-      const first = await signMessage(msg, WALLET_AGENT_RECIPIENT, WALLET_AGENT_NONCE);
-      const second = await signMessage(msg, WALLET_AGENT_RECIPIENT, WALLET_AGENT_NONCE);
-      if (first !== second) {
-        throw new Error("This wallet signs differently each time, so it cannot recreate the same agent on another device. Use a browser-only agent instead.");
-      }
-      adopt(agentFromSignature(first), "wallet");
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "The wallet did not sign.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const createInBrowser = () => adopt(newAgent(), "browser");
-
-  const fund = async () => {
-    if (!agent) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      const y = parseNear(FUND);
-      await transfer(agent.account, (y ?? BigInt(0)).toString());
-      // A wallet can return before the chain has the account; check a few times.
-      for (let i = 0; i < 6; i++) {
-        if ((await accountExists(agent.account)) === true) break;
-        await new Promise((r) => setTimeout(r, 1500));
-      }
-      await refresh();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "The transfer did not go through.");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const link = agent && origin ? agentLink(origin, agent) : "";
   const masked = link ? link.replace(/(\/mcp\/bk_).+$/, "$1••••••••••••••••") : "";
@@ -189,35 +98,65 @@ function Connect() {
         {err && <Notice tone="bad">{err}</Notice>}
       </Step>
 
-      <Step n={3} title="Copy your agent link" done={false}>
+      <Step n={3} title="Connect your AI app" done={false}>
         {!agent ? (
           <p>Create your agent first.</p>
         ) : (
           <>
-            <p>Paste this into your AI app as a connector. It carries your agent key, so treat it like a password.</p>
+            <p>Add this address as a connector. Your AI app opens Bridle so you can approve it, and there is no key to copy.</p>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <code className="min-w-0 flex-1 break-all rounded-xl border border-line bg-paper px-3.5 py-3 font-mono text-[12.5px] text-ink dark:border-dark-border dark:bg-white/5 dark:text-white">{show ? link : masked}</code>
-              <div className="flex gap-2">
-                <Btn variant="outline" onClick={() => setShow((s) => !s)}>{show ? "Hide" : "Show"}</Btn>
-                <Btn onClick={() => copy("link", link)}>{copied === "link" ? "Copied" : "Copy link"}</Btn>
-              </div>
+              <code className="min-w-0 flex-1 break-all rounded-xl border border-line bg-paper px-3.5 py-3 font-mono text-[13px] text-ink dark:border-dark-border dark:bg-white/5 dark:text-white">{origin ? `${origin}/mcp` : ""}</code>
+              <Btn onClick={() => copy("addr", `${origin}/mcp`)}>{copied === "addr" ? "Copied" : "Copy address"}</Btn>
             </div>
             <div className="space-y-2 pt-1">
               <Label>How to use it</Label>
               <ul className="list-disc space-y-1.5 pl-5">
-                <li>In Claude: Settings, then Connectors, add a custom connector, and paste the link. The names can differ by plan and version.</li>
+                <li>In Claude: Settings, then Connectors, add a custom connector, paste the address, and tap Connect. Approve it in Bridle when it opens. Names can differ by plan and version.</li>
                 <li>
-                  In Claude Code, run:{" "}
-                  <button type="button" onClick={() => copy("cmd", `claude mcp add --transport http bridle ${link}`)} className="rounded-md border border-line px-2 py-0.5 font-mono text-[12px] text-ink hover:bg-paper dark:border-dark-border dark:text-white dark:hover:bg-white/5">
+                  In Claude Code, run{" "}
+                  <button type="button" onClick={() => copy("cmd", `claude mcp add --transport http bridle ${origin}/mcp`)} className="rounded-md border border-line px-2 py-0.5 font-mono text-[12px] text-ink hover:bg-paper dark:border-dark-border dark:text-white dark:hover:bg-white/5">
                     {copied === "cmd" ? "Copied" : "copy the command"}
                   </button>
+                  , then use /mcp to sign in.
                 </li>
-                <li>Any app that supports remote MCP servers over HTTP can use the same link.</li>
               </ul>
-              <p>
-                Prefer to run it yourself? See{" "}
-                <Link href="/mcp" className="underline underline-offset-2">the local server</Link>.
-              </p>
+            </div>
+            <details className="rounded-xl border border-line px-4 py-3 dark:border-dark-border">
+              <summary className="cursor-pointer text-[14px] font-medium text-ink dark:text-white">Advanced: a personal link instead</summary>
+              <div className="mt-3 space-y-3">
+                <p>For apps that cannot sign in. The link carries your agent key, so treat it like a password. It has no expiry.</p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <code className="min-w-0 flex-1 break-all rounded-xl border border-line bg-paper px-3.5 py-3 font-mono text-[12.5px] text-ink dark:border-dark-border dark:bg-white/5 dark:text-white">{show ? link : masked}</code>
+                  <div className="flex gap-2">
+                    <Btn variant="outline" onClick={() => setShow((x) => !x)}>{show ? "Hide" : "Show"}</Btn>
+                    <Btn onClick={() => copy("link", link)}>{copied === "link" ? "Copied" : "Copy link"}</Btn>
+                  </div>
+                </div>
+                <p>
+                  Prefer to run it yourself? See <Link href="/mcp" className="underline underline-offset-2">the local server</Link>.
+                </p>
+              </div>
+            </details>
+          </>
+        )}
+      </Step>
+
+      <Step n={4} title="Try it" done={false}>
+        {!agent ? (
+          <p>Create your agent first.</p>
+        ) : rules === 0 ? (
+          <>
+            <p>No rule names this agent yet, so there is nothing for it to spend under. Create one, then come back.</p>
+            <Link href={`/app/mandates/new?agent=${agent.account}`} className="inline-flex h-11 items-center rounded-xl bg-accent px-5 text-[14px] font-medium text-white hover:opacity-90 dark:bg-accent-dark dark:text-ink">
+              Create a rule for this agent
+            </Link>
+          </>
+        ) : (
+          <>
+            <p>Paste this to your AI app. It checks a payment without sending anything.</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+              <code className="min-w-0 flex-1 rounded-xl border border-line bg-paper px-3.5 py-3 text-[13.5px] leading-relaxed text-ink dark:border-dark-border dark:bg-white/5 dark:text-white">{TRY_PROMPT}</code>
+              <Btn onClick={() => copy("try", TRY_PROMPT)}>{copied === "try" ? "Copied" : "Copy prompt"}</Btn>
             </div>
           </>
         )}
