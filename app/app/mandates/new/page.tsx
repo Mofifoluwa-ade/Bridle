@@ -172,8 +172,11 @@ function Form() {
   useEffect(() => {
     const a = accountId ? loadAgent(accountId) : null;
     setOwnAgent(a?.account ?? null);
-    if (a) setAgent((cur) => cur || a.account);
-  }, [accountId]);
+    // An agent can send its owner here with ?agent=<account> already filled in.
+    const fromLink = sp.get("agent")?.trim() ?? "";
+    if (validNearAccount(fromLink)) setAgent(fromLink);
+    else if (a) setAgent((cur) => cur || a.account);
+  }, [accountId, sp]);
   const [chains, setChains] = useState<Chain[]>(preNear ? ["Near"] : ["Base"]);
   // A NEAR mandate is NEAR-only: its caps are in NEAR (24 decimals), not USDC (6).
   const isNear = chains.includes("Near");
@@ -492,7 +495,7 @@ function Form() {
               </div>
               <Field
                 label="Agent NEAR address"
-                help={ownAgent && agent === ownAgent ? "This is your Bridle agent, made on the Connect page. Its link works for this rule automatically." : "The NEAR testnet account your AI agent uses. It can only request payments that satisfy your configured rules."}
+                help={ownAgent && agent === ownAgent ? "This is your Bridle agent, made on the Connect page. Its link works for this rule automatically." : sp.get("agent") && agent === sp.get("agent")?.trim() ? "Filled in from your agent's link. Check it is the agent you connected." : "The NEAR testnet account your AI agent uses. It can only request payments that satisfy your configured rules."}
                 error={show("agent")}
               >
                 <input
