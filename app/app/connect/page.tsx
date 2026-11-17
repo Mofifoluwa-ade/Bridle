@@ -6,7 +6,19 @@ import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { NeedsWallet } from "@/components/app/Gate";
 import { Btn, Card, Label, Notice, PageHeader } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
-import { type AgentIdentity, agentLink, loadAgent, newAgent, saveAgent } from "@/lib/agentLink";
+import {
+  type AgentIdentity,
+  type AgentKind,
+  WALLET_AGENT_NONCE,
+  WALLET_AGENT_RECIPIENT,
+  agentFromSignature,
+  agentLink,
+  loadAgent,
+  loadAgentKind,
+  newAgent,
+  saveAgent,
+  walletAgentMessage,
+} from "@/lib/agentLink";
 import { parseNear } from "@/lib/format";
 import { accountExists, api } from "@/lib/near";
 
@@ -33,8 +45,9 @@ function Step({ n, title, done, children }: { n: number; title: string; done?: b
 }
 
 function Connect() {
-  const { accountId, transfer } = useWallet();
+  const { accountId, transfer, signMessage } = useWallet();
   const [agent, setAgent] = useState<AgentIdentity | null>(null);
+  const [kind, setKind] = useState<AgentKind>("browser");
   const [funded, setFunded] = useState<boolean | null>(null);
   const [rules, setRules] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -50,6 +63,7 @@ function Connect() {
 
   useEffect(() => {
     setAgent(accountId ? loadAgent(accountId) : null);
+    setKind(accountId ? loadAgentKind(accountId) : "browser");
     setShow(false);
   }, [accountId]);
 
@@ -67,14 +81,37 @@ function Connect() {
     void refresh();
   }, [refresh]);
 
-  const create = () => {
+  const adopt = (a: AgentIdentity, k: AgentKind) => {
     if (!accountId) return;
-    const a = newAgent();
-    saveAgent(accountId, a);
+    saveAgent(accountId, a, k);
     setAgent(a);
-    setFunded(false);
-    setRules(0);
+    setKind(k);
+    setFunded(null);
+    setRules(null);
+    setShow(false);
   };
+
+  // The agent is a function of a wallet signature, so the same wallet gets the same agent in any browser.
+  const createFromWallet = async () => {
+    if (!accountId) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const msg = walletAgentMessage(accountId);
+      const first = await signMessage(msg, WALLET_AGENT_RECIPIENT, WALLET_AGENT_NONCE);
+      const second = await signMessage(msg, WALLET_AGENT_RECIPIENT, WALLET_AGENT_NONCE);
+      if (first !== second) {
+        throw new Error("This wallet signs differently each time, so it cannot recreate the same agent on another device. Use a browser-only agent instead.");
+      }
+      adopt(agentFromSignature(first), "wallet");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "The wallet did not sign.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createInBrowser = () => adopt(newAgent(), "browser");
 
   const fund = async () => {
     if (!agent) return;
@@ -114,18 +151,28 @@ function Connect() {
       <Step n={1} title="Create your agent" done={!!agent}>
         {agent ? (
           <>
-            <p>Your agent has its own account. It was made in this browser, so Bridle did not choose or see it until you use the link.</p>
+            {kind === "wallet" ? (
+              <p>Your agent comes from your wallet. Connect the same wallet in any browser, tap Restore, and the same agent is back.</p>
+            ) : (
+              <p>This agent only exists in this browser, so a different device cannot get it back. Switch to a wallet agent to carry it with you.</p>
+            )}
             <p className="break-all font-mono text-[12.5px] text-ink dark:text-white">{agent.account}</p>
-            <button type="button" onClick={() => setConfirmNew(true)} className="text-[13.5px] underline underline-offset-2 hover:text-ink dark:hover:text-white">
-              Make a new agent
-            </button>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              {kind !== "wallet" && <Btn variant="outline" onClick={createFromWallet} busy={busy}>Switch to a wallet agent</Btn>}
+              <button type="button" onClick={() => setConfirmNew(true)} className="text-[13.5px] underline underline-offset-2 hover:text-ink dark:hover:text-white">
+                Make a browser-only agent
+              </button>
+            </div>
+            {kind !== "wallet" && <p className="text-[13px]">A wallet agent is a new account. Rules that already use this one keep it, and its link keeps working.</p>}
           </>
         ) : (
           <>
-            <p>One click makes a personal agent for your rules. You do not need to type an account or a key.</p>
-            <Btn onClick={create}>Create my agent</Btn>
+            <p>Sign one message with your wallet. It moves no funds and costs nothing. The same wallet always makes the same agent, so it is there on any computer. If you made one before, tap again to bring it back.</p>
+            <Btn onClick={createFromWallet} busy={busy}>Create or restore my agent</Btn>
+            <p className="text-[13px]">Your wallet will ask twice, to confirm it signs the same way each time.</p>
           </>
         )}
+        {err && <Notice tone="bad">{err}</Notice>}
       </Step>
 
       <Step n={2} title="Give it a little gas" done={funded === true}>
@@ -206,23 +253,22 @@ function Connect() {
       )}
 
       <Notice tone="warn" title="If the link leaks">
-        Anyone with it can propose payments on the rules that use this agent, but only inside their limits. Make a new agent, then create new rules with it. Bridle&apos;s server sees the key whenever the link is used. This is testnet and unaudited.
+        Anyone with it can propose payments on the rules that use this agent, but only inside their limits. Make a new agent, then create new rules with it. A wallet agent is derived from a signature of a fixed message, so never sign that message on a site you do not trust. Bridle&apos;s server sees the key whenever the link is used. This is testnet and unaudited.
       </Notice>
 
       <ConfirmDialog
         open={confirmNew}
         destructive
-        title="Make a new agent?"
-        confirmLabel="Make a new agent"
+        title="Make a browser-only agent?"
+        confirmLabel="Make it"
         cancelLabel="Keep this one"
         onCancel={() => setConfirmNew(false)}
         onConfirm={() => {
           setConfirmNew(false);
-          create();
-          setShow(false);
+          createInBrowser();
         }}
       >
-        Your current link keeps working for the rules that already use this agent, but Bridle will stop showing it here. New rules will use the new agent. Copy the old link first if you still need it.
+        Your current link keeps working for the rules that already use this agent, but Bridle will stop showing it here. A browser-only agent cannot be restored on another device. Copy the old link first if you still need it.
       </ConfirmDialog>
     </div>
   );
