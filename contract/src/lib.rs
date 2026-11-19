@@ -11,7 +11,7 @@
 pub mod evm;
 
 use near_sdk::json_types::{U128, U64};
-use near_sdk::store::IterableMap;
+use near_sdk::store::{IterableMap, LookupMap, LookupSet};
 use near_sdk::{
     env, near, require, AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault, Promise,
     PromiseError,
@@ -23,8 +23,19 @@ const MIN_WINDOW_S: u64 = 60;
 const MAX_WINDOW_S: u64 = 86_400;
 const MAX_EXPIRY_DAYS: u64 = 30;
 const MAX_ALLOWLIST: usize = 50;
-// Valid implicit account nobody holds a key for: slashed funds sent here are burned.
-const BURN_ACCOUNT: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+/// Smallest watcher bond, whatever the mandate's bond is, so flagging is never free.
+const MIN_WATCHER_BOND: u128 = 10_000_000_000_000_000_000_000; // 0.01 NEAR
+/// A mandate's storage reserve must start at least this high (on top of its own record).
+const MIN_STORAGE_RESERVE: u128 = 50_000_000_000_000_000_000_000; // 0.05 NEAR
+/// Bytes charged to the reserve for each stored proposal (its record plus map overhead).
+/// Fixed on purpose: `near_sdk::store` collections write lazily, so `env::storage_usage()` does
+/// not move inside the call and cannot be measured.
+const PROPOSAL_BYTES: u64 = 500;
+/// Bytes set aside at proposal time for the signing record a Base payment may later create.
+const SIGNING_RECORD_BYTES: u64 = 700;
+/// Longest recipient and asset string an agent may submit.
+const MAX_RECIPIENT_LEN: usize = 128;
+const MAX_ASSET_LEN: usize = 16;
 
 // ── Chain Signatures (testnet) ──
 /// NEAR MPC signer. Mainnet is `v1.signer`.
@@ -193,6 +204,9 @@ enum Key {
     Proposals,
     Signing,
     NearBalances,
+    Holds,
+    Reserve,
+    Sweeps,
 }
 
 #[near(contract_state)]
@@ -206,17 +220,27 @@ pub struct Bridle {
     signing: IterableMap<u64, SigningRecord>,
     /// NEAR (yoctoNEAR) the owner has funded per mandate, for native NEAR payments.
     near_balances: IterableMap<u64, u128>,
+    /// Per mandate: proposals that are Flagged or Signing. Replaces scanning every proposal.
+    holds: LookupMap<u64, u64>,
+    /// Per mandate: prepaid yoctoNEAR that pays for the storage its proposals use. A mandate with
+    /// no entry predates this field and is not charged.
+    reserve: LookupMap<u64, u128>,
+    /// Proposal ids that are owner withdrawals from the mandate's Base address, not agent payments.
+    sweeps: LookupSet<u64>,
+    /// Slashed funds that are kept in the contract for good (the burn share).
+    burned: u128,
 }
 
-/// State layout before native NEAR payments existed. Used only by `migrate`.
+/// State layout before the audit fixes. Used only by `migrate`.
 #[near(serializers = [borsh])]
-struct BridleV2 {
+struct BridleV3 {
     executor: AccountId,
     next_mandate: u64,
     next_proposal: u64,
     mandates: IterableMap<u64, Mandate>,
     proposals: IterableMap<u64, Proposal>,
     signing: IterableMap<u64, SigningRecord>,
+    near_balances: IterableMap<u64, u128>,
 }
 
 /// Each mandate gets its own Base address: the signer derives it from this contract's account
@@ -244,15 +268,28 @@ impl Bridle {
             proposals: IterableMap::new(Key::Proposals),
             signing: IterableMap::new(Key::Signing),
             near_balances: IterableMap::new(Key::NearBalances),
+            holds: LookupMap::new(Key::Holds),
+            reserve: LookupMap::new(Key::Reserve),
+            sweeps: LookupSet::new(Key::Sweeps),
+            burned: 0,
         }
     }
 
-    /// Upgrade a contract deployed before native NEAR payments. Keeps every mandate, proposal
-    /// and signing record. Call once, by the contract account, right after deploying the new code.
+    /// Upgrade a contract deployed with the native NEAR payments layout. Keeps every mandate,
+    /// proposal, signing record and NEAR balance, and counts the proposals that are Flagged or
+    /// Signing (one pass over the proposals, so run it while there are few). Call once, by the
+    /// contract account, right after deploying the new code.
     #[private]
     #[init(ignore_state)]
     pub fn migrate() -> Self {
-        let old: BridleV2 = env::state_read().unwrap_or_else(|| env::panic_str("no old state"));
+        let old: BridleV3 = env::state_read().unwrap_or_else(|| env::panic_str("no old state"));
+        let mut holds: LookupMap<u64, u64> = LookupMap::new(Key::Holds);
+        for p in old.proposals.values() {
+            if matches!(p.status, ProposalStatus::Flagged | ProposalStatus::Signing) {
+                let n = holds.get(&p.mandate_id).copied().unwrap_or(0);
+                holds.insert(p.mandate_id, n + 1);
+            }
+        }
         Self {
             executor: old.executor,
             next_mandate: old.next_mandate,
@@ -260,13 +297,21 @@ impl Bridle {
             mandates: old.mandates,
             proposals: old.proposals,
             signing: old.signing,
-            near_balances: IterableMap::new(Key::NearBalances),
+            near_balances: old.near_balances,
+            holds,
+            reserve: LookupMap::new(Key::Reserve),
+            sweeps: LookupSet::new(Key::Sweeps),
+            burned: 0,
         }
     }
 
     // ───────────── owner: mandates ─────────────
 
-    /// Sign a mandate. Empty allowlist denies everything.
+    /// Sign a mandate. Empty allowlist denies everything. Attach NEAR: it pays for the mandate's
+    /// own storage and the rest becomes its storage reserve, which pays for the storage of every
+    /// proposal the agent makes (blocked ones too). The owner can top it up and, once the mandate
+    /// is over, take back what is left.
+    #[payable]
     #[allow(clippy::too_many_arguments)]
     pub fn create_mandate(
         &mut self,
@@ -298,6 +343,11 @@ impl Bridle {
         for r in &allowlist {
             require!(chains.contains(&r.chain), "allowlist uses a chain the mandate does not allow");
             require!(!r.address.trim().is_empty() && r.address.len() <= 128, "bad recipient address");
+            match r.chain {
+                Chain::Base => require!(evm::parse_address(&r.address).is_some(), "allowlist has an invalid EVM address"),
+                Chain::Near => require!(r.address.parse::<AccountId>().is_ok(), "allowlist has an invalid NEAR account"),
+                Chain::Solana => {}
+            }
         }
         let now = env::block_timestamp();
         let id = self.next_mandate;
@@ -323,44 +373,46 @@ impl Bridle {
             pending_limits: None,
         };
         self.mandates.insert(id, m.clone());
+        self.reserve.insert(id, 0);
+        let own_bytes = 800
+            + m.allowlist.iter().map(|r| r.address.len() as u64 + 8).sum::<u64>()
+            + m.assets.iter().map(|a| a.len() as u64 + 4).sum::<u64>();
+        let own_cost = own_bytes as u128 * env::storage_byte_cost().as_yoctonear();
+        let attached = env::attached_deposit().as_yoctonear();
+        require!(
+            attached >= own_cost + MIN_STORAGE_RESERVE,
+            "attach NEAR for the mandate's storage and its reserve (at least 0.05 NEAR above the storage cost)"
+        );
+        self.reserve.insert(id, attached - own_cost);
         event("mandate_created", format!("{{\"id\":{},\"owner\":\"{}\",\"agent\":\"{}\"}}", id, m.owner, m.agent));
         m
     }
 
-    /// Instant revoke. Anything not yet signed stops.
+    /// Instant revoke. Nothing that is not yet signed can move again. This is a single write on
+    /// purpose: it never loops over proposals, so nobody can make it too expensive to call.
+    /// Proposals still waiting are closed afterwards with `close_dead_proposal`.
     pub fn revoke(&mut self, mandate_id: u64) {
         let mut m = self.mandate(mandate_id);
         require!(env::predecessor_account_id() == m.owner, "only the owner can revoke");
         m.state = MandateState::Revoked;
-
-        // Cancel any in-flight proposals that have not yet been signed so the agent bond does not stay locked
-        let in_flight_ids: Vec<u64> = self
-            .proposals
-            .values()
-            .filter(|p| {
-                p.mandate_id == mandate_id
-                    && matches!(
-                        p.status,
-                        ProposalStatus::Waiting | ProposalStatus::Ready | ProposalStatus::Flagged
-                    )
-            })
-            .map(|p| p.id)
-            .collect();
-
-        for pid in in_flight_ids {
-            let mut p = self.proposal(pid);
-            let had_flag = p.status == ProposalStatus::Flagged;
-            self.refund_budget(&mut m, &p);
-            if had_flag {
-                self.refund_flagger(&mut p);
-            }
-            p.status = ProposalStatus::Cancelled;
-            p.reason = Some("Mandate revoked by owner".into());
-            self.proposals.insert(pid, p);
-        }
-
         self.mandates.insert(mandate_id, m);
         event("mandate_revoked", format!("{{\"id\":{}}}", mandate_id));
+    }
+
+    /// Anyone can close a Waiting or Ready proposal whose mandate is revoked or expired: it can
+    /// never execute, so it is cancelled and its budget handed back. Flagged proposals are closed
+    /// by `resolve_flag` or `expire_flag`.
+    pub fn close_dead_proposal(&mut self, proposal_id: u64) {
+        let mut p = self.proposal(proposal_id);
+        let mut m = self.mandate(p.mandate_id);
+        let revoked = m.state == MandateState::Revoked;
+        require!(revoked || env::block_timestamp() >= m.expires_at.0, "mandate is still active");
+        require!(matches!(p.status, ProposalStatus::Waiting | ProposalStatus::Ready), "nothing to close");
+        self.refund_budget(&mut m, &p);
+        p.status = if revoked { ProposalStatus::Cancelled } else { ProposalStatus::Expired };
+        p.reason = Some(if revoked { "Mandate revoked by owner".into() } else { "Mandate expired".into() });
+        self.mandates.insert(p.mandate_id, m);
+        self.proposals.insert(proposal_id, p);
     }
 
     /// Tightening applies now. Any loosening waits one challenge window.
@@ -446,6 +498,75 @@ impl Bridle {
         Promise::new(m.owner).transfer(NearToken::from_yoctonear(amount.0))
     }
 
+    // ───────────── owner: storage reserve ─────────────
+
+    /// The owner tops up the mandate's storage reserve (it pays for the agent's proposals).
+    #[payable]
+    pub fn fund_storage(&mut self, mandate_id: u64) {
+        let m = self.mandate(mandate_id);
+        require!(env::predecessor_account_id() == m.owner, "only the owner can fund storage");
+        let amt = env::attached_deposit().as_yoctonear();
+        require!(amt > 0, "attach NEAR");
+        let r = self.reserve.get(&mandate_id).copied().unwrap_or(0);
+        self.reserve.insert(mandate_id, r + amt);
+    }
+
+    /// After the mandate is revoked or expired, the owner takes back the unused reserve.
+    pub fn withdraw_storage_reserve(&mut self, mandate_id: u64, amount: U128) -> Promise {
+        let m = self.mandate(mandate_id);
+        require!(env::predecessor_account_id() == m.owner, "only the owner can withdraw");
+        require!(
+            m.state == MandateState::Revoked || env::block_timestamp() >= m.expires_at.0,
+            "the reserve unlocks after revoke or expiry"
+        );
+        let r = self.reserve.get(&mandate_id).copied().unwrap_or(0);
+        require!(amount.0 > 0 && amount.0 <= r, "amount exceeds the storage reserve");
+        self.reserve.insert(mandate_id, r - amount.0);
+        Promise::new(m.owner).transfer(NearToken::from_yoctonear(amount.0))
+    }
+
+    /// The owner takes USDC back out of the mandate's Base address, in any state of the mandate
+    /// (revoked and expired included). Without this, USDC left at the address when a mandate ends
+    /// could never be moved again. The caps do not apply: it is the owner's own money. The
+    /// proposal goes straight to `Signing`; the executor signs and broadcasts it as usual.
+    pub fn owner_withdraw_base(&mut self, mandate_id: u64, amount: U128, recipient: String) -> Proposal {
+        let m = self.mandate(mandate_id);
+        require!(env::predecessor_account_id() == m.owner, "only the owner can withdraw");
+        require!(amount.0 > 0, "amount must be above zero");
+        require!(evm::parse_address(&recipient).is_some(), "recipient is not a valid EVM address");
+        let now = env::block_timestamp();
+        let id = self.next_proposal;
+        self.next_proposal += 1;
+        let p = Proposal {
+            id,
+            mandate_id,
+            chain: Chain::Base,
+            asset: "USDC".into(),
+            amount,
+            recipient,
+            status: ProposalStatus::Signing,
+            reason: Some("Owner withdrawal".into()),
+            created_at: U64(now),
+            executable_at: U64(now),
+            flagger: None,
+            flag_reason: None,
+            flag_bond: U128(0),
+            tx_hash: None,
+        };
+        self.proposals.insert(id, p.clone());
+        self.sweeps.insert(id);
+        self.hold(mandate_id);
+        self.charge_storage(mandate_id, SIGNING_RECORD_BYTES);
+        event(
+            "ready_to_sign",
+            format!(
+                "{{\"id\":{},\"mandate\":{},\"chain\":\"Base\",\"asset\":\"USDC\",\"amount\":\"{}\",\"recipient\":\"{}\"}}",
+                id, mandate_id, amount.0, p.recipient
+            ),
+        );
+        p
+    }
+
     // ───────────── agent ─────────────
 
     /// The agent posts its bond. Required before it can propose.
@@ -469,6 +590,7 @@ impl Bridle {
     ) -> Proposal {
         let mut m = self.mandate(mandate_id);
         require!(env::predecessor_account_id() == m.agent, "only the mandate's agent can propose");
+        require!(recipient.len() <= MAX_RECIPIENT_LEN && asset.len() <= MAX_ASSET_LEN, "recipient or asset too long");
         let now = env::block_timestamp();
         self.roll_day(&mut m, now);
         self.apply_due_limits(&mut m, now);
@@ -484,6 +606,10 @@ impl Bridle {
             Some("Chain is not allowed by the mandate".into())
         } else if !m.assets.contains(&asset) {
             Some("Asset is not allowed by the mandate".into())
+        } else if chain == Chain::Solana {
+            Some("Solana payments are not built yet".into())
+        } else if chain == Chain::Base && asset != "USDC" {
+            Some("Base payments support USDC only".into())
         } else if chain == Chain::Near && asset != "NEAR" {
             Some("Native NEAR payments use the NEAR asset".into())
         } else if chain == Chain::Near && recipient.parse::<AccountId>().is_err() {
@@ -530,11 +656,13 @@ impl Bridle {
         };
         self.mandates.insert(mandate_id, m);
         self.proposals.insert(id, p.clone());
+        let extra = if status != ProposalStatus::Rejected && chain == Chain::Base { SIGNING_RECORD_BYTES } else { 0 };
+        self.charge_storage(mandate_id, extra);
         event("proposal", format!("{{\"id\":{},\"mandate\":{},\"status\":\"{:?}\"}}", id, mandate_id, status));
         p
     }
 
-    /// After a revoke or expiry, with nothing left in flight, the agent takes its bond back.
+    /// After a revoke or expiry, with nothing flagged or signing, the agent takes its bond back.
     pub fn withdraw_bond(&mut self, mandate_id: u64) -> Promise {
         let mut m = self.mandate(mandate_id);
         require!(env::predecessor_account_id() == m.agent, "only the agent can withdraw");
@@ -542,17 +670,10 @@ impl Bridle {
             m.state == MandateState::Revoked || env::block_timestamp() >= m.expires_at.0,
             "bond unlocks after revoke or expiry"
         );
-        require!(
-            !self.proposals.values().any(|p| p.mandate_id == mandate_id
-                && matches!(
-                    p.status,
-                    ProposalStatus::Waiting
-                        | ProposalStatus::Ready
-                        | ProposalStatus::Flagged
-                        | ProposalStatus::Signing
-                )),
-            "proposals are still in flight"
-        );
+        // Waiting and Ready proposals cannot execute any more once the mandate is over, so only
+        // flagged ones (the owner may still slash) and signing ones (a signature may be out) hold
+        // the bond.
+        require!(self.holds.get(&mandate_id).copied().unwrap_or(0) == 0, "proposals are still in flight");
         let amt = m.bond_posted.0;
         require!(amt > 0, "no bond posted");
         m.bond_posted = U128(0);
@@ -570,7 +691,7 @@ impl Bridle {
         require!(p.status == ProposalStatus::Waiting, "only waiting proposals can be flagged");
         require!(env::block_timestamp() < p.executable_at.0, "challenge window has closed");
         require!(!reason.trim().is_empty() && reason.len() <= 280, "give a short reason");
-        let need = m.bond.0 / 10;
+        let need = (m.bond.0 / 10).max(MIN_WATCHER_BOND);
         require!(env::attached_deposit().as_yoctonear() >= need, "attach the watcher bond");
         p.status = ProposalStatus::Flagged;
         p.flagger = Some(env::predecessor_account_id());
@@ -579,6 +700,7 @@ impl Bridle {
         // Owner gets a full window to answer from the moment of the flag.
         p.executable_at = U64(env::block_timestamp() + m.challenge_window_s * SEC_NS);
         self.proposals.insert(proposal_id, p);
+        self.hold(m.id);
         event("flagged", format!("{{\"id\":{}}}", proposal_id));
     }
 
@@ -599,6 +721,7 @@ impl Bridle {
         // A vetoed flagged proposal: the flag was right, so refund the watcher's bond.
         if had_flag {
             self.refund_flagger(&mut p);
+            self.release(p.mandate_id);
         }
         self.proposals.insert(proposal_id, p);
         event("vetoed", format!("{{\"id\":{}}}", proposal_id));
@@ -622,7 +745,8 @@ impl Bridle {
             let burn = slash - to_watcher - to_owner;
             Promise::new(watcher).transfer(NearToken::from_yoctonear(to_watcher + wbond)).detach();
             Promise::new(m.owner.clone()).transfer(NearToken::from_yoctonear(to_owner)).detach();
-            Promise::new(BURN_ACCOUNT.parse().unwrap()).transfer(NearToken::from_yoctonear(burn)).detach();
+            // The burn share stays in the contract for good: no account can ever spend it.
+            self.burned += burn;
             p.status = ProposalStatus::Cancelled;
             event("flag_confirmed", format!("{{\"id\":{},\"slashed\":\"{}\"}}", proposal_id, slash));
         } else {
@@ -632,6 +756,7 @@ impl Bridle {
             event("flag_dismissed", format!("{{\"id\":{}}}", proposal_id));
         }
         p.flag_bond = U128(0);
+        self.release(p.mandate_id);
         self.mandates.insert(p.mandate_id, m);
         self.proposals.insert(proposal_id, p);
     }
@@ -645,6 +770,7 @@ impl Bridle {
         self.refund_budget(&mut m, &p);
         self.refund_flagger(&mut p);
         p.status = ProposalStatus::Expired;
+        self.release(p.mandate_id);
         self.mandates.insert(p.mandate_id, m);
         self.proposals.insert(proposal_id, p);
         event("flag_expired", format!("{{\"id\":{}}}", proposal_id));
@@ -675,7 +801,9 @@ impl Bridle {
             require!(bal >= p.amount.0, "mandate's NEAR balance is too low; the owner must fund it");
             self.near_balances.insert(m.id, bal - p.amount.0);
             p.status = ProposalStatus::Signing;
+            p.executable_at = U64(env::block_timestamp());
             self.proposals.insert(proposal_id, p.clone());
+            self.hold(m.id);
             let to: AccountId = p.recipient.parse().unwrap_or_else(|_| env::panic_str("bad recipient"));
             Promise::new(to)
                 .transfer(NearToken::from_yoctonear(p.amount.0))
@@ -684,7 +812,10 @@ impl Bridle {
             return;
         }
         p.status = ProposalStatus::Signing;
+        // The signing timeout runs from now, not from when the proposal became eligible.
+        p.executable_at = U64(env::block_timestamp());
         self.proposals.insert(proposal_id, p.clone());
+        self.hold(m.id);
         event(
             "ready_to_sign",
             format!(
@@ -712,8 +843,11 @@ impl Bridle {
         let p = self.proposal(proposal_id);
         let m = self.mandate(p.mandate_id);
         require!(p.status == ProposalStatus::Signing, "proposal is not being signed");
-        require!(m.state == MandateState::Active, "mandate is revoked");
-        require!(env::block_timestamp() < m.expires_at.0, "mandate has expired");
+        // An owner withdrawal may be signed after the mandate has ended; an agent payment may not.
+        if !self.sweeps.contains(&proposal_id) {
+            require!(m.state == MandateState::Active, "mandate is revoked");
+            require!(env::block_timestamp() < m.expires_at.0, "mandate has expired");
+        }
         require!(p.chain == Chain::Base, "only Base signing is built");
         require!(p.asset == "USDC", "only USDC is supported");
         require!(!self.signing.contains_key(&proposal_id), "a signature was already requested for this proposal");
@@ -777,6 +911,7 @@ impl Bridle {
         if p.status != ProposalStatus::Signing || p.chain != Chain::Near {
             return;
         }
+        self.release(p.mandate_id);
         if result.is_ok() {
             p.status = ProposalStatus::Executed;
             event("executed", format!("{{\"id\":{}}}", proposal_id));
@@ -824,6 +959,7 @@ impl Bridle {
         let mut p = self.proposal(proposal_id);
         require!(p.status == ProposalStatus::Signing, "proposal is not being signed");
         require!(p.chain != Chain::Near, "native NEAR payments settle on-chain");
+        self.release(p.mandate_id);
         p.status = ProposalStatus::Executed;
         p.tx_hash = Some(tx_hash);
         self.proposals.insert(proposal_id, p);
@@ -837,7 +973,13 @@ impl Bridle {
         require!(p.status == ProposalStatus::Signing, "proposal is not being signed");
         require!(p.chain != Chain::Near, "native NEAR payments settle on-chain");
         let mut m = self.mandate(p.mandate_id);
-        self.refund_budget(&mut m, &p);
+        // A stored signature is a valid transaction anyone can still broadcast, so the executor
+        // saying "it failed" must not hand the daily budget back. Only an unsigned proposal is
+        // refunded.
+        if !self.signing.contains_key(&proposal_id) {
+            self.refund_budget(&mut m, &p);
+        }
+        self.release(p.mandate_id);
         p.status = ProposalStatus::Cancelled;
         p.reason = Some(reason);
         self.mandates.insert(p.mandate_id, m);
@@ -862,6 +1004,7 @@ impl Bridle {
         );
         let mut m = self.mandate(p.mandate_id);
         self.refund_budget(&mut m, &p);
+        self.release(p.mandate_id);
         p.status = ProposalStatus::Expired;
         p.reason = Some("Signing timed out without execution report".into());
         self.mandates.insert(p.mandate_id, m);
@@ -878,6 +1021,14 @@ impl Bridle {
     /// The derivation path the MPC signer uses for this mandate's Base address.
     pub fn get_near_balance(&self, mandate_id: u64) -> U128 {
         U128(self.near_balances.get(&mandate_id).copied().unwrap_or(0))
+    }
+
+    pub fn get_storage_reserve(&self, mandate_id: u64) -> U128 {
+        U128(self.reserve.get(&mandate_id).copied().unwrap_or(0))
+    }
+
+    pub fn get_burned(&self) -> U128 {
+        U128(self.burned)
     }
 
     pub fn get_derivation_path(&self, mandate_id: u64) -> String {
@@ -956,7 +1107,30 @@ impl Bridle {
         }
     }
 
+    fn hold(&mut self, mandate_id: u64) {
+        let n = self.holds.get(&mandate_id).copied().unwrap_or(0);
+        self.holds.insert(mandate_id, n + 1);
+    }
+
+    fn release(&mut self, mandate_id: u64) {
+        let n = self.holds.get(&mandate_id).copied().unwrap_or(0);
+        self.holds.insert(mandate_id, n.saturating_sub(1));
+    }
+
+    /// Charge one stored proposal (plus `extra_bytes`) to the mandate's
+    /// reserve, so a caller can never make the contract pay for its storage.
+    fn charge_storage(&mut self, mandate_id: u64, extra_bytes: u64) {
+        let Some(r) = self.reserve.get(&mandate_id).copied() else { return };
+        let bytes = PROPOSAL_BYTES + extra_bytes;
+        let cost = bytes as u128 * env::storage_byte_cost().as_yoctonear();
+        require!(r >= cost, "the mandate's storage reserve is used up; the owner must top it up");
+        self.reserve.insert(mandate_id, r - cost);
+    }
+
     fn refund_budget(&self, m: &mut Mandate, p: &Proposal) {
+        if self.sweeps.contains(&p.id) {
+            return; // owner withdrawals never counted against the budget
+        }
         // Only refund within the same UTC day the amount was counted in.
         if p.created_at.0 / DAY_NS == m.day_index {
             m.spent_today = U128(m.spent_today.0.saturating_sub(p.amount.0));
@@ -997,6 +1171,7 @@ mod tests {
     fn setup() -> (Bridle, u64) {
         ctx("owner.testnet", 0, T0);
         let mut c = Bridle::new(acct("exec.testnet"));
+        ctx("owner.testnet", NEAR / 5, T0);
         let m = c.create_mandate(
             acct("agent.testnet"),
             vec![Chain::Base],
@@ -1017,6 +1192,8 @@ mod tests {
         ctx("agent.testnet", 0, ts);
         c.propose_payment(id, Chain::Base, "USDC".into(), U128(amt), to.into())
     }
+
+    mod audit;
 
     #[test]
     fn small_payment_is_ready_and_executes() {
@@ -1126,12 +1303,16 @@ mod tests {
         ctx("owner.testnet", 0, T0 + 10 * SEC_NS);
         c.revoke(id);
 
-        // Cancelled by revoke
+        // Revoke is one write; it cannot execute any more, and anyone can close it.
+        assert_eq!(c.get_proposal(p.id).unwrap().status, ProposalStatus::Waiting);
+        ctx("anyone.testnet", 0, T0 + 12 * SEC_NS);
+        c.close_dead_proposal(p.id);
         assert_eq!(c.get_proposal(p.id).unwrap().status, ProposalStatus::Cancelled);
+        assert_eq!(c.get_mandate(id).unwrap().spent_today.0, 0);
 
         // Bond is unlocked and can be withdrawn by agent
         ctx("agent.testnet", 0, T0 + 15 * SEC_NS);
-        c.withdraw_bond(id);
+        let _ = c.withdraw_bond(id);
         assert_eq!(c.get_mandate(id).unwrap().bond_posted.0, 0);
     }
 
@@ -1279,6 +1460,7 @@ mod tests {
     fn setup_near() -> (Bridle, u64) {
         ctx("owner.testnet", 0, T0);
         let mut c = Bridle::new(acct("exec.testnet"));
+        ctx("owner.testnet", NEAR / 5, T0);
         let m = c.create_mandate(
             acct("agent.testnet"),
             vec![Chain::Near],
@@ -1307,6 +1489,7 @@ mod tests {
     fn near_mandates_are_near_only() {
         ctx("owner.testnet", 0, T0);
         let mut c = Bridle::new(acct("exec.testnet"));
+        ctx("owner.testnet", NEAR / 5, T0);
         c.create_mandate(
             acct("agent.testnet"),
             vec![Chain::Base, Chain::Near],
@@ -1326,6 +1509,7 @@ mod tests {
     fn one_click_pay_batch_works_end_to_end() {
         ctx("owner.testnet", 0, T0);
         let mut c = Bridle::new(acct("exec.testnet"));
+        ctx("owner.testnet", NEAR / 5, T0);
         let amt = 2 * NEAR;
         let m = c.create_mandate(
             acct("owner.testnet"),

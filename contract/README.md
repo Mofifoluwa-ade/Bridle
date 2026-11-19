@@ -26,12 +26,12 @@ Once a proposal is cleared (`execute`), it is `Signing`. Then:
 
 ## Upgrading a deployed contract
 
-State changed (a new signing map). To keep existing mandates, deploy the new wasm without init, then call `migrate` once as the contract account. Check the exact `near` commands against your installed version.
+State changed again (proposal holds, storage reserves, owner withdrawals, burned total). To keep existing mandates, deploy the new wasm without init, then call `migrate` once as the contract account. `migrate` reads the native-NEAR layout (the one with `near_balances`); it does not read the older pre-NEAR layout. It makes one pass over the proposals to count the ones that are flagged or signing, so run it while there are few. Mandates created before the upgrade have no storage reserve and are not charged; every new mandate must attach NEAR at `create_mandate` (the app attaches 0.2 NEAR, the pay flow 0.1 NEAR). Check the exact `near` commands against your installed version.
 
 ## Test it
 
 ```bash
-cargo test            # 22 tests: policy rules, EVM transaction bytes (checked against viem), signing guards
+cargo test            # 55 tests: policy rules, EVM transaction bytes (checked against viem), signing guards
 ```
 
 (`rust-toolchain.toml` adds the wasm target. If you run plain `cargo check`, use `cargo check --tests`.)

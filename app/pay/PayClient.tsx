@@ -121,6 +121,7 @@ function Body() {
         {
           method: "create_mandate",
           gas: "30000000000000",
+          deposit: "100000000000000000000000", // 0.1 NEAR: mandate storage plus its reserve
           args: {
             agent: accountId,
             chains: ["Near"],
