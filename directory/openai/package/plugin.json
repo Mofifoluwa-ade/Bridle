@@ -1,0 +1,42 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "bridle",
+  "version": "0.1.0",
+  "description": "Policy-bound agent payments under owner-signed spending mandates.",
+  "homepage": "https://bridle-agent.vercel.app/mcp",
+  "repository": "https://github.com/Mofifoluwa-ade/Bridle",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "ai-agents",
+    "payments",
+    "spending-limits",
+    "near",
+    "base"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Bridle",
+        "shortDescription": "Policy-bound agent payments",
+        "longDescription": "Bridle gives AI agents a controlled way to propose payments under owner-signed spending mandates. Owners define approved recipients, supported networks, per-payment limits, daily spending caps and review thresholds. Agents can inspect mandates, check payment eligibility, submit proposals and track execution. The Bridle contract enforces the mandate. Agents cannot change spending rules, add recipients or revoke owner controls. The current deployment operates on testnets: NEAR testnet, Base Sepolia USDC and native NEAR. A cleared proposal is not necessarily an executed payment. Solana support is planned.",
+        "developerName": "CONFIRM VERIFIED PUBLISHER IDENTITY",
+        "category": "Finance",
+        "capabilities": [
+          "Read spending mandates",
+          "Check payment eligibility",
+          "Propose testnet payments",
+          "Track proposal execution"
+        ],
+        "websiteURL": "https://bridle-agent.vercel.app",
+        "privacyPolicyURL": "https://bridle-agent.vercel.app/privacy",
+        "termsOfServiceURL": "https://bridle-agent.vercel.app/terms",
+        "defaultPrompt": [
+          "Show me the spending mandates assigned to my agent.",
+          "Check whether this payment is permitted under my Bridle rules.",
+          "Show me the status and receipt for my latest proposal."
+        ]
+      }
+    }
+  }
+}
