@@ -28,7 +28,7 @@ OpenAI currently requires exactly five positive and three negative test cases fo
 
 ## Claude
 
-Do not submit the current payment-capable connector to the Anthropic directory without written policy clearance. Anthropic's published policy excludes software that transfers money, cryptocurrency, or other financial assets, or executes financial transactions on users' behalf. The request in `claude/policy-exception-request.md` is a draft inquiry, not a submission.
+Do not submit the current payment-capable connector to the Anthropic directory without written policy clearance. Anthropic's current policy restricts software that transfers money or other financial assets, or executes financial transactions autonomously on users' behalf without human-in-the-loop safeguards, and says cryptocurrency software is generally not allowed. Bridle has owner-signed mandates and review thresholds, but not every payment requires a separate owner approval, so written clarification is needed. The request in `claude/policy-exception-request.md` is a draft inquiry, not a submission.
 
 ## Security note discovered during review
 
