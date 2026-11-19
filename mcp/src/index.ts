@@ -103,7 +103,7 @@ server.registerTool("get_supported_networks", {
 
 server.registerTool("get_agent_status", {
   title: "Read agent status",
-  description: "Show this agent's account, proposal-signing availability, mandate counts and fixed permission boundaries. Never returns keys.",
+  description: "Show this agent's account, whether an agent key is configured, mandate counts and fixed permission boundaries. Never returns keys.",
   inputSchema: {}, annotations: READ,
 }, () => run(() => t.getAgentStatus(deps)));
 
