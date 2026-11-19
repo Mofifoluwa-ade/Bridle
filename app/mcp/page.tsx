@@ -68,7 +68,7 @@ export default function McpPage() {
         </h1>
         <p className={`mt-5 max-w-[640px] text-base sm:text-lg ${body}`}>
           The Bridle MCP server lets an agent read its limits, check a payment before sending it, and propose it. The
-          contract decides. Its restricted function-call key can submit proposals to Bridle, but cannot transfer funds.
+          contract decides. The agent can submit on-chain proposals but cannot directly call destination transfer methods; a cleared proposal may later be executed by the configured executor under the mandate.
         </p>
         <div className="mt-7 flex flex-wrap items-center gap-4">
           <CopyPromptButton text={AGENT_PROMPT} label="Copy agent prompt" />
