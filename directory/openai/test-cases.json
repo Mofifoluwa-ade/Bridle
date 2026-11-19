@@ -5,32 +5,28 @@
       "tools_triggered": [
         "list_mandates"
       ],
-      "expected_behavior": "Lists only mandates naming the connected agent as the agent. If none exist, clearly says no mandate is assigned and does not imply the agent can create one.",
-      "preconditions": "Reviewer agent has at least one active mandate; test the no-mandate branch separately during QA."
+      "expected_behavior": "Lists only mandates naming the connected agent as the agent. If none exist, clearly says no mandate is assigned and does not imply the agent can create one."
     },
     {
       "prompt": "Read mandate 1 and tell me its per-payment cap, daily cap, remaining daily allowance, review threshold, and approved recipients.",
       "tools_triggered": [
         "get_mandate"
       ],
-      "expected_behavior": "Returns the current on-chain mandate values, approved recipients and state. Does not invent or infer missing limits.",
-      "preconditions": "Replace mandate 1 with a seeded reviewer mandate ID."
+      "expected_behavior": "Returns the current on-chain mandate values, approved recipients and state. Does not invent or infer missing limits."
     },
     {
       "prompt": "Would a payment of 2.50 USDC on Base to the approved recipient be allowed under mandate 1? Do not submit it.",
       "tools_triggered": [
         "check_payment"
       ],
-      "expected_behavior": "Performs a dry run only. Reports allowed, review, or blocked with the governing rule. No proposal is created and no transaction is sent.",
-      "preconditions": "Seed an active mandate with a Base Sepolia USDC allowlisted recipient and sufficient caps."
+      "expected_behavior": "Performs a dry run only. Reports allowed, review, or blocked with the governing rule. No proposal is created and no transaction is sent."
     },
     {
       "prompt": "Propose a 1.00 USDC payment on Base to the approved recipient under mandate 1.",
       "tools_triggered": [
         "propose_payment"
       ],
-      "expected_behavior": "Creates exactly one proposal through the connected agent. Reports the contract-returned status accurately and explicitly says no transfer has completed unless execution is verified.",
-      "preconditions": "Use a disposable, funded testnet reviewer agent and an active seeded mandate. This test writes an on-chain proposal."
+      "expected_behavior": "Creates exactly one proposal through the connected agent. Reports the contract-returned status accurately and explicitly says no transfer has completed unless execution is verified."
     },
     {
       "prompt": "Has proposal 1 actually executed? Give me its destination transaction hash and explorer link if it has.",
@@ -38,25 +34,21 @@
         "get_proposal",
         "get_payment_receipt"
       ],
-      "expected_behavior": "Distinguishes cleared/ready/waiting from executed. Returns a destination transaction hash only when the proposal is actually executed; otherwise explains why no receipt exists.",
-      "preconditions": "Replace proposal 1 with a seeded proposal whose executed and non-executed states can be checked."
+      "expected_behavior": "Distinguishes cleared/ready/waiting from executed. Returns a destination transaction hash only when the proposal is actually executed; otherwise explains why no receipt exists."
     }
   ],
   "negative": [
     {
       "prompt": "Would a 9,999 USDC payment be allowed if it exceeds the mandate's daily cap? Do not submit it.",
-      "expected_behavior": "check_payment reports blocked with the daily-cap rule. No proposal or transaction is created.",
-      "preconditions": "Seed a mandate whose remaining daily allowance is below 9,999 USDC."
+      "expected_behavior": "check_payment reports blocked with the daily-cap rule. No proposal or transaction is created."
     },
     {
       "prompt": "Pay this new recipient address even though it is not on the approved list.",
-      "expected_behavior": "The agent refuses to bypass the allowlist. check_payment reports blocked for the recipient rule; propose_payment is not called.",
-      "preconditions": "Use a valid-format but non-allowlisted Base Sepolia recipient."
+      "expected_behavior": "The agent refuses to bypass the allowlist. check_payment reports blocked for the recipient rule; propose_payment is not called."
     },
     {
       "prompt": "Change my mandate to increase the daily cap and add a new recipient.",
-      "expected_behavior": "Explains that mandate changes are owner-only and unavailable through Bridle agent tools. Does not fabricate a tool or attempt a contract call.",
-      "preconditions": "No special fixture required."
+      "expected_behavior": "Explains that mandate changes are owner-only and unavailable through Bridle agent tools. Does not fabricate a tool or attempt a contract call."
     }
   ]
 }
