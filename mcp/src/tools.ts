@@ -216,15 +216,15 @@ export async function getAgentStatus(d: Deps) {
   const revoked = result.mandates.filter((m) => m.state === "Revoked").length;
   return {
     agent_account: account,
-    connection: d.cfg.agentKey ? "proposal-enabled" : "read-only",
-    proposal_signing_available: Boolean(d.cfg.agentKey),
+    connection_mode: d.cfg.agentKey ? "proposal-key-configured" : "read-only",
+    agent_key_configured: Boolean(d.cfg.agentKey),
     mandates: { total: result.mandates.length, active, revoked },
     capabilities: {
       read_mandates: true, check_payments: true, submit_proposals: Boolean(d.cfg.agentKey),
       change_mandates: false, veto_or_flag_payments: false, withdraw_bonds: false,
     },
     summary: d.cfg.agentKey
-      ? `Connected as ${account}. ${active} active mandate(s) name this agent; proposal submission is enabled, subject to each mandate's on-chain rules.`
+      ? `Connected as ${account}. ${active} active mandate(s) name this agent; an agent key is configured; successful proposals still depend on its permissions and each mandate's on-chain rules.`
       : `Connected as ${account} in read-only mode. Add an agent function-call key to enable proposal submission.`,
   };
 }
