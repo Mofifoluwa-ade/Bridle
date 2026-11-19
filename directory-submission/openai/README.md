@@ -25,3 +25,7 @@ The current server exposes nine tools. It runs on NEAR testnet and supports Base
 ## Known blocker
 
 The current hosted OAuth implementation is stateless. It seals tokens, but has no per-app session revocation or token inventory. The personal `/mcp/bk_…` link also does not expire. This is disclosed in the draft Privacy page and should be addressed before broad public distribution.
+
+## Eligibility risk
+
+OpenAI's public directory guidelines say trial/demo plugins are not accepted. Bridle currently operates on testnets only and is not a production mainnet payment product. The package does not disguise that status. Before spending time on a formal submission, ask OpenAI whether a functional testnet-only protocol integration is eligible; do not claim mainnet or production payment availability.
