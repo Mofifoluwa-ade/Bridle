@@ -25,6 +25,13 @@ const groups = [
     ],
   },
   {
+    title: "Support",
+    links: [
+      { href: "/support", label: "Help & support" },
+      { href: "mailto:usebridle@gmail.com", label: "Email Bridle", external: true },
+    ],
+  },
+  {
     title: "Use Bridle",
     links: [
       { href: "/app/mandates/new", label: "Create a mandate" },
@@ -58,7 +65,7 @@ export function Footer() {
               <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#A3ABB8]">Testnet</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-x-7 gap-y-10 sm:grid-cols-3 sm:gap-x-8">
+          <div className="grid grid-cols-2 gap-x-7 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 sm:gap-x-8">
             {groups.map((group) => (
               <div key={group.title}>
                 <h3 className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#46D9A4]">{group.title}</h3>
