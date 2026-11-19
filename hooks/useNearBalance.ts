@@ -168,8 +168,16 @@ export function useAccountBalance(customAccount?: string | null): BalanceState {
 
       if (!res.ok) throw new Error("RPC error");
       const body = await res.json();
-      const amountStr = body.result?.amount ?? "0";
-      const storageBytes = Number(body.result?.storage_usage ?? 0);
+      // NEAR RPC may return HTTP 200 with a JSON-RPC error. Never turn that
+      // response into a zero balance or overwrite the last known good value.
+      if (body?.error || !body?.result || typeof body.result.amount !== "string") {
+        throw new Error(body?.error?.message ?? "Invalid NEAR balance response");
+      }
+      const amountStr = body.result.amount;
+      const storageBytes = Number(body.result.storage_usage ?? 0);
+      if (!Number.isFinite(storageBytes) || storageBytes < 0) {
+        throw new Error("Invalid NEAR storage usage");
+      }
 
       const availableYocto = BigInt(amountStr);
       const storageYocto = BigInt(storageBytes) * BigInt("10000000000000000000"); // 10^19 yoctoNEAR/byte
