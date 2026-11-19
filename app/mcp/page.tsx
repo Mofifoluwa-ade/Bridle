@@ -117,7 +117,7 @@ export default function McpPage() {
             <CodeBlock code={claudeCode} label="Or: Claude Code" />
           </div>
           <p className={`mt-5 max-w-[640px] ${body}`}>
-            Without the agent account and key the server is read-only: everything but <code className="font-mono text-[13px]">propose_payment</code> still works. To run from source instead, see the{" "}
+            Without the agent account and key the local server is read-only: everything but <code className="font-mono text-[13px]">propose_payment</code> still works. To run from source instead, see the{" "}
             <a className={link} href="https://github.com/Mofifoluwa-ade/Bridle/tree/main/mcp" target="_blank" rel="noopener noreferrer">repo</a>.
           </p>
           <div className="mt-8 overflow-x-auto">
