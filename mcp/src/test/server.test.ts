@@ -132,8 +132,8 @@ test("agent status reports identity and read-only permissions without a key", as
   const c = await connect();
   const r = json(await c.callTool({ name: "get_agent_status", arguments: {} }));
   assert.equal(r.agent_account, "agent.testnet");
-  assert.equal(r.connection, "read-only");
-  assert.equal(r.proposal_signing_available, false);
+  assert.equal(r.connection_mode, "read-only");
+  assert.equal(r.agent_key_configured, false);
   assert.equal(r.mandates.active, 1);
   assert.equal(r.capabilities.change_mandates, false);
   await c.close();
