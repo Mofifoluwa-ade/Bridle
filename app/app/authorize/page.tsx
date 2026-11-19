@@ -143,7 +143,7 @@ function Approve({ req }: { req: Req }) {
         <Btn variant="outline" onClick={deny} disabled={working || done}>Cancel</Btn>
       </div>
       <p className="text-[13px] leading-relaxed text-mute dark:text-dark-mute">
-        Approving lets {req.name} use your agent for up to 90 days. Bridle&apos;s server holds no list of sign-ins, so to cut access off, make a new agent. Testnet, unaudited.
+        Approving lets {req.name} use your agent. OAuth access tokens last one hour and refresh tokens can be renewed for up to 90 days at a time. Bridle currently has no per-app revoke control or sign-in list; a personal agent link does not expire. Only approve apps you trust, and never share your agent link. Testnet, unaudited.
       </p>
     </div>
   );
