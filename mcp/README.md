@@ -13,8 +13,15 @@ It is deliberately small. The contract is the authority, and this server is a th
 | `check_payment` | Dry run: `ready`, `review` or `blocked`, and the rule. Sends nothing, leaves no record |
 | `propose_payment` | Sends `propose_payment` as the agent. The contract decides |
 | `get_proposal` / `list_proposals` | Status and reason |
+| `get_supported_networks` | Live testnet networks/assets and planned chains |
+| `get_agent_status` | Agent identity, mandate counts and available permissions |
+| `get_payment_receipt` | Destination transaction hash and explorer link after execution |
 
 **Not exposed, on purpose:** create, update, revoke, veto, flag, bond withdrawal. An agent must not be able to widen its own limits. A test fails if a tool like that is ever added.
+
+## Connect without installing anything
+
+Owners can connect an AI app to the hosted Bridle MCP endpoint at `https://bridle-agent.vercel.app/mcp` from [Connect your agent](https://bridle-agent.vercel.app/app/connect). Bridle uses OAuth 2.1 with PKCE: the owner approves the app in Bridle, and the app receives a scoped agent token. No private key is pasted into the AI chat or connector settings. The endpoint exposes the same agent-only tool surface as the local server. The personal `/mcp/<token>` link remains an advanced fallback and should be treated like a password.
 
 ## Run
 
