@@ -31,13 +31,13 @@ const payment = {
   },
   required: ["mandate_id", "chain", "amount", "recipient"],
 };
-const READ = { readOnlyHint: true, openWorldHint: true };
+const READ = { readOnlyHint: true, destructiveHint: false, openWorldHint: true };
 
 const TOOLS = [
   { name: "list_mandates", title: "List my rules", description: "Find the spending rules (mandates) that name you as the agent. Start here to get the rule id.", inputSchema: { type: "object", properties: { account_id: { type: "string", description: "A NEAR account. Defaults to your own agent account" } } }, annotations: READ },
   { name: "get_mandate", title: "Read a rule", description: "Read the limits that govern you: per-payment cap, daily cap and what is left today, the review threshold, and the approved recipients.", inputSchema: { type: "object", properties: { mandate_id: mandateId }, required: ["mandate_id"] }, annotations: READ },
   { name: "check_payment", title: "Check a payment (dry run)", description: "Ask whether a payment would be allowed, held for the owner's review, or blocked, and which rule decides. Sends nothing and leaves no record. Prefer this before propose_payment.", inputSchema: payment, annotations: READ },
-  { name: "propose_payment", title: "Propose a payment", description: "Propose a payment (USDC on Base, or native NEAR on the Near chain). The contract decides: it may be blocked (recorded with the rule), held for the owner's review, or cleared. This does not move money by itself. Never resend a blocked or waiting payment.", inputSchema: payment, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } },
+  { name: "propose_payment", title: "Propose a payment", description: "Propose a payment (USDC on Base, or native NEAR on the Near chain). The contract decides: it may be blocked (recorded with the rule), held for the owner's review, or cleared. This does not move money by itself. Never resend a blocked or waiting payment.", inputSchema: payment, annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true } },
   { name: "get_proposal", title: "Read a proposal", description: "Check where a proposal stands: blocked, waiting for the owner, flagged, vetoed, cleared or executed.", inputSchema: { type: "object", properties: { proposal_id: { type: "integer", minimum: 0, description: "The proposal id returned by propose_payment" } }, required: ["proposal_id"] }, annotations: READ },
   { name: "get_supported_networks", title: "List supported networks", description: "Live testnet networks/assets and planned chains.", inputSchema: { type: "object", properties: {} }, annotations: READ },
   { name: "get_agent_status", title: "Read agent status", description: "Agent identity, whether an agent key is configured, mandate counts and permission boundaries.", inputSchema: { type: "object", properties: {} }, annotations: READ },
