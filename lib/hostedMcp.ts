@@ -11,6 +11,7 @@ const VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
 const INSTRUCTIONS =
   "Bridle bounds what you may spend. A rule set by your owner lists the chains, the approved recipients and the caps. " +
+  "Call get_supported_networks to discover live rails, get_agent_status to inspect your permissions, and get_payment_receipt to verify an executed payment. " +
   "Call list_mandates to find your rules, get_mandate to read the limits, and check_payment before propose_payment. " +
   "If a payment is blocked, do not retry it with a different amount or address to get around the rule; tell your owner instead. " +
   "You cannot change a rule, and there is deliberately no tool for it. Amounts are decimals in the rule's asset: USDC for Base, for example 18.50, or NEAR for the Near chain, for example 1.5. " +
@@ -38,6 +39,9 @@ const TOOLS = [
   { name: "check_payment", title: "Check a payment (dry run)", description: "Ask whether a payment would be allowed, held for the owner's review, or blocked, and which rule decides. Sends nothing and leaves no record. Prefer this before propose_payment.", inputSchema: payment, annotations: READ },
   { name: "propose_payment", title: "Propose a payment", description: "Propose a payment (USDC on Base, or native NEAR on the Near chain). The contract decides: it may be blocked (recorded with the rule), held for the owner's review, or cleared. This does not move money by itself. Never resend a blocked or waiting payment.", inputSchema: payment, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } },
   { name: "get_proposal", title: "Read a proposal", description: "Check where a proposal stands: blocked, waiting for the owner, flagged, vetoed, cleared or executed.", inputSchema: { type: "object", properties: { proposal_id: { type: "integer", minimum: 0, description: "The proposal id returned by propose_payment" } }, required: ["proposal_id"] }, annotations: READ },
+  { name: "get_supported_networks", title: "List supported networks", description: "Live testnet networks/assets and planned chains.", inputSchema: { type: "object", properties: {} }, annotations: READ },
+  { name: "get_agent_status", title: "Read agent status", description: "Agent identity, whether an agent key is configured, mandate counts and permission boundaries.", inputSchema: { type: "object", properties: {} }, annotations: READ },
+  { name: "get_payment_receipt", title: "Get a payment receipt", description: "Destination transaction hash and explorer link for an executed proposal.", inputSchema: { type: "object", properties: { proposal_id: { type: "integer", minimum: 0 } }, required: ["proposal_id"] }, annotations: READ },
   { name: "list_proposals", title: "List recent proposals", description: "Recent proposals for a rule, newest first, with each one's status and reason.", inputSchema: { type: "object", properties: { mandate_id: mandateId, limit: { type: "integer", minimum: 1, maximum: 50, description: "How many to return. Default 10" } }, required: ["mandate_id"] }, annotations: READ },
 ];
 
@@ -99,6 +103,9 @@ async function callTool(d: t.Deps, name: string, a: any, origin: string) {
     case "propose_payment": return run(() => t.proposePayment(d, a));
     case "get_proposal": return run(() => t.getProposal(d, a));
     case "list_proposals": return run(() => t.listProposals(d, a));
+    case "get_supported_networks": return run(() => t.getSupportedNetworks(d));
+    case "get_agent_status": return run(() => t.getAgentStatus(d));
+    case "get_payment_receipt": return run(() => t.getPaymentReceipt(d, a));
     default: return null;
   }
 }

@@ -49,7 +49,7 @@ The contract is the single source of truth. Every spending proposal passes throu
 | Challenge window, watcher flags, bonds, 40/30/30 slashing, veto | Working on NEAR testnet |
 | Agent proposals (`propose_payment`) and blocked-with-reason records | Working on NEAR testnet |
 | Web app: sentence-based mandate builder, live feed, watcher view | Working, reads the contract directly over RPC |
-| MCP server for agents (read limits, dry-run a payment, propose) | Working, tested against a mock chain |
+| MCP server for agents (nine tools: policy reads, dry-run, proposals, network discovery, agent status and receipts; local stdio + hosted OAuth endpoint) | Working, tested against a mock chain |
 | Base USDC transfer through NEAR Chain Signatures | Working on testnet. The contract builds the EIP-1559 transfer, asks `v1.signer-prod.testnet` to sign it, and the [executor](executor/README.md) broadcasts it. Verified offline (bytes checked against viem, addresses against chainsig.js). **Run end to end on testnet (2026-11-07):** the mandate's derived address `0x2832B357267F8AC932fc07C33a3BB9F4edbca0d5` sent USDC on Base Sepolia, signed by the MPC network, no agent key involved. Transaction [`0x4e00…d88d`](https://sepolia.basescan.org/tx/0x4e000aa199e98ad81942804abd2abe6a172724344b761c3e338e93e496e0d88d). The test executor was the contract account itself; a separate executor account is the intended setup. |
 | Solana signing (Ed25519) | Not built |
 | NEAR Intents | Not used |

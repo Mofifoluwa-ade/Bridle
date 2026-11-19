@@ -26,7 +26,7 @@ before(async () => {
       const out =
         m === "get_mandate" ? (args.mandate_id === 1 ? mandate() : null)
         : m === "list_mandates_for" ? [mandate(), mandate({ id: 2, agent: "someone.testnet" })]
-        : m === "get_proposal" ? (args.proposal_id === 7 ? proposal() : args.proposal_id === 8 ? proposal({ id: 8, status: "Rejected", reason: "Recipient is not on the allowlist" }) : null)
+        : m === "get_proposal" ? (args.proposal_id === 7 ? proposal() : args.proposal_id === 8 ? proposal({ id: 8, status: "Rejected", reason: "Recipient is not on the allowlist" }) : args.proposal_id === 9 ? proposal({ id: 9, status: "Executed", tx_hash: "0xabc123" }) : null)
         : m === "list_proposals" ? [proposal(), proposal({ id: 6, status: "Waiting", amount: "32000000", executable_at: (NOW_NS + 600n * 1_000_000_000n).toString() })]
         : null;
       send({ result: [...Buffer.from(JSON.stringify(out))], logs: [] });
@@ -49,7 +49,7 @@ const json = (r: any) => JSON.parse(text(r));
 test("exposes agent tools and no owner tools", async () => {
   const c = await connect();
   const names = (await c.listTools()).tools.map((t) => t.name).sort();
-  assert.deepEqual(names, ["check_payment", "get_mandate", "get_proposal", "list_mandates", "list_proposals", "propose_payment"]);
+  assert.deepEqual(names, ["check_payment", "get_agent_status", "get_mandate", "get_payment_receipt", "get_proposal", "get_supported_networks", "list_mandates", "list_proposals", "propose_payment"]);
   for (const bad of ["create", "update", "revoke", "veto", "flag", "bond", "withdraw"]) {
     assert.ok(!names.some((n) => n.includes(bad)), `unexpected tool containing ${bad}`);
   }
@@ -115,4 +115,37 @@ test("get_proposal and list_proposals describe status honestly", async () => {
 test("fails fast without a contract", async () => {
   const client = new Client({ name: "test", version: "0" });
   await assert.rejects(client.connect(new StdioClientTransport({ command: process.execPath, args: [entry], env: { PATH: process.env.PATH ?? "" } })));
+});
+
+
+test("network discovery lists supported testnet rails and planned chains", async () => {
+  const c = await connect();
+  const r = json(await c.callTool({ name: "get_supported_networks", arguments: {} }));
+  assert.equal(r.environment, "testnet");
+  assert.ok(r.supported_networks.some((n: any) => n.chain === "Base" && n.chain_id === 84532));
+  assert.ok(r.supported_networks.some((n: any) => n.chain === "Near"));
+  assert.ok(r.planned_networks.some((n: any) => n.chain === "Solana"));
+  await c.close();
+});
+
+test("agent status reports identity and read-only permissions without a key", async () => {
+  const c = await connect();
+  const r = json(await c.callTool({ name: "get_agent_status", arguments: {} }));
+  assert.equal(r.agent_account, "agent.testnet");
+  assert.equal(r.connection_mode, "read-only");
+  assert.equal(r.agent_key_configured, false);
+  assert.equal(r.mandates.active, 1);
+  assert.equal(r.capabilities.change_mandates, false);
+  await c.close();
+});
+
+test("payment receipt appears only after execution and links destination transaction", async () => {
+  const c = await connect();
+  const pending = json(await c.callTool({ name: "get_payment_receipt", arguments: { proposal_id: 7 } }));
+  assert.equal(pending.receipt_available, false);
+  const receipt = json(await c.callTool({ name: "get_payment_receipt", arguments: { proposal_id: 9 } }));
+  assert.equal(receipt.receipt_available, true);
+  assert.equal(receipt.transaction_hash, "0xabc123");
+  assert.equal(receipt.explorer_url, "https://sepolia.basescan.org/tx/0xabc123");
+  await c.close();
 });

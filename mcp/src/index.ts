@@ -95,6 +95,25 @@ server.registerTool("get_proposal", {
   annotations: READ,
 }, (a) => run(() => t.getProposal(deps, a)));
 
+server.registerTool("get_supported_networks", {
+  title: "List supported networks",
+  description: "List live testnet payment networks and assets, plus planned networks that are not yet payable.",
+  inputSchema: {}, annotations: READ,
+}, () => run(() => t.getSupportedNetworks(deps)));
+
+server.registerTool("get_agent_status", {
+  title: "Read agent status",
+  description: "Show this agent's account, whether an agent key is configured, mandate counts and fixed permission boundaries. Never returns keys.",
+  inputSchema: {}, annotations: READ,
+}, () => run(() => t.getAgentStatus(deps)));
+
+server.registerTool("get_payment_receipt", {
+  title: "Get a payment receipt",
+  description: "Return the destination transaction hash and explorer link for an executed proposal, or explain why no receipt is available yet.",
+  inputSchema: { proposal_id: z.number().int().nonnegative().describe("The proposal id returned by propose_payment") },
+  annotations: READ,
+}, (a) => run(() => t.getPaymentReceipt(deps, a)));
+
 server.registerTool("list_proposals", {
   title: "List recent proposals",
   description: "Recent proposals for a mandate, newest first, with each one's status and reason.",

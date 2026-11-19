@@ -21,6 +21,9 @@ const tools = [
   ["propose_payment", "Propose a payment. The contract decides. Needs the agent key."],
   ["get_proposal", "Where one proposal stands, and why."],
   ["list_proposals", "Recent proposals for a mandate."],
+  ["get_supported_networks", "Live testnet payment networks and assets; planned chains are clearly marked."],
+  ["get_agent_status", "Your agent identity, mandate counts and available permissions."],
+  ["get_payment_receipt", "Destination transaction hash and explorer link after execution."],
 ];
 
 const env = [
@@ -103,12 +106,18 @@ export default function McpPage() {
           <p className={`mt-4 max-w-[640px] ${body}`}>
             The server is the npm package <code className="font-mono text-[13px]">bridle-mcp</code>. It runs locally over stdio and needs Node 22.22.2 or newer. There is nothing to install or build: your client runs it with <code className="font-mono text-[13px]">npx</code>.
           </p>
+          <div className="mt-6 rounded-2xl border border-line bg-white/70 p-5 dark:border-dark-border dark:bg-dark-card/70">
+            <h3 className="text-base font-semibold text-ink dark:text-white">Connect without a local install</h3>
+            <p className={`mt-2 ${body}`}>Use Bridle’s hosted MCP endpoint with OAuth 2.1. Create or restore your agent, approve the AI app in Bridle, and connect without copying an agent key.</p>
+            <p className="mt-3 break-all font-mono text-[13px] text-ink dark:text-white">https://bridle-agent.vercel.app/mcp</p>
+            <Link href="/app/connect" className={`mt-4 inline-flex ${link}`}>Connect your agent in Bridle →</Link>
+          </div>
           <div className="mt-6 grid gap-4">
-            <CodeBlock code={clientConfig} label="Claude Desktop, Cursor, most MCP clients" />
+            <CodeBlock code={clientConfig} label="Local: Claude Desktop, Cursor, most MCP clients" />
             <CodeBlock code={claudeCode} label="Or: Claude Code" />
           </div>
           <p className={`mt-5 max-w-[640px] ${body}`}>
-            Without the agent account and key the server is read-only: everything but <code className="font-mono text-[13px]">propose_payment</code> still works. To run from source instead, see the{" "}
+            Without the agent account and key the local server is read-only: everything but <code className="font-mono text-[13px]">propose_payment</code> still works. To run from source instead, see the{" "}
             <a className={link} href="https://github.com/Mofifoluwa-ade/Bridle/tree/main/mcp" target="_blank" rel="noopener noreferrer">repo</a>.
           </p>
           <div className="mt-8 overflow-x-auto">
@@ -134,7 +143,7 @@ export default function McpPage() {
         </section>
 
         <section className="mt-16 sm:mt-20" aria-labelledby="tools-title">
-          <h2 id="tools-title" className={h2}>Six tools</h2>
+          <h2 id="tools-title" className={h2}>Nine tools</h2>
           <ul className="mt-6 divide-y divide-rule dark:divide-dark-border border-y border-rule dark:border-dark-border">
             {tools.map(([name, desc]) => (
               <li key={name} className="grid gap-1 py-4 sm:grid-cols-[190px_1fr] sm:gap-6">
@@ -164,9 +173,9 @@ export default function McpPage() {
           </p>
           <h3 className="mt-8 text-lg font-semibold tracking-[-0.02em] text-ink dark:text-white">Where this stands</h3>
           <p className={`mt-3 max-w-[680px] ${body}`}>
-            Bridle runs on NEAR testnet. The server is tested against a mock chain and has not yet been run with a
-            real agent key against the live contract. A cleared payment is reported as &quot;cleared&quot;, not
-            &quot;paid&quot;: Base signing is built and Solana is planned.
+            Bridle runs on testnets. The local tool suite is tested against a mock chain. A cleared proposal is not
+            a completed transfer: use get_proposal or get_payment_receipt to verify execution and retrieve a destination
+            transaction hash when one has been recorded. Solana signing and execution are not yet available.
           </p>
         </section>
 

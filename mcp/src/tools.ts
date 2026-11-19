@@ -133,7 +133,7 @@ function describeProposal(p: Proposal, cfg: Config) {
     case "Ready":
       summary = p.chain === "Near"
         ? "Cleared by the mandate. The payment goes out when anyone triggers execute (the owner's dashboard has a button); no funds have moved yet."
-        : "Cleared by the mandate. Cross-chain signing is not connected in this version, so no funds have moved.";
+        : "Cleared by the mandate. The Base executor still needs to request the Chain Signatures signature and broadcast the transaction; no funds have moved.";
       break;
     case "Flagged": summary = "A watcher flagged it. It will not run unless the owner dismisses the flag."; break;
     case "Cancelled": summary = "Cancelled after a confirmed flag."; break;
@@ -156,7 +156,11 @@ function describeProposal(p: Proposal, cfg: Config) {
     created_at: iso(p.created_at),
     executable_at: p.status === "Waiting" ? iso(p.executable_at) : null,
     tx_hash: p.tx_hash,
-    explorer: `${cfg.explorer}/address/${cfg.contractId}`,
+    explorer: `${cfg.explorer.replace(/\/+$/, "")}/address/${cfg.contractId}`,
+    transaction_explorer: p.tx_hash
+      ? p.chain === "Base" ? `https://sepolia.basescan.org/tx/${p.tx_hash}`
+        : p.chain === "Near" ? `${cfg.explorer.replace(/\/+$/, "")}/txns/${p.tx_hash}` : null
+      : null,
   };
 }
 
@@ -187,5 +191,62 @@ export async function listProposals(d: Deps, a: { mandate_id: number; limit?: nu
   return {
     summary: list.length ? `${list.length} most recent proposal${list.length === 1 ? "" : "s"} for mandate ${a.mandate_id}, newest first.` : `No proposals yet for mandate ${a.mandate_id}.`,
     proposals: list.map((p) => describeProposal(p, d.cfg)),
+  };
+}
+
+
+/** Networks the current Bridle testnet deployment can actually execute payments on. */
+export async function getSupportedNetworks(d: Deps) {
+  return {
+    environment: "testnet",
+    control_plane: { network: "NEAR testnet", contract: d.cfg.contractId },
+    supported_networks: [
+      { chain: "Base", network: "Base Sepolia", chain_id: 84532, assets: ["USDC"], status: "supported", execution: "NEAR Chain Signatures with the Bridle executor" },
+      { chain: "Near", network: "NEAR testnet", assets: ["NEAR"], status: "supported", execution: "Native NEAR transfer from the mandate balance" },
+    ],
+    planned_networks: [{ chain: "Solana", status: "planned", note: "Signing and execution are not implemented; do not treat Solana proposals as payable." }],
+  };
+}
+
+export async function getAgentStatus(d: Deps) {
+  const account = d.cfg.agentAccount;
+  if (!account) throw new ToolError("Set BRIDLE_AGENT_ACCOUNT so Bridle can identify this agent.");
+  const result = await listMandates(d, { account_id: account });
+  const active = result.mandates.filter((m) => m.state === "Active").length;
+  const revoked = result.mandates.filter((m) => m.state === "Revoked").length;
+  return {
+    agent_account: account,
+    connection_mode: d.cfg.agentKey ? "proposal-key-configured" : "read-only",
+    agent_key_configured: Boolean(d.cfg.agentKey),
+    mandates: { total: result.mandates.length, active, revoked },
+    capabilities: {
+      read_mandates: true, check_payments: true, submit_proposals: Boolean(d.cfg.agentKey),
+      change_mandates: false, veto_or_flag_payments: false, withdraw_bonds: false,
+    },
+    summary: d.cfg.agentKey
+      ? `Connected as ${account}. ${active} active mandate(s) name this agent; an agent key is configured; successful proposals still depend on its permissions and each mandate's on-chain rules.`
+      : `Connected as ${account} in read-only mode. Add an agent function-call key to enable proposal submission.`,
+  };
+}
+
+export async function getPaymentReceipt(d: Deps, a: { proposal_id: number }) {
+  const p = await d.view<Proposal | null>("get_proposal", { proposal_id: a.proposal_id });
+  if (!p) throw new ToolError(`No proposal with id ${a.proposal_id}.`);
+  const base = {
+    proposal_id: p.id, mandate_id: p.mandate_id, status: p.status, chain: p.chain,
+    asset: p.asset, amount: formatAmount(p.amount, decimalsOf(p.asset)), recipient: p.recipient,
+    receipt_available: false, transaction_hash: p.tx_hash,
+  };
+  if (p.status !== "Executed") return { ...base, summary: `No payment receipt yet. Proposal ${p.id} is ${p.status.toLowerCase()}.` };
+  if (!p.tx_hash) return { ...base, summary: "The contract marks this proposal executed, but no destination transaction hash is recorded." };
+  const explorerUrl = p.chain === "Base"
+    ? `https://sepolia.basescan.org/tx/${p.tx_hash}`
+    : p.chain === "Near" ? `${d.cfg.explorer.replace(/\/+$/, "")}/txns/${p.tx_hash}` : null;
+  return {
+    ...base, receipt_available: Boolean(explorerUrl),
+    network: p.chain === "Base" ? "Base Sepolia" : p.chain === "Near" ? "NEAR testnet" : "Solana",
+    explorer_url: explorerUrl,
+    summary: explorerUrl ? `Payment executed on ${p.chain === "Base" ? "Base Sepolia" : "NEAR testnet"}.`
+      : "The proposal is marked executed, but this chain does not have a configured transaction explorer.",
   };
 }

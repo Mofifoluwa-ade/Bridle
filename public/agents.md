@@ -11,7 +11,7 @@ Status: NEAR testnet, version 0.1. Base signing through NEAR Chain Signatures ha
 
 ## Connect with MCP
 
-The MCP server is the npm package `bridle-mcp`. It needs Node 22.22.2 or newer (a dependency requires it) and runs locally over stdio. Nothing to install or build: your client runs it with `npx`.
+The MCP server is available in two ways: a hosted remote endpoint at `https://bridle-agent.vercel.app/mcp` (OAuth 2.1 + PKCE; approve the AI app in Bridle, no key pasted into the client), or the local npm package `bridle-mcp` (Node 22.22.2+, stdio). To connect the hosted version, open https://bridle-agent.vercel.app/app/connect.
 
 Claude Desktop, Cursor and most MCP clients take this shape:
 
@@ -35,7 +35,7 @@ Claude Code: `claude mcp add bridle -e BRIDLE_CONTRACT=bridle.testnet -e BRIDLE_
 
 To run from source instead: `git clone https://github.com/Mofifoluwa-ade/Bridle`, then `cd Bridle/mcp && npm install && npm run build`, and point `command` at `node` with the path to `mcp/dist/index.js`.
 
-Without `BRIDLE_AGENT_ACCOUNT` and `BRIDLE_AGENT_KEY` the server is read-only: `list_mandates` (with an account id), `get_mandate`, `check_payment`, `get_proposal` and `list_proposals` still work.
+Without `BRIDLE_AGENT_ACCOUNT` and `BRIDLE_AGENT_KEY` the local server is read-only. The hosted OAuth connection is scoped to the owner-approved agent identity; neither connection exposes owner controls.
 
 ## Tools
 
@@ -47,6 +47,9 @@ Without `BRIDLE_AGENT_ACCOUNT` and `BRIDLE_AGENT_KEY` the server is read-only: `
 | `propose_payment` | Propose a payment. The contract decides. Needs the agent key |
 | `get_proposal` | Where one proposal stands |
 | `list_proposals` | Recent proposals for a mandate |
+| `get_supported_networks` | Live testnet networks/assets and planned chains |
+| `get_agent_status` | Agent identity, mandate counts and available permissions |
+| `get_payment_receipt` | Destination transaction hash and explorer link after execution |
 
 There are deliberately no tools to create, change, revoke or veto a mandate. Those are owner actions. An agent cannot widen its own limits.
 
