@@ -58,7 +58,7 @@ async function run(fn: () => Promise<unknown>) {
   }
 }
 
-const READ = { readOnlyHint: true, openWorldHint: true } as const;
+const READ = { readOnlyHint: true, destructiveHint: false, openWorldHint: true } as const;
 
 server.registerTool("list_mandates", {
   title: "List my mandates",
@@ -85,7 +85,7 @@ server.registerTool("propose_payment", {
   title: "Propose a payment",
   description: "Propose a payment (USDC on Base, or native NEAR on the Near chain). The contract decides: it may be blocked (recorded with the rule), held for the owner's review, or cleared. This does not move money by itself. Needs BRIDLE_AGENT_ACCOUNT and BRIDLE_AGENT_KEY. Never resend a blocked or waiting payment.",
   inputSchema: payment,
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
 }, (a) => run(() => t.proposePayment(deps, a)));
 
 server.registerTool("get_proposal", {
