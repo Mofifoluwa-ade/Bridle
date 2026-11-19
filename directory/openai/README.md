@@ -5,7 +5,7 @@ This is a draft portable Agent Plugins package for Bridle.
 - `package/plugin.json`: portable plugin identity and OpenAI directory metadata.
 - `package/mcp.json`: hosted Streamable HTTP MCP endpoint and OAuth DCR configuration.
 - `test-cases.json`: exactly five positive and three negative review prompts.
-- `fixtures.md`: disposable test account and state setup.
+- `fixtures.md` and `fixture-mapping.json`: disposable test account and state setup.
 - `release-notes.md`: initial release notes.
 
 Before uploading:
