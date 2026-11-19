@@ -15,7 +15,7 @@ The current deployment is testnet-only:
 
 The MCP tool `propose_payment` submits an on-chain proposal to the Bridle contract. It does not directly broadcast a destination-chain transfer. Depending on the mandate and execution workflow, a proposal may be held for owner review or later executed. The connector has no tools to create, change, fund, revoke, veto, or flag mandates/payments.
 
-We understand the published Software Directory Policy excludes software that transfers money, cryptocurrency, or other financial assets, or executes financial transactions on users' behalf. We do not want to mischaracterize Bridle or submit an ineligible integration.
+We understand the current Software Directory Policy restricts software that transfers money or other financial assets, or executes financial transactions autonomously on users' behalf without human-in-the-loop safeguards, and says cryptocurrency software is generally not allowed. Bridle uses owner-signed mandates, allowlists, spending caps and review thresholds, but not every payment requires a separate owner approval. We do not want to mischaracterize these safeguards or submit an ineligible integration.
 
 Could you confirm whether a testnet-only, owner-authorized MCP connector that can submit proposals but cannot independently change spending rules or directly broadcast destination transfers is eligible for directory review? If not, would a separate read-only connector limited to mandate, network, proposal-status, and receipt inspection be eligible, or is the product's overall financial purpose disqualifying?
 
