@@ -1,6 +1,6 @@
 ---
 name: bridle-spending
-description: How to spend money as an AI agent under a Bridle mandate. Use when you can make payments through the Bridle MCP tools (list_mandates, get_mandate, check_payment, propose_payment).
+description: How to operate as an AI agent under a Bridle mandate using its MCP tools for policy discovery, payment checks, proposals and execution receipts.
 ---
 
 # Spending under a Bridle mandate
@@ -13,6 +13,7 @@ Your owner has signed a mandate: the chains, approved recipients and caps you ma
 2. Before each payment, `check_payment`. It sends nothing and leaves no record.
 3. If it says `ready` or `review`, call `propose_payment` with the same arguments.
 4. Use `get_proposal` to see where it stands. A payment held for review can take up to the challenge window.
+5. Use `get_payment_receipt` after execution to verify the destination transaction hash and explorer link. Use `get_agent_status` and `get_supported_networks` when you need to confirm your identity, permissions or live payment rails.
 
 ## Rules for yourself
 
