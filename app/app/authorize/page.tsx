@@ -143,7 +143,7 @@ function Approve({ req }: { req: Req }) {
         <Btn variant="outline" onClick={deny} disabled={working || done}>Cancel</Btn>
       </div>
       <p className="text-[13px] leading-relaxed text-mute dark:text-dark-mute">
-        Approving lets {req.name} use your agent for up to 90 days. Bridle&apos;s server holds no list of sign-ins, so to cut access off, make a new agent. Testnet, unaudited.
+        Approving lets {req.name} use your agent. Access tokens last one hour; refresh tokens can remain usable for up to 90 days after their latest refresh. Bridle does not yet offer per-app sign-in revocation. Revoking every mandate that names this agent prevents new payment proposals, but does not remove the app&apos;s access to public on-chain records. Creating a different agent does not revoke this one. Testnet, unaudited.
       </p>
     </div>
   );
