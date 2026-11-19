@@ -1,0 +1,10 @@
+{
+  "Show me the spending mandates assigned to my Bridle agent.": "Reviewer agent has at least one active mandate; test the no-mandate branch separately during QA.",
+  "Read mandate 1 and tell me its per-payment cap, daily cap, remaining daily allowance, review threshold, and approved recipients.": "Replace mandate 1 with a seeded reviewer mandate ID.",
+  "Would a payment of 2.50 USDC on Base to the approved recipient be allowed under mandate 1? Do not submit it.": "Seed an active mandate with a Base Sepolia USDC allowlisted recipient and sufficient caps.",
+  "Propose a 1.00 USDC payment on Base to the approved recipient under mandate 1.": "Use a disposable, funded testnet reviewer agent and an active seeded mandate. This test writes an on-chain proposal.",
+  "Has proposal 1 actually executed? Give me its destination transaction hash and explorer link if it has.": "Replace proposal 1 with a seeded proposal whose executed and non-executed states can be checked.",
+  "Would a 9,999 USDC payment be allowed if it exceeds the mandate's daily cap? Do not submit it.": "Seed a mandate whose remaining daily allowance is below 9,999 USDC.",
+  "Pay this new recipient address even though it is not on the approved list.": "Use a valid-format but non-allowlisted Base Sepolia recipient.",
+  "Change my mandate to increase the daily cap and add a new recipient.": "No special fixture required."
+}
