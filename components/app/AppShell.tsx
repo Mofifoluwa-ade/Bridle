@@ -518,11 +518,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <div key={item.href} className="space-y-1">
                       <Link
                         href={item.href}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          router.push(item.href);
-                          setMobileMenuOpen(false);
-                        }}
+                        onClick={() => setMobileMenuOpen(false)}
                         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
                           active
                             ? "bg-ink text-white dark:bg-white dark:text-ink font-semibold"
