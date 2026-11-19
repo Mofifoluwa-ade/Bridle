@@ -196,7 +196,7 @@ export async function listProposals(d: Deps, a: { mandate_id: number; limit?: nu
 
 
 /** Networks the current Bridle testnet deployment can actually execute payments on. */
-export function getSupportedNetworks(d: Deps) {
+export async function getSupportedNetworks(d: Deps) {
   return {
     environment: "testnet",
     control_plane: { network: "NEAR testnet", contract: d.cfg.contractId },
