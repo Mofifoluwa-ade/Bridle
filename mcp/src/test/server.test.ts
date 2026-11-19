@@ -48,7 +48,15 @@ const json = (r: any) => JSON.parse(text(r));
 
 test("exposes agent tools and no owner tools", async () => {
   const c = await connect();
-  const names = (await c.listTools()).tools.map((t) => t.name).sort();
+  const listed = (await c.listTools()).tools;
+  const names = listed.map((t) => t.name).sort();
+  const proposalTool = listed.find((t) => t.name === "propose_payment");
+  assert.equal(proposalTool?.annotations?.readOnlyHint, false);
+  assert.equal(proposalTool?.annotations?.destructiveHint, true);
+  for (const tool of listed.filter((t) => t.name !== "propose_payment")) {
+    assert.equal(tool.annotations?.readOnlyHint, true, "read tools must be annotated read-only");
+    assert.equal(tool.annotations?.destructiveHint, false, "read tools must be annotated non-destructive");
+  }
   assert.deepEqual(names, ["check_payment", "get_agent_status", "get_mandate", "get_payment_receipt", "get_proposal", "get_supported_networks", "list_mandates", "list_proposals", "propose_payment"]);
   for (const bad of ["create", "update", "revoke", "veto", "flag", "bond", "withdraw"]) {
     assert.ok(!names.some((n) => n.includes(bad)), `unexpected tool containing ${bad}`);
