@@ -83,7 +83,7 @@ server.registerTool("check_payment", {
 
 server.registerTool("propose_payment", {
   title: "Propose a payment",
-  description: "Propose a payment (USDC on Base, or native NEAR on the Near chain). The contract decides: it may be blocked (recorded with the rule), held for the owner's review, or cleared. This does not move money by itself. Needs BRIDLE_AGENT_ACCOUNT and BRIDLE_AGENT_KEY. Never resend a blocked or waiting payment.",
+  description: "Create an on-chain payment proposal (USDC on Base, or native NEAR on the Near chain). The contract may block it, hold it for owner review, or clear it. This call does not itself broadcast a destination transfer, but a cleared proposal may later be executed by the configured executor under the mandate. This is a state-changing action: call it only when the user explicitly asks to propose the payment. Needs BRIDLE_AGENT_ACCOUNT and BRIDLE_AGENT_KEY. Never resend a blocked or waiting payment.",
   inputSchema: payment,
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
 }, (a) => run(() => t.proposePayment(deps, a)));
