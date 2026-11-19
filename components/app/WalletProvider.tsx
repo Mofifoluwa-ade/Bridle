@@ -73,9 +73,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // from the existing wallet session during provider initialization.
     void (async () => {
       try {
-        const wallet = await near.wallet();
-        const accounts = await wallet.getAccounts();
-        if (!cancelled) setAccountId(accounts[0]?.accountId ?? null);
+        // A remembered wallet can fail to answer (stale session, blocked wallet host). Never let that
+        // hold the whole app on "Loading wallet": give up after a few seconds and show Connect.
+        const restore = (async () => {
+          const wallet = await near.wallet();
+          const accounts = await wallet.getAccounts();
+          return accounts[0]?.accountId ?? null;
+        })();
+        const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+        const restored = await Promise.race([restore, timeout]);
+        restore.catch(() => undefined);
+        if (!cancelled) setAccountId(restored);
       } catch {
         // No existing wallet session is a normal disconnected state.
         if (!cancelled) setAccountId(null);
