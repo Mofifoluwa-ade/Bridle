@@ -269,6 +269,26 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const isSettingsActive = path.startsWith("/app/settings");
 
+  // Sign-in for an outside app (Claude, etc.): a focused page, no sidebar or app chrome.
+  if (path.startsWith("/app/authorize")) {
+    return (
+      <div className="flex min-h-screen w-full flex-col bg-paper text-ink transition-colors dark:bg-dark-bg dark:text-dark-text">
+        <header className="mx-auto flex w-full max-w-[760px] items-center justify-between px-5 py-6 sm:px-6">
+          <span className="flex items-center gap-2.5 text-ink dark:text-white">
+            <LogoMark size={24} className="text-ink dark:text-white" />
+            <Wordmark className="text-[18px]" />
+          </span>
+          <span className="flex items-center gap-2 font-mono text-[11.5px] text-mute dark:text-dark-mute">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent-dark" />
+            Testnet
+            {accountId && <span className="rounded-full border border-line px-2.5 py-1 text-ink dark:border-dark-border dark:text-white">{shortAddr(accountId, 8, 6)}</span>}
+          </span>
+        </header>
+        <main className="mx-auto w-full max-w-[760px] flex-1 px-5 pb-12 pt-2 sm:px-6 sm:pt-6">{children}</main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full bg-paper dark:bg-dark-bg text-ink dark:text-dark-text transition-colors">
       {/* 1. Desktop Persistent Left Sidebar */}

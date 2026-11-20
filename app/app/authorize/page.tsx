@@ -164,7 +164,7 @@ export default function AuthorizePage() {
   return (
     <>
       <PageHeader title="Connect with Bridle" lead="Approve one app to use your agent. It can only work inside the rules you sign." />
-      <div className="mx-auto max-w-[760px]">
+      <div>
         <Suspense fallback={null}>
           <Inner />
         </Suspense>
