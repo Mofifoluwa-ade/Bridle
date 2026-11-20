@@ -202,6 +202,21 @@ export function WalletButton() {
   );
 }
 
+function TabIcon({ children }: { children: ReactNode }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
+
+const TABS: { href: string; label: string; icon: ReactNode }[] = [
+  { href: "/app", label: "Home", icon: <TabIcon><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /></TabIcon> },
+  { href: "/app/mandates", label: "Rules", icon: <TabIcon><path d="M12 3 4 6v6c0 4.5 3.2 7.6 8 9 4.8-1.4 8-4.5 8-9V6l-8-3Z" /><path d="m9 12 2 2 4-4" /></TabIcon> },
+  { href: "/app/send", label: "Send", icon: <TabIcon><path d="M21 3 10 14" /><path d="m21 3-7 18-4-7-7-4 18-7Z" /></TabIcon> },
+  { href: "/app/watch", label: "Watch", icon: <TabIcon><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></TabIcon> },
+];
+
 export function AppShell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
@@ -655,29 +670,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="md:ml-64 flex flex-col min-h-screen min-w-0">
         {/* Top Nav Header: Only "NEAR testnet" together with "Connect wallet" (+ mobile menu trigger) */}
         <header className="sticky top-0 z-20 flex h-14 w-full items-center justify-between border-b border-line dark:border-dark-border bg-paper/90 dark:bg-dark-bg/90 px-3.5 sm:px-7 backdrop-blur transition-colors">
-          {/* Left: Mobile hamburger trigger */}
+          {/* Left: logo on mobile (navigation lives in the bottom tab bar) */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden flex h-8 w-8 items-center justify-center rounded-xl border border-line dark:border-dark-border bg-white dark:bg-dark-card text-ink dark:text-white"
-              aria-label="Open sidebar menu"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
+            <Link href="/" className="md:hidden flex items-center gap-2 text-ink dark:text-white" aria-label="Bridle home">
+              <LogoMark size={22} className="text-ink dark:text-white" />
+              <Wordmark className="text-[16px]" />
+            </Link>
           </div>
 
           {/* Right: "NEAR testnet" badge + non-real funds notice and "Connect wallet" */}
@@ -699,11 +697,47 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         {/* Content Body */}
-        <main className="flex-1 w-full max-w-page mx-auto px-3.5 sm:px-7 py-4 sm:py-5 animate-fade-in min-w-0">
+        <main className="flex-1 w-full max-w-page mx-auto px-3.5 sm:px-7 py-4 sm:py-5 pb-28 md:pb-5 animate-fade-in min-w-0">
           {!CONFIG.contractId && <SetupNotice />}
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom tab bar */}
+      <nav
+        aria-label="Primary"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 backdrop-blur dark:border-dark-border dark:bg-dark-card/95 md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <ul className="mx-auto flex max-w-[520px] items-stretch justify-around px-1">
+          {TABS.map((t) => {
+            const active = t.href === "/app" ? path === "/app" : path.startsWith(t.href);
+            return (
+              <li key={t.href} className="flex-1">
+                <Link
+                  href={t.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${active ? "text-ink dark:text-white" : "text-mute dark:text-dark-mute"}`}
+                >
+                  {t.icon}
+                  {t.label}
+                </Link>
+              </li>
+            );
+          })}
+          <li className="flex-1">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex w-full flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-mute dark:text-dark-mute"
+              aria-label="More"
+            >
+              <TabIcon><circle cx="5" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="19" cy="12" r="1.2" /></TabIcon>
+              More
+            </button>
+          </li>
+        </ul>
+      </nav>
 
       {/* Getting Started Guide Modal */}
       <GettingStartedModal
