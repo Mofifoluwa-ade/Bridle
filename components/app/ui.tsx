@@ -100,7 +100,7 @@ export const STATUS: Record<
   Waiting: {
     label: "Paused",
     tone: "warn",
-    line: "Paused for review. You can approve or cancel.",
+    line: "Paused for review. Cancel it now, or send it once the timer ends.",
   },
   Ready: {
     label: "Approved",

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CONFIG } from "@/lib/config";
-import { formatNear, formatNearWithUsd } from "@/lib/format";
+import { countdown, formatNear, formatNearWithUsd } from "@/lib/format";
 import type { Mandate, Proposal } from "@/lib/types";
 import { Btn, Notice, inputCls } from "./ui";
 import { useWallet } from "./WalletProvider";
@@ -36,10 +36,12 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
   const canResolve = isOwner && p.status === "Flagged";
   const canExecute = (p.status === "Ready" || (p.status === "Waiting" && !windowOpen)) && m.state === "Active";
   const canFlag = p.status === "Waiting" && windowOpen && accountId !== m.owner && accountId !== m.agent;
+  // Held payments cannot be sent until the review timer ends. Show that to the owner instead of hiding the button.
+  const holding = isOwner && p.status === "Waiting" && windowOpen && m.state === "Active";
   const canExpire = p.status === "Flagged" && !windowOpen;
   const canTimeout = p.status === "Signing" && p.chain !== "Near" && now >= execAt + 3600_000;
 
-  if (!canVeto && !canResolve && !canExecute && !canFlag && !canExpire && !canTimeout) return null;
+  if (!canVeto && !canResolve && !canExecute && !holding && !canFlag && !canExpire && !canTimeout) return null;
   if (!accountId)
     return (
       <div className="flex items-center gap-3">
@@ -68,6 +70,11 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
         {canExecute && (
           <Btn variant="accent" busy={busy === "exec"} onClick={() => run("exec", "execute", { proposal_id: p.id })}>
             Approve & send payment
+          </Btn>
+        )}
+        {holding && (
+          <Btn variant="accent" disabled title="A held payment can be sent once the review timer ends">
+            Approve & send in {countdown(execAt - now)}
           </Btn>
         )}
         {canExpire && (
@@ -103,6 +110,11 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
             </Btn>
           </div>
         </div>
+      )}
+      {holding && (
+        <p className="text-[13px] text-mute dark:text-dark-mute">
+          This payment is above your review threshold, so it waits out the review timer. That gives anyone watching time to report it. You can cancel now, or approve and send once the timer ends.
+        </p>
       )}
       {err && <Notice tone="bad" title="That did not go through">{err}</Notice>}
       <p className="text-[13px] text-mute dark:text-dark-mute">Signed with {accountId} on NEAR testnet (no real money).</p>
