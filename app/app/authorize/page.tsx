@@ -3,7 +3,8 @@
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { NeedsWallet } from "@/components/app/Gate";
-import { Btn, Card, Label, Notice, PageHeader } from "@/components/app/ui";
+import { Btn, Card, Label, Notice } from "@/components/app/ui";
+import { useWallet } from "@/components/app/WalletProvider";
 import { FUND, useWalletAgent } from "@/components/app/useWalletAgent";
 
 const short = (a: string) => `${a.slice(0, 8)}…${a.slice(-6)}`;
@@ -149,26 +150,55 @@ function Approve({ req }: { req: Req }) {
   );
 }
 
+function Head({ title, lead, account, onSwitch }: { title: string; lead: string; account?: string | null; onSwitch?: () => void }) {
+  return (
+    <header className="mb-8">
+      <Label>Connect with Bridle</Label>
+      <h1 className="mt-3 text-[32px] font-semibold leading-[1.1] tracking-heading text-ink dark:text-white sm:text-[36px]">{title}</h1>
+      <p className="mt-3 max-w-[60ch] text-[16px] leading-relaxed text-mute dark:text-dark-mute">
+        {lead}
+        {account && onSwitch && (
+          <>
+            {" "}
+            <button type="button" onClick={onSwitch} className="whitespace-nowrap underline underline-offset-2 hover:text-ink dark:hover:text-white">
+              Not you? Switch wallet
+            </button>
+          </>
+        )}
+      </p>
+    </header>
+  );
+}
+
 function Inner() {
   const sp = useSearchParams();
+  const { accountId, signOut } = useWallet();
   const req = useMemo(() => parseRequest(sp), [sp]);
-  if ("error" in req) return <Notice tone="bad">{req.error}</Notice>;
+  if ("error" in req) {
+    return (
+      <>
+        <Head title="Connect an app" lead="Approve one app to use your agent. It can only work inside the rules you sign." />
+        <Notice tone="bad">{req.error}</Notice>
+      </>
+    );
+  }
+  const lead = accountId
+    ? `${req.name} will act as the agent for ${accountId}. It can only work inside the rules you sign.`
+    : `${req.name} wants to use a Bridle agent. It can only work inside the rules you sign.`;
   return (
-    <NeedsWallet why="Connect your wallet so Bridle knows which agent to give this app.">
-      <Approve req={req} />
-    </NeedsWallet>
+    <>
+      <Head title={`Connect ${req.name}`} lead={lead} account={accountId} onSwitch={() => void signOut()} />
+      <NeedsWallet why="Connect your wallet so Bridle knows which agent to give this app.">
+        <Approve req={req} />
+      </NeedsWallet>
+    </>
   );
 }
 
 export default function AuthorizePage() {
   return (
-    <>
-      <PageHeader title="Connect with Bridle" lead="Approve one app to use your agent. It can only work inside the rules you sign." />
-      <div>
-        <Suspense fallback={null}>
-          <Inner />
-        </Suspense>
-      </div>
-    </>
+    <Suspense fallback={null}>
+      <Inner />
+    </Suspense>
   );
 }
