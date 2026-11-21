@@ -19,4 +19,5 @@ Hosted OAuth tokens are sealed and stateless. There is currently no per-app toke
 ## Review docs
 
 - [OpenAI package](./openai/README.md)
+- [Reviewer fixture plan](./openai/fixtures.md)
 - [Claude exception request](./claude/policy-exception-request.md)
