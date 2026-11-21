@@ -790,7 +790,12 @@ impl Bridle {
         match p.status {
             ProposalStatus::Ready => {}
             ProposalStatus::Waiting => {
-                require!(env::block_timestamp() >= p.executable_at.0, "still in the challenge window")
+                // The owner may approve a held payment right away. Everyone else waits out the window,
+                // which is what gives watchers time to flag it.
+                require!(
+                    env::block_timestamp() >= p.executable_at.0 || env::predecessor_account_id() == m.owner,
+                    "still in the challenge window"
+                )
             }
             _ => env::panic_str("proposal cannot be executed"),
         }

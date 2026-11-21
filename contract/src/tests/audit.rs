@@ -311,3 +311,33 @@ fn g_the_burn_share_stays_in_the_contract() {
     c.resolve_flag(p.id, true);
     assert_eq!(c.get_burned().0, NEAR * 30 / 100);
 }
+
+// ── H: the owner can approve a held payment without waiting ──
+
+#[test]
+fn h_owner_approves_a_held_payment_early() {
+    let (mut c, id) = setup();
+    let p = propose(&mut c, id, 24_000_000, ADDR, T0);
+    assert_eq!(c.get_proposal(p.id).unwrap().status, ProposalStatus::Waiting);
+    ctx("owner.testnet", 0, T0 + 1);
+    c.execute(p.id);
+    assert_eq!(c.get_proposal(p.id).unwrap().status, ProposalStatus::Signing);
+}
+
+#[test]
+#[should_panic(expected = "still in the challenge window")]
+fn h_nobody_else_can_skip_the_window() {
+    let (mut c, id) = setup();
+    let p = propose(&mut c, id, 24_000_000, ADDR, T0);
+    ctx("anyone.testnet", 0, T0 + 1);
+    c.execute(p.id);
+}
+
+#[test]
+#[should_panic(expected = "still in the challenge window")]
+fn h_the_agent_cannot_skip_the_window() {
+    let (mut c, id) = setup();
+    let p = propose(&mut c, id, 24_000_000, ADDR, T0);
+    ctx("agent.testnet", 0, T0 + 1);
+    c.execute(p.id);
+}
