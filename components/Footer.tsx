@@ -84,6 +84,9 @@ export function Footer() {
         <div className="flex flex-col gap-4 py-6 text-[11px] text-[#687384] sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Bridle. Open source, built in public.</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono uppercase tracking-[0.09em]">
+            <Link href="/privacy" className="transition-colors hover:text-white">Privacy</Link>
+            <Link href="/terms" className="transition-colors hover:text-white">Terms</Link>
+            <Link href="/support" className="transition-colors hover:text-white">Support</Link>
             <span>Policy before payment</span>
             <a href="https://github.com/Mofifoluwa-ade/Bridle" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">Source ↗</a>
           </div>
