@@ -335,6 +335,8 @@ function Form() {
     try {
       const hash = await call({
         method: "create_mandate",
+        // Pays for the mandate's storage; the rest is its storage reserve for the agent's proposals.
+        deposit: "200000000000000000000000",
         args: {
           agent,
           chains,
