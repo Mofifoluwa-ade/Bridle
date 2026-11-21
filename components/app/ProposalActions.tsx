@@ -73,8 +73,8 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
           </Btn>
         )}
         {holding && (
-          <Btn variant="accent" disabled title="A held payment can be sent once the review timer ends">
-            Approve & send in {countdown(execAt - now)}
+          <Btn variant="accent" busy={busy === "exec"} onClick={() => run("exec", "execute", { proposal_id: p.id })}>
+            Approve & send now
           </Btn>
         )}
         {canExpire && (
@@ -113,7 +113,7 @@ export function ProposalActions({ proposal: p, mandate: m, now, onDone }: { prop
       )}
       {holding && (
         <p className="text-[13px] text-mute dark:text-dark-mute">
-          This payment is above your review threshold, so it waits out the review timer. That gives anyone watching time to report it. You can cancel now, or approve and send once the timer ends.
+          This payment is above your review threshold, so everyone else has to wait out the review timer ({countdown(execAt - now)} left) while watchers can report it. As the owner you can approve and send it now, or cancel it.
         </p>
       )}
       {err && <Notice tone="bad" title="That did not go through">{err}</Notice>}
