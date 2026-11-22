@@ -135,8 +135,8 @@ export default function Dashboard() {
       )}
 
       {/* Compact Page Header with Quick Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-semibold tracking-[-0.02em] text-ink dark:text-white">
             Dashboard
           </h1>
@@ -144,23 +144,27 @@ export default function Dashboard() {
             Set spending rules for your AI agents and watch every payment in real time
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Icon-only on phones so the header stays one row; labels return from sm up. */}
+        <div className="flex flex-none items-center gap-2">
           <Link
             id="tour-stress-test-btn"
             href="/app/agent"
-            className="inline-flex items-center gap-1.5 rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3.5 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover shadow-2xs transition-all"
+            aria-label="Test your agent"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3 sm:px-3.5 text-xs font-semibold text-ink dark:text-white hover:bg-paper dark:hover:bg-dark-card-hover shadow-2xs transition-all"
             title="Try sending a test payment from your agent"
           >
-            <span>Test your agent</span>
-            <span aria-hidden="true">→</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="sm:hidden" aria-hidden><path d="m5 3 14 9-14 9z" /></svg>
+            <span className="hidden sm:inline">Test your agent</span>
+            <span aria-hidden="true" className="hidden sm:inline">→</span>
           </Link>
           <Link
             id="tour-new-mandate-btn"
             href="/app/mandates/new"
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink dark:bg-white text-white dark:text-ink px-3.5 py-1.5 text-xs font-semibold hover:opacity-90 shadow-sm transition-all"
+            aria-label="New rule"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-ink dark:bg-white text-white dark:text-ink px-3 sm:px-3.5 text-xs font-semibold hover:opacity-90 shadow-sm transition-all"
           >
-            <span>+</span>
-            <span>New rule</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
+            <span className="hidden sm:inline">New rule</span>
           </Link>
         </div>
       </div>
@@ -442,7 +446,7 @@ export default function Dashboard() {
               </div>
 
               {/* Filter Pills with Count Badges */}
-              <div className="flex items-center gap-1 p-0.5 rounded-full bg-paper dark:bg-dark-bg border border-line dark:border-dark-border text-xs overflow-x-auto max-w-full">
+              <div className="flex w-full items-center gap-1 overflow-x-auto rounded-full border border-line bg-paper p-1 text-xs scrollbar-thin dark:border-dark-border dark:bg-dark-bg sm:w-auto">
                 {(["All", "Needs review", "Allowed", "Stopped"] as const).map((tab) => {
                   const isActive = filter === tab;
                   return (
@@ -450,20 +454,14 @@ export default function Dashboard() {
                       key={tab}
                       type="button"
                       onClick={() => setFilter(tab)}
-                      className={`rounded-full px-2.5 py-1 text-xs transition-all duration-150 flex items-center gap-1.5 ${
+                      className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs transition-all duration-150 sm:flex-none ${
                         isActive
-                          ? "bg-white dark:bg-dark-card text-ink dark:text-white font-semibold shadow-xs border border-line dark:border-dark-border"
+                          ? "bg-white dark:bg-dark-card text-ink dark:text-white font-semibold shadow-xs"
                           : "text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white"
                       }`}
                     >
                       <span>{tab}</span>
-                      <span
-                        className={`font-mono text-[10px] px-1 rounded-full ${
-                          isActive
-                            ? "bg-paper dark:bg-dark-bg text-ink dark:text-white"
-                            : "text-dim dark:text-dark-dim"
-                        }`}
-                      >
+                      <span className={`font-mono text-[10px] ${isActive ? "text-ink dark:text-white" : "text-dim dark:text-dark-dim"}`}>
                         {counts[tab]}
                       </span>
                     </button>

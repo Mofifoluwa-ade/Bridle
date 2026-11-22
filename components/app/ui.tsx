@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, type ButtonHTMLAttributes, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { CONFIG } from "@/lib/config";
 import { shortAddr } from "@/lib/format";
@@ -145,7 +145,7 @@ export function StatusPill({ status }: { status: ProposalStatus }) {
 }
 
 const BTN =
-  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-45";
+  "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-45";
 const SIZES = {
   md: "min-h-[44px] px-5 text-[15px]",
   lg: "min-h-[50px] px-7 text-base",
@@ -426,6 +426,39 @@ export function NearAccountLink({ id }: { id: string }) {
   );
 }
 
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+/**
+ * Places an absolutely positioned popover under its anchor and keeps it fully on screen.
+ * Returns the left offset (relative to the anchor) and a width that never exceeds the viewport.
+ */
+export function usePopoverPosition(
+  open: boolean,
+  anchor: RefObject<HTMLElement | null>,
+  maxWidth: number,
+  align: "left" | "right" = "left",
+) {
+  const [pos, setPos] = useState<{ left: number; width: number } | null>(null);
+  useIsoLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const el = anchor.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const vw = document.documentElement.clientWidth;
+      const margin = 12;
+      const width = Math.min(maxWidth, vw - margin * 2);
+      let left = align === "right" ? r.right - width : r.left;
+      left = Math.max(margin, Math.min(left, vw - margin - width));
+      setPos({ left: left - r.left, width });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [open, anchor, maxWidth, align]);
+  return pos;
+}
+
 export function HelpButton({
   content,
   title,
@@ -439,6 +472,7 @@ export function HelpButton({
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pos = usePopoverPosition(open, containerRef, 320, align);
 
   useEffect(() => {
     if (!open) return;
@@ -481,9 +515,8 @@ export function HelpButton({
 
       {open && (
         <div
-          className={`absolute ${
-            align === "right" ? "right-0" : "left-0"
-          } top-full mt-2 z-50 w-72 sm:w-80 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3.5 text-xs leading-relaxed text-ink dark:text-dark-text shadow-xl animate-fade-in`}
+          style={{ left: pos?.left ?? 0, width: pos?.width ?? 288 }}
+          className={`absolute top-full mt-2 z-50 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3.5 text-xs leading-relaxed text-ink dark:text-dark-text shadow-xl animate-fade-in`}
         >
           <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-line/60 dark:border-dark-border/60">
             <div className="flex items-center gap-1.5 font-semibold text-ink dark:text-white text-[12px]">
@@ -578,6 +611,7 @@ export function HelpGuideMenu({
   const [open, setOpen] = useState(false);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pos = usePopoverPosition(open, containerRef, 384, "right");
 
   useEffect(() => {
     if (!open) return;
@@ -625,7 +659,7 @@ export function HelpGuideMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-80 sm:w-96 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3 shadow-xl backdrop-blur-md animate-fade-in space-y-2">
+        <div style={{ left: pos?.left ?? 0, width: pos?.width ?? 320 }} className="absolute top-full mt-2 z-50 rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3 shadow-xl backdrop-blur-md animate-fade-in space-y-2">
           <div className="flex items-center justify-between px-2 pt-1 pb-2 border-b border-line dark:border-dark-border">
             <div className="flex items-center gap-1.5">
               <span className="font-semibold text-xs text-ink dark:text-white">Help & Rules Guide</span>
@@ -733,3 +767,93 @@ export function Field({
 export const inputCls =
   "mt-2 block w-full min-w-0 rounded-xl border border-rule dark:border-dark-border bg-white dark:bg-dark-card px-4 py-3 text-[15.5px] text-ink dark:text-white placeholder:text-dim dark:placeholder:text-dark-dim focus:border-ink dark:focus:border-white focus:outline-none transition-colors shadow-2xs";
 export const monoInputCls = `${inputCls} font-mono text-[14.5px]`;
+
+
+/** A compact filter dropdown: one button showing the current choice, a short list of options with counts. */
+export function FilterMenu<T extends string>({
+  value,
+  options,
+  onChange,
+  label = "Filter",
+}: {
+  value: T;
+  options: { id: T; label: string; count?: number }[];
+  onChange: (v: T) => void;
+  label?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const pos = usePopoverPosition(open, root, 240, "right");
+  const current = options.find((o) => o.id === value) ?? options[0];
+  const filtered = value !== options[0]?.id;
+
+  useEffect(() => {
+    if (!open) return;
+    const off = (e: PointerEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", off);
+    window.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", off);
+      window.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  return (
+    <div ref={root} className="relative flex-none">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`${label}: ${current?.label}`}
+        className={`inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-[13.5px] font-medium shadow-2xs transition-colors ${
+          filtered
+            ? "border-ink bg-ink text-white dark:border-white dark:bg-white dark:text-ink"
+            : "border-line bg-white text-ink hover:border-ink/30 dark:border-dark-border dark:bg-dark-card dark:text-white dark:hover:border-white/30"
+        }`}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M3 5h18l-7 8v6l-4-2v-4z" />
+        </svg>
+        <span className={filtered ? "" : "hidden sm:inline"}>{filtered ? current?.label : label}</span>
+      </button>
+      {open && (
+        <ul
+          role="listbox"
+          style={{ left: pos?.left ?? 0, width: pos?.width ?? 224 }}
+          className="absolute top-full z-40 mt-1.5 overflow-hidden rounded-xl border border-line bg-white p-1 shadow-xl animate-fade-in dark:border-dark-border dark:bg-dark-card"
+        >
+          {options.map((o) => (
+            <li key={o.id} role="option" aria-selected={o.id === value}>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(o.id);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-[14px] transition-colors hover:bg-paper dark:hover:bg-white/5 ${
+                  o.id === value ? "font-semibold text-ink dark:text-white" : "text-mute dark:text-dark-mute"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  {o.id === value ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="text-accent dark:text-accent-dark" aria-hidden><path d="m5 12 5 5 9-10" /></svg>
+                  ) : (
+                    <span className="w-3.5" />
+                  )}
+                  {o.label}
+                </span>
+                {o.count !== undefined && <span className="font-mono text-[12px] text-dim dark:text-dark-dim">{o.count}</span>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
