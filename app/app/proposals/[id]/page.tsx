@@ -86,7 +86,7 @@ function Body({ id }: { id: number }) {
           <Card className="p-5 sm:p-6">
             <Label>Spending rule</Label>
             <p className="mt-3 text-sm sm:text-[15px]"><Link className="font-semibold underline" href={`/app/mandates/${m.id}`}>Rule #{m.id}</Link></p>
-            <p className="mt-1 font-mono text-xs sm:text-[13px] text-mute">Owner: {m.owner}<br />Agent: {m.agent}</p>
+            <p className="mt-1 font-mono text-xs sm:text-[13px] text-mute [overflow-wrap:anywhere]">Owner: {m.owner}<br />Agent: {m.agent}</p>
           </Card>
           <Card className="p-5 sm:p-6">
             <Label>Requested on</Label>

@@ -816,7 +816,7 @@ function Form() {
             <p className="font-mono text-xs uppercase tracking-wider text-dim">Summary of your rule</p>
             <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 font-mono text-[10px] uppercase text-amber-300">Testnet mode</span>
           </div>
-          <p className="mt-4 text-lg leading-relaxed text-white"><b>{agent || "Your agent"}</b> can pay <b>{unit}</b> on <b>{chains.join(" and ") || "selected chains"}</b>, only to <b>{v.filled.length}</b> approved {v.filled.length === 1 ? "address" : "addresses"}.</p>
+          <p className="mt-4 text-lg leading-relaxed text-white [overflow-wrap:anywhere]"><b>{agent || "Your agent"}</b> can pay <b>{unit}</b> on <b>{chains.join(" and ") || "selected chains"}</b>, only to <b>{v.filled.length}</b> approved {v.filled.length === 1 ? "address" : "addresses"}.</p>
           <div className="mt-5 space-y-3 border-t border-night pt-5 text-sm leading-relaxed text-dim">
             <SummaryLine label="Max per payment" value={v.p !== null ? money(v.p, unit) : "—"} />
             <SummaryLine label="Max per day" value={v.d !== null ? money(v.d, unit) : "—"} />
@@ -883,9 +883,9 @@ function Form() {
 }
 
 function SummaryLine({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-start justify-between gap-3"><span>{label}</span><span className="text-right font-mono text-white">{value}</span></div>;
+  return <div className="flex items-start justify-between gap-3"><span className="flex-none">{label}</span><span className="min-w-0 text-right font-mono text-white [overflow-wrap:anywhere]">{value}</span></div>;
 }
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-start justify-between gap-4 border-b border-line pb-2 last:border-0 dark:border-dark-border"><span className="text-mute dark:text-dark-mute">{label}</span><span className="text-right font-medium text-ink dark:text-white">{value}</span></div>;
+  return <div className="flex items-start justify-between gap-4 border-b border-line pb-2 last:border-0 dark:border-dark-border"><span className="flex-none text-mute dark:text-dark-mute">{label}</span><span className="min-w-0 text-right font-medium text-ink dark:text-white [overflow-wrap:anywhere]">{value}</span></div>;
 }

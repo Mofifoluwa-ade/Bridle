@@ -86,8 +86,8 @@ export function PaidReceipt({
         <p className="paid-fade mt-2 font-mono text-[44px] font-medium leading-none sm:text-[56px]" style={{ animationDelay: "0.3s" }}>
           <span ref={figure} className="tabular-nums">{target.toFixed(decimals)}</span> <span className="text-[22px] text-mute dark:text-dark-mute sm:text-[26px]">NEAR</span>
         </p>
-        <p className="paid-fade mt-4 inline-flex items-center gap-2 text-[15px] text-mute dark:text-dark-mute" style={{ animationDelay: "0.4s" }}>
-          to <AccountAvatar id={to} size={22} /> <span className="font-mono text-ink dark:text-white">{to}</span>
+        <p className="paid-fade mt-4 inline-flex max-w-full items-center gap-2 text-[15px] text-mute dark:text-dark-mute" style={{ animationDelay: "0.4s" }}>
+          to <AccountAvatar id={to} size={22} /> <span className="min-w-0 font-mono text-ink dark:text-white [overflow-wrap:anywhere]">{to}</span>
         </p>
       </div>
 
