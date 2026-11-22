@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { NeedsContract, NeedsWallet } from "@/components/app/Gate";
 import { StemChart } from "@/components/app/StemChart";
 import { Card, Empty, Label, PageHeader, Skeleton, StatusPill } from "@/components/app/ui";
@@ -21,6 +21,8 @@ import {
 import { CONFIG } from "@/lib/config";
 import { formatNear, shortAddr, timeAgo, unitOfAsset, formatUnits } from "@/lib/format";
 import { api, contractBalance } from "@/lib/near";
+import { fetchStats, trackingConfigured, type DailyRow, type TrackEvent } from "@/lib/track";
+import { DAY_MS, dayStart, type DayPoint } from "@/lib/adminStats";
 import type { Mandate, Proposal, ProposalStatus } from "@/lib/types";
 
 const MAX_PROPOSALS = 1000;
@@ -231,8 +233,10 @@ function Body() {
         </Card>
       </div>
 
+      <Visitors />
+
       <p className="text-xs text-mute dark:text-dark-mute">
-        Refreshes every 30 seconds. Built from public contract data only, so it shows no visitor numbers. For stuck payments, run the executor (<span className="font-mono">npm run once</span> in <span className="font-mono">executor/</span>).
+        Refreshes every 30 seconds. Chain numbers come from public contract data. For stuck payments, run the executor (<span className="font-mono">npm run once</span> in <span className="font-mono">executor/</span>).
       </p>
     </div>
   );
@@ -295,4 +299,131 @@ function Row({ k, children }: { k: string; children: ReactNode }) {
       <dd className="min-w-0 text-right font-mono text-[13px] text-ink dark:text-white [overflow-wrap:anywhere]">{children}</dd>
     </div>
   );
+}
+
+const VISIT_CARDS: { event: TrackEvent; title: string; sub: string }[] = [
+  { event: "site_view", title: "Site visits", sub: "Marketing pages, last 30 days" },
+  { event: "app_view", title: "App visits", sub: "Inside /app, last 30 days" },
+  { event: "wallet_connect", title: "Wallet connects", sub: "Fresh connections, last 30 days" },
+  { event: "authorize_open", title: "Authorize opened", sub: "Agent sign-in pages, last 30 days" },
+  { event: "mcp_call", title: "MCP calls", sub: "Agent requests, last 30 days" },
+];
+
+const seriesFor = (rows: DailyRow[], event: TrackEvent): DayPoint[] => {
+  // The database counts in UTC days; line them up with the same 30 days the chain charts use.
+  const end = dayStart(Date.now());
+  const start = end - 29 * DAY_MS;
+  const out: DayPoint[] = Array.from({ length: 30 }, (_, i) => ({ t: start + i * DAY_MS, v: 0 }));
+  for (const r of rows) {
+    if (r.event !== event) continue;
+    const idx = Math.round((new Date(`${r.day}T12:00:00`).getTime() - start) / DAY_MS);
+    if (idx >= 0 && idx < 30) out[idx].v += r.n;
+  }
+  return out;
+};
+
+function Visitors() {
+  const [token, setToken] = useState("");
+  const [rows, setRows] = useState<DailyRow[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async (t: string) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      setRows(await fetchStats(t, 30));
+      try {
+        localStorage.setItem("bridle_admin_pass", t);
+      } catch {}
+    } catch (e) {
+      setRows(null);
+      setErr(e instanceof Error ? e.message : "Could not load");
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("bridle_admin_pass");
+      if (saved) {
+        setToken(saved);
+        void load(saved);
+      }
+    } catch {}
+  }, [load]);
+
+  if (!trackingConfigured) {
+    return (
+      <Card>
+        <Label>Visitors</Label>
+        <p className="mt-3 text-[14px] text-mute dark:text-dark-mute">
+          Visitor counting is off. Set <span className="font-mono">NEXT_PUBLIC_SUPABASE_URL</span> and <span className="font-mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</span> in Vercel and redeploy.
+        </p>
+      </Card>
+    );
+  }
+
+  if (!rows) {
+    return (
+      <Card>
+        <Label>Visitors</Label>
+        <p className="mt-3 text-[14px] text-mute dark:text-dark-mute">
+          Anonymous daily counts of visits, wallet connects and MCP calls. Enter your owner passphrase to view them.
+        </p>
+        <form
+          className="mt-4 flex flex-wrap gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (token) void load(token);
+          }}
+        >
+          <input
+            type="password"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Owner passphrase"
+            aria-label="Owner passphrase"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-line bg-white px-3.5 text-[15px] text-ink focus:border-ink focus:outline-none dark:border-dark-border dark:bg-dark-card dark:text-white"
+          />
+          <button type="submit" disabled={!token || busy} className="h-11 rounded-xl bg-ink px-5 text-[14px] font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-ink">
+            {busy ? "Checking…" : "Show visitors"}
+          </button>
+        </form>
+        {err && <p className="mt-2 text-[13px] text-bad">{err}</p>}
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {VISIT_CARDS.map((c) => {
+        const series = seriesFor(rows, c.event);
+        const total = series.reduce((a, x) => a + x.v, 0);
+        const prev = windowTotal(rows, c.event);
+        return (
+          <StatCard
+            key={c.event}
+            title={c.title}
+            sub={c.sub}
+            change={prev}
+            chart={<StemChart data={series} format={(v) => String(Math.round(v))} />}
+            stats={[
+              ["Last 30 days", String(total)],
+              ["Today", String(series[series.length - 1].v)],
+            ]}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/** Change of the last 15 days against the 15 before, since only 30 days are loaded. */
+function windowTotal(rows: DailyRow[], event: TrackEvent): number | null {
+  const s = seriesFor(rows, event);
+  const prev = s.slice(0, 15).reduce((a, x) => a + x.v, 0);
+  const cur = s.slice(15).reduce((a, x) => a + x.v, 0);
+  return prev === 0 ? null : ((cur - prev) / prev) * 100;
 }

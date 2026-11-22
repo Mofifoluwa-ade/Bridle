@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { Track } from "@/components/Track";
 
 const sans = Instrument_Sans({
   subsets: ["latin"],
@@ -69,7 +70,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Track />
+      </body>
     </html>
   );
 }

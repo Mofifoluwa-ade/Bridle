@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { trackServer } from "@/lib/track";
 // The plain Bridle address (https://<host>/mcp). AI apps find the OAuth sign-in from the 401 below,
 // send the owner to approve in Bridle, then call this endpoint with a bearer token.
 import { methodNotAllowed, preflight, rpcError, json, serve } from "@/lib/hostedMcp";
@@ -17,6 +19,7 @@ export async function POST(req: Request) {
     res.headers.set("www-authenticate", `Bearer ${params.join(", ")}`);
     return res;
   }
+  after(() => trackServer("mcp_call"));
   return serve(req, r.agent);
 }
 
