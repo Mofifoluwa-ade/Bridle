@@ -128,19 +128,36 @@ function Timeline({ p, m }: { p: Proposal; m: Mandate }) {
     if (p.status === "Flagged") steps[steps.length - 1] = { label: "Waiting for owner to review the report", state: "now" };
   }
   const dot = { done: "bg-accent text-white", now: "bg-warn-tint text-warn ring-2 ring-warn", todo: "bg-[#ECEEF2] text-mute", stop: "bg-bad-tint text-bad" };
+  const mark = (s: Step, i: number) => (s.state === "done" ? "✓" : s.state === "stop" ? "×" : i + 1);
+  const seg = (on: boolean) => (on ? "bg-accent" : "bg-[#DDE1E7] dark:bg-white/15");
   return (
-    <ol className="mt-6 space-y-5">
-      {steps.map((s, i) => (
-        <li key={i} className="flex gap-4">
-          <span className={`mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full text-[13px] font-semibold ${dot[s.state]}`}>
-            {s.state === "done" ? "✓" : s.state === "stop" ? "×" : i + 1}
-          </span>
-          <div>
-            <p className={`text-[16px] ${s.state === "todo" ? "text-mute" : "font-semibold"}`}>{s.label}</p>
-            {s.note && <p className="mt-0.5 text-[14px] text-mute">{s.note}</p>}
-          </div>
-        </li>
-      ))}
-    </ol>
+    <>
+      {/* Wide screens: one line with a node per step */}
+      <ol className="mt-8 hidden md:flex" aria-label="Payment progress">
+        {steps.map((s, i) => (
+          <li key={i} className="flex min-w-0 flex-1 flex-col items-center text-center">
+            <div className="flex w-full items-center">
+              <span className={`h-[3px] flex-1 rounded-full ${i === 0 ? "bg-transparent" : seg(steps[i - 1].state === "done")}`} />
+              <span className={`flex h-9 w-9 flex-none items-center justify-center rounded-full text-[14px] font-semibold ${dot[s.state]}`}>{mark(s, i)}</span>
+              <span className={`h-[3px] flex-1 rounded-full ${i === steps.length - 1 ? "bg-transparent" : seg(s.state === "done")}`} />
+            </div>
+            <p className={`mt-3 max-w-[11rem] px-1 text-[14px] leading-snug ${s.state === "todo" ? "text-mute" : "font-semibold"}`}>{s.label}</p>
+            {s.note && <p className="mt-1 max-w-[11rem] px-1 text-[13px] leading-snug text-mute">{s.note}</p>}
+          </li>
+        ))}
+      </ol>
+      {/* Phones: the same steps as a vertical list */}
+      <ol className="mt-6 space-y-5 md:hidden">
+        {steps.map((s, i) => (
+          <li key={i} className="flex gap-4">
+            <span className={`mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full text-[13px] font-semibold ${dot[s.state]}`}>{mark(s, i)}</span>
+            <div>
+              <p className={`text-[16px] ${s.state === "todo" ? "text-mute" : "font-semibold"}`}>{s.label}</p>
+              {s.note && <p className="mt-0.5 text-[14px] text-mute">{s.note}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </>
   );
 }
