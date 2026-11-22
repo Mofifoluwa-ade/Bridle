@@ -8,17 +8,17 @@ const KEY: Record<Chain, LogoKey> = { Base: "base", Solana: "solana", Near: "nea
 const LABEL: Record<Chain, string> = { Base: "Base", Solana: "Solana", Near: "NEAR" };
 
 /** A network's logo with its name beside it. Pass `name={false}` for the logo alone. */
-export function ChainTag({ chain, size = 18, name = true, className = "" }: { chain: Chain; size?: number; name?: boolean; className?: string }) {
+export function ChainTag({ chain, size = 18, name = true, className = "", nameClassName = "" }: { chain: Chain; size?: number; name?: boolean; className?: string; nameClassName?: string }) {
   return (
     <span title={name ? undefined : LABEL[chain]} className={`inline-flex items-center gap-2 ${className}`}>
       <ChainLogo chain={KEY[chain]} size={size} label={!name} />
-      {name && <span>{LABEL[chain]}</span>}
+      {name && <span className={nameClassName}>{LABEL[chain]}</span>}
     </span>
   );
 }
 
 /** Replaces the browser's own select so networks show their logos. Arrow keys, Enter, Esc and typing all work. */
-export function ChainSelect({ value, options, onChange, id, className = "mt-2" }: { value: Chain; options: readonly Chain[]; onChange: (c: Chain) => void; id?: string; className?: string }) {
+export function ChainSelect({ value, options, onChange, id, className = "mt-2", compact = false }: { value: Chain; options: readonly Chain[]; onChange: (c: Chain) => void; id?: string; className?: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
@@ -58,15 +58,15 @@ export function ChainSelect({ value, options, onChange, id, className = "mt-2" }
         aria-controls={`${uid}-list`}
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={onKey}
-        className="flex h-12 w-full items-center justify-between gap-3 rounded-xl border border-line bg-white px-3.5 text-left text-[15px] shadow-2xs transition-colors hover:border-ink/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent dark:border-dark-border dark:bg-dark-card dark:hover:border-white/30 dark:focus-visible:ring-accent-dark"
+        className={`flex h-12 w-full items-center justify-between rounded-xl border border-line bg-white text-left text-[15px] shadow-2xs transition-colors hover:border-ink/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent dark:border-dark-border dark:bg-dark-card dark:hover:border-white/30 dark:focus-visible:ring-accent-dark ${compact ? "gap-1.5 px-3 sm:gap-3 sm:px-3.5" : "gap-3 px-3.5"}`}
       >
-        <ChainTag chain={value} size={22} />
+        <ChainTag chain={value} size={22} nameClassName={compact ? "hidden sm:inline" : ""} />
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`flex-none text-mute transition-transform duration-150 ${open ? "rotate-180" : ""}`} aria-hidden>
           <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
       {open && (
-        <ul id={`${uid}-list`} role="listbox" className="chain-pop absolute left-0 right-0 z-30 mt-1.5 overflow-hidden rounded-xl border border-line bg-white p-1 shadow-xl dark:border-dark-border dark:bg-dark-card">
+        <ul id={`${uid}-list`} role="listbox" className="chain-pop absolute left-0 right-0 z-30 mt-1.5 min-w-[11rem] overflow-hidden rounded-xl border border-line bg-white p-1 shadow-xl dark:border-dark-border dark:bg-dark-card">
           {list.map((c, i) => (
             <li
               key={c}

@@ -556,7 +556,7 @@ function Form() {
             </Card>
 
             <Card className="space-y-4 p-5 sm:p-7">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Label>02 · Approved recipients</Label>
                   <HelpButton
@@ -564,12 +564,24 @@ function Form() {
                     title="Recipient Whitelist"
                   />
                 </div>
+                {rows.length < 20 && (
+                  <Btn
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    className="!min-h-[34px] !px-3"
+                    onClick={() => setRows((old) => [...old, { chain: chains[0] ?? "Base", address: "" }])}
+                  >
+                    + Add
+                  </Btn>
+                )}
               </div>
               {rows.map((r, i) => (
                 <div key={i} className="space-y-1.5">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <div className="sm:w-40 sm:flex-none">
+                  <div className="flex items-center gap-2">
+                    <div className="w-[4.5rem] flex-none sm:w-40">
                       <ChainSelect
+                        compact
                         className="mt-0"
                         options={CHAINS}
                         value={r.chain}
@@ -593,9 +605,11 @@ function Form() {
                         variant="outline"
                         size="sm"
                         type="button"
+                        aria-label={`Remove recipient ${i + 1}`}
+                        className="!h-12 !w-12 flex-none !px-0"
                         onClick={() => setRows((old) => old.filter((_, j) => j !== i))}
                       >
-                        Remove
+                        ✕
                       </Btn>
                     )}
                   </div>
@@ -603,16 +617,6 @@ function Form() {
                 </div>
               ))}
               {show("rows") && <p className="text-sm text-bad">{v.e.rows}</p>}
-              {rows.length < 20 && (
-                <Btn
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={() => setRows((old) => [...old, { chain: chains[0] ?? "Base", address: "" }])}
-                >
-                  + Add recipient
-                </Btn>
-              )}
               <HelpDropdown title="How approved recipient allowlisting protects you">
                 <p>
                   Zero-trust security: your AI agent is cryptographically restricted from sending any USDC or initiating cross-chain transactions to addresses not registered on this list.

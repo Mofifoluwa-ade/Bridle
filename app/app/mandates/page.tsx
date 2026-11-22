@@ -7,6 +7,7 @@ import {
   Btn,
   Card,
   Empty,
+  FilterMenu,
   LinkBtn,
   Notice,
   PageHeader,
@@ -99,8 +100,8 @@ export default function MandatesPage() {
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Header with New Rule Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-semibold tracking-[-0.02em] text-ink dark:text-white">
             Spending rules
           </h1>
@@ -109,11 +110,17 @@ export default function MandatesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <LinkBtn href="/app/mandates/new" variant="accent" size="sm" className="shadow-xs">
-            + New rule
-          </LinkBtn>
-        </div>
+        {/* A round "+" on phones saves a whole row; the labelled button returns from sm up. */}
+        <Link
+          href="/app/mandates/new"
+          aria-label="New rule"
+          className="sm:hidden inline-flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-accent text-white shadow-sm"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden><path d="M12 5v14M5 12h14" /></svg>
+        </Link>
+        <LinkBtn href="/app/mandates/new" variant="accent" size="sm" className="hidden sm:inline-flex shadow-xs">
+          + New rule
+        </LinkBtn>
       </div>
 
       {/* Disconnected State notice */}
@@ -165,60 +172,43 @@ export default function MandatesPage() {
 
       {/* Filter and Search Controls */}
       <Card className="p-4 sm:p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-paper dark:bg-dark-bg border border-line dark:border-dark-border text-xs">
-            {(
-              [
-                { id: "All", label: "All rules", count: counts.all },
-                { id: "Active", label: "Active", count: counts.active },
-                { id: "Needs deposit", label: "Needs deposit", count: counts.needsDeposit },
-                { id: "Inactive", label: "Inactive", count: counts.inactive },
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setFilter(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
-                  filter === tab.id
-                    ? "bg-white dark:bg-dark-card text-ink dark:text-white shadow-2xs font-semibold"
-                    : "text-mute dark:text-dark-mute hover:text-ink dark:hover:text-white"
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`font-mono text-[10.5px] px-1.5 py-0.2 rounded-full ${
-                    filter === tab.id
-                      ? "bg-paper dark:bg-dark-bg text-ink dark:text-white"
-                      : "bg-line/40 dark:bg-dark-border/40 text-mute dark:text-dark-mute"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Search box */}
-          <div className="relative min-w-[200px] sm:w-64">
+        <div className="flex items-center gap-2">
+          {/* Search, with the filter folded into a menu beside it */}
+          <div className="relative min-w-0 flex-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mute dark:text-dark-mute" aria-hidden>
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by agent or rule #…"
-              className="w-full rounded-xl border border-line dark:border-dark-border bg-paper/60 dark:bg-dark-bg/60 px-3 py-1.5 text-xs text-ink dark:text-white placeholder:text-dim dark:placeholder:text-dark-dim focus:border-ink dark:focus:border-white focus:outline-none transition-colors"
+              placeholder="Search by agent or rule #"
+              aria-label="Search rules"
+              className="h-10 w-full rounded-xl border border-line dark:border-dark-border bg-paper/60 dark:bg-dark-bg/60 pl-9 pr-8 text-[14px] text-ink dark:text-white placeholder:text-dim dark:placeholder:text-dark-dim focus:border-ink dark:focus:border-white focus:outline-none transition-colors"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch("")}
+                aria-label="Clear search"
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mute hover:text-ink dark:hover:text-white text-xs"
               >
                 ✕
               </button>
             )}
           </div>
+          <FilterMenu
+            value={filter}
+            onChange={setFilter}
+            label="Filter"
+            options={[
+              { id: "All", label: "All rules", count: counts.all },
+              { id: "Active", label: "Active", count: counts.active },
+              { id: "Needs deposit", label: "Needs deposit", count: counts.needsDeposit },
+              { id: "Inactive", label: "Inactive", count: counts.inactive },
+            ]}
+          />
         </div>
 
         {/* Rules Grid */}

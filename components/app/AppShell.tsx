@@ -183,7 +183,7 @@ export function WalletButton() {
   return (
     <div id="tour-wallet-btn" className="flex items-center gap-2">
       <div
-        className="hidden rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3 py-1.5 font-mono text-[12px] text-ink dark:text-white sm:flex items-center gap-2 shadow-2xs"
+        className="hidden flex-none whitespace-nowrap rounded-full border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3 py-1.5 font-mono text-[12px] text-ink dark:text-white sm:flex items-center gap-2 shadow-2xs"
         title={`${accountId} · ${balance.near} NEAR ≈ ${balance.usd} (Market rate)`}
       >
         <span>{shortAddr(accountId, 8, 4)}</span>
@@ -191,7 +191,7 @@ export function WalletButton() {
         <span className="font-semibold text-accent dark:text-[#46D9A4]">
           {balance.loading && balance.near === 0 ? "…" : `${balance.near} NEAR`}
         </span>
-        <span className="text-mute dark:text-dark-mute text-[11px] font-sans">
+        <span className="hidden text-mute dark:text-dark-mute text-[11px] font-sans lg:inline">
           ({balance.usd})
         </span>
       </div>
@@ -681,14 +681,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Right: "NEAR testnet" badge + non-real funds notice and "Connect wallet" */}
           <div className="flex items-center gap-2 sm:gap-2.5">
             <div
-              className="inline-flex items-center gap-1.5 rounded-full bg-paper dark:bg-dark-card border border-line dark:border-dark-border px-2 sm:px-3 py-1 font-mono text-[10px] sm:text-[10.5px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium transition-colors"
+              className="inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full bg-paper dark:bg-dark-card border border-line dark:border-dark-border px-2 sm:px-3 py-1 font-mono text-[10px] sm:text-[10.5px] uppercase tracking-wider text-mute dark:text-dark-mute font-medium transition-colors"
               title="NEAR Testnet: all tokens, caps, and bonds have zero real monetary value"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-accent dark:bg-[#46D9A4]" />
               <span className="hidden xs:inline">NEAR {CONFIG.network}</span>
               <span className="xs:hidden">Testnet</span>
-              <span className="hidden sm:inline text-dim dark:text-dark-dim">·</span>
-              <span className="hidden sm:inline text-[10px] text-amber-600 dark:text-amber-400 font-sans normal-case font-medium">
+              <span className="hidden lg:inline text-dim dark:text-dark-dim">·</span>
+              <span className="hidden lg:inline text-[10px] text-amber-600 dark:text-amber-400 font-sans normal-case font-medium">
                 Test tokens only
               </span>
             </div>
