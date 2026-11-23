@@ -39,6 +39,8 @@ export const api = {
   proposal: (id: number) => view<Proposal | null>("get_proposal", { proposal_id: id }),
   proposals: (mandateId: number | null, limit = 50) =>
     view<Proposal[]>("list_proposals", { mandate_id: mandateId, from: 0, limit }),
+  proposalsPage: (from: number, limit = 100) =>
+    view<Proposal[]>("list_proposals", { mandate_id: null, from, limit }),
   counts: async () => ({ mandates: await view<number>("count_mandates"), proposals: await view<number>("count_proposals") }),
   nearBalance: (id: number) => view<string>("get_near_balance", { mandate_id: id }),
   config: () => view<{ executor: string; flag_bond_divisor: number }>("get_config"),
@@ -103,4 +105,22 @@ export async function txOutcome(hash: string, signer: string): Promise<"ok" | "f
   } catch {
     return "unknown";
   }
+}
+
+/** The contract account's own balance in yoctoNEAR. It pays for storage, so it is worth watching. */
+export async function contractBalance(): Promise<string | null> {
+  if (!CONFIG.contractId) return null;
+  const res = await fetch(CONFIG.rpc, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "bridle",
+      method: "query",
+      params: { request_type: "view_account", finality: "optimistic", account_id: CONFIG.contractId },
+    }),
+  });
+  if (!res.ok) return null;
+  const body = await res.json();
+  return typeof body?.result?.amount === "string" ? body.result.amount : null;
 }

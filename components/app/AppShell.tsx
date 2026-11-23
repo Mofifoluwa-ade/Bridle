@@ -159,6 +159,18 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+const ADMIN_ITEM: NavItem = {
+  href: "/app/admin",
+  label: "Monitor",
+  id: "nav-admin",
+  icon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 3v18h18" />
+      <path d="m7 15 4-5 3 3 5-7" />
+    </svg>
+  ),
+};
+
 export function WalletButton() {
   const { ready, accountId, connecting, connectionError, clearConnectionError, signIn, signOut } = useWallet();
   const balance = useAccountBalance(accountId);
@@ -221,6 +233,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const { accountId } = useWallet();
+  // The owner monitor only shows in the nav for the contract account itself.
+  const navItems = accountId && accountId === CONFIG.contractId ? [...NAV_ITEMS, ADMIN_ITEM] : NAV_ITEMS;
   const {
     isGuideModalOpen,
     openGuideModal,
@@ -335,7 +349,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           {/* Navigation Links */}
           <nav className="space-y-1" aria-label="Sidebar Navigation">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const active = isNavActive(item);
               const parentActive = isNavParentActive(item);
               return (
@@ -546,7 +560,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
 
               <nav className="space-y-1">
-                {NAV_ITEMS.map((item) => {
+                {navItems.map((item) => {
                   const active = isNavActive(item);
                   const parentActive = isNavParentActive(item);
                   return (

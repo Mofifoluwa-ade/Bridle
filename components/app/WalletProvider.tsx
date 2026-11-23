@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/track";
 import { NearConnector } from "@hot-labs/near-connect";
 import { actionCreators } from "@near-js/transactions";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -62,6 +63,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     connector.current = near;
 
     near.on("wallet:signIn", ({ accounts }) => {
+      track("wallet_connect");
       if (!cancelled) setAccountId(accounts[0]?.accountId ?? null);
     });
     near.on("wallet:signOut", () => {
