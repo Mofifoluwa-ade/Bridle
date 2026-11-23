@@ -154,8 +154,8 @@ function Head({ title, lead, account, onSwitch }: { title: string; lead: string;
   return (
     <header className="mb-8">
       <Label>Connect with Bridle</Label>
-      <h1 className="mt-3 text-[32px] font-semibold leading-[1.1] tracking-heading text-ink dark:text-white sm:text-[36px]">{title}</h1>
-      <p className="mt-3 max-w-[60ch] text-[16px] leading-relaxed text-mute dark:text-dark-mute">
+      <h1 className="mt-3 text-[32px] font-semibold leading-[1.1] tracking-heading text-ink dark:text-white sm:text-[36px] [overflow-wrap:anywhere]">{title}</h1>
+      <p className="mt-3 max-w-[60ch] text-[16px] leading-relaxed text-mute dark:text-dark-mute [overflow-wrap:anywhere]">
         {lead}
         {account && onSwitch && (
           <>

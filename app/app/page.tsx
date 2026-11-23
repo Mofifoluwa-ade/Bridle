@@ -280,7 +280,7 @@ export default function Dashboard() {
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-mute dark:text-dark-mute">
                 <span>Connected as</span>
-                <span className="font-mono text-ink dark:text-white">{accountId}</span>
+                <span className="min-w-0 font-mono text-ink dark:text-white [overflow-wrap:anywhere]">{accountId}</span>
                 <span>·</span>
                 <a href={`${CONFIG.explorer}/address/${accountId}`} target="_blank" rel="noreferrer" className="font-medium text-accent dark:text-[#46D9A4] hover:underline">View on explorer ↗</a>
               </div>
@@ -402,7 +402,7 @@ export default function Dashboard() {
             </div>
             {displayMandates.slice(0, 2).map((m) => (
               <div key={m.id} className="mt-3 rounded-xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-3.5">
-                <Link href={`/app/mandates/${m.id}`} className="text-xs font-semibold text-ink dark:text-white hover:underline">Rule #{m.id} · {m.agent}</Link>
+                <Link href={`/app/mandates/${m.id}`} className="block text-xs font-semibold text-ink dark:text-white hover:underline [overflow-wrap:anywhere]">Rule #{m.id} · {m.agent}</Link>
                 <MandatePolicySummary m={m} />
               </div>
             ))}

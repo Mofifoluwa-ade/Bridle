@@ -95,7 +95,7 @@ function Body({ id }: { id: number }) {
                 <span>
                   {accountId ? (
                     <>
-                      You are signed in as <strong className="font-mono text-ink dark:text-white">{accountId}</strong> ({isOwner ? "Rule Owner" : "Viewer"}). The smart contract requires the deposit to be posted by the agent (<strong className="font-mono text-ink dark:text-white">{mandate.agent}</strong>). To deposit this bond, switch your wallet to <strong className="font-mono text-ink dark:text-white">{mandate.agent}</strong>.
+                      <span className="[overflow-wrap:anywhere]">You are signed in as <strong className="font-mono text-ink dark:text-white">{accountId}</strong> ({isOwner ? "Rule Owner" : "Viewer"}). The smart contract requires the deposit to be posted by the agent (<strong className="font-mono text-ink dark:text-white">{mandate.agent}</strong>). To deposit this bond, switch your wallet to <strong className="font-mono text-ink dark:text-white">{mandate.agent}</strong>.</span>
                     </>
                   ) : (
                     <>Sign in with the agent account (<strong className="font-mono">{mandate.agent}</strong>) to deposit this bond.</>

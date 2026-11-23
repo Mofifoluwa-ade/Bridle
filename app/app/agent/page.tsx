@@ -49,7 +49,7 @@ function Body() {
   if (accountId && mine.length === 0)
     return (
       <Notice title="No active spending rules assign this account as the agent">
-        Ask the rule owner to create a spending rule with <span className="font-mono text-[14px]">{accountId}</span> as the agent. To test it yourself, create a rule from another wallet and put this account as the agent.
+        <span className="[overflow-wrap:anywhere]">Ask the rule owner to create a spending rule with <span className="font-mono text-[14px]">{accountId}</span> as the agent. To test it yourself, create a rule from another wallet and put this account as the agent.</span>
         <div className="mt-4"><LinkBtn href="/app/mandates/new" variant="outline" size="sm">New rule</LinkBtn></div>
       </Notice>
     );
