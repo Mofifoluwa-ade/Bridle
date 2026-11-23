@@ -3,9 +3,9 @@ import { Logo } from "@/components/Logo";
 
 export default function NotFound() {
   return (
-    <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#F7F8F6] text-[#111827] dark:bg-[#0B0E14] dark:text-[#111827] dark:text-white">
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-[#F7F8F6] text-[#111827] dark:bg-[#0B0E14] dark:text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(17,24,39,0.055)_1px,transparent_1px),linear-gradient(to_bottom,rgba(17,24,39,0.055)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_at_50%_35%,black,transparent_78%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(17,24,39,0.055)_1px,transparent_1px),linear-gradient(to_bottom,rgba(17,24,39,0.055)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_at_50%_35%,black,transparent_78%)]" />
         <div className="absolute -right-40 -top-48 h-[560px] w-[560px] rounded-full border border-[#111827]/[0.08] dark:border-white/[0.055]" />
         <div className="absolute -right-16 -top-24 h-[320px] w-[320px] rounded-full border border-[#111827]/[0.08] dark:border-white/[0.055]" />
       </div>
@@ -46,7 +46,7 @@ export default function NotFound() {
               </Link>
               <Link
                 href="/app"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#D4DAD7] bg-white/70 dark:border-white/15 dark:bg-white/[0.035] px-5 text-[14px] font-medium text-white transition-colors hover:border-[#AAB5B0] hover:bg-white dark:hover:border-white/30 dark:hover:bg-white/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#46D9A4]"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#D4DAD7] bg-white/70 dark:border-white/15 dark:bg-white/[0.035] px-5 text-[14px] font-medium text-[#111827] dark:text-white transition-colors hover:border-[#AAB5B0] hover:bg-white dark:hover:border-white/30 dark:hover:bg-white/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#46D9A4]"
               >
                 Open dashboard
               </Link>
@@ -83,8 +83,8 @@ export default function NotFound() {
                 </svg>
               </div>
               <div className="border-t border-[#E3E7E4] dark:border-white/[0.08] pt-5">
-                <p className="text-[14px] font-medium text-[#111827] dark:text-[#111827] dark:text-white">The destination wasn’t found.</p>
-                <p className="mt-1.5 text-[12px] leading-[1.7] text-[#667085] dark:text-[#667085] dark:text-[#8B95A5]">No transaction was made. No policy was changed. Try one of the routes above.</p>
+                <p className="text-[14px] font-medium text-[#111827] dark:text-white">The destination wasn’t found.</p>
+                <p className="mt-1.5 text-[12px] leading-[1.7] text-[#667085] dark:text-[#8B95A5]">No transaction was made. No policy was changed. Try one of the routes above.</p>
               </div>
             </div>
             <p className="mt-4 text-center font-mono text-[9px] uppercase tracking-[0.16em] text-[#7B8491] dark:text-[#687384]">BRIDLE / ROUTE STATUS</p>
