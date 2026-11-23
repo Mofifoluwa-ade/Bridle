@@ -19,7 +19,7 @@ import {
   windowChange,
 } from "@/lib/adminStats";
 import { CONFIG } from "@/lib/config";
-import { formatNear, shortAddr, timeAgo, unitOfAsset, formatUnits } from "@/lib/format";
+import { amountOf, formatNear, shortAddr, timeAgo } from "@/lib/format";
 import { api, contractBalance } from "@/lib/near";
 import { fetchStats, trackingConfigured, type DailyRow, type TrackEvent } from "@/lib/track";
 import { DAY_MS, dayStart, type DayPoint } from "@/lib/adminStats";
@@ -63,7 +63,7 @@ function Gate() {
   const { accountId } = useWallet();
   if (accountId !== CONFIG.contractId) {
     return (
-      <Card>
+      <Card className="p-5 sm:p-6">
         <Empty title="Owner only">
           This page is for {CONFIG.contractId}. You are signed in as {accountId}. Everything on it is public chain data, but the page is kept to the owner.
         </Empty>
@@ -78,7 +78,7 @@ function Body() {
   const d = live.data;
   if (!d) {
     return live.error ? (
-      <Card>
+      <Card className="p-5 sm:p-6">
         <Empty title="Could not load">{live.error}</Empty>
       </Card>
     ) : (
@@ -153,7 +153,7 @@ function Body() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-3 p-5 sm:p-6">
           <Label>Needs attention</Label>
           <div className="mt-4 grid grid-cols-3 gap-3">
             <Tile label="Stuck signing" value={stuck.length} bad={stuck.length > 0} />
@@ -165,7 +165,7 @@ function Body() {
               {stuck.slice(0, 6).map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-3 py-2.5 text-[14px]">
                   <Link href={`/app/proposals/${p.id}`} className="font-medium text-ink hover:underline dark:text-white">
-                    Payment #{p.id} · {formatUnits(p.amount)} {unitOfAsset(p.asset)}
+                    Payment #{p.id} · {amountOf(p)}
                   </Link>
                   <span className="text-mute dark:text-dark-mute">waiting {timeAgo(executableMs(p), now).replace(" ago", "")} · run the executor</span>
                 </li>
@@ -176,11 +176,11 @@ function Body() {
           )}
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 p-5 sm:p-6">
           <Label>Contract</Label>
           <dl className="mt-4 space-y-3 text-[14px]">
             <Row k="Account">{CONFIG.contractId}</Row>
-            <Row k="Balance">{d.balance ? `${formatNear(d.balance)} NEAR` : "unavailable"}</Row>
+            <Row k="Balance">{d.balance ? formatNear(d.balance) : "unavailable"}</Row>
             <Row k="Executor">{d.config ? shortAddr(d.config.executor, 10, 6) : "unavailable"}</Row>
             <Row k="Flag bond">{d.config ? `1/${d.config.flag_bond_divisor} of the cap` : "unavailable"}</Row>
           </dl>
@@ -188,7 +188,7 @@ function Body() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-5">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 p-5 sm:p-6">
           <Label>Payments by outcome</Label>
           <ul className="mt-4 space-y-4">
             {statusRows.map(([status, v]) => (
@@ -208,7 +208,7 @@ function Body() {
           </ul>
         </Card>
 
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-3 p-5 sm:p-6">
           <Label>Latest payments</Label>
           <ul className="mt-3 divide-y divide-line dark:divide-dark-border">
             {d.proposals.slice(0, 12).map((p) => (
@@ -216,7 +216,7 @@ function Body() {
                 <Link href={`/app/proposals/${p.id}`} className="flex items-center justify-between gap-3 py-3 hover:opacity-80">
                   <span className="min-w-0">
                     <span className="block text-[14.5px] font-medium text-ink dark:text-white">
-                      {formatUnits(p.amount)} {unitOfAsset(p.asset)} · Rule #{p.mandate_id}
+                      {amountOf(p)} · Rule #{p.mandate_id}
                     </span>
                     <span className="block truncate font-mono text-[12px] text-mute dark:text-dark-mute">
                       {p.chain} · {shortAddr(p.recipient, 10, 6)} · {timeAgo(proposalMs(p), now)}
@@ -356,7 +356,7 @@ function Visitors() {
 
   if (!trackingConfigured) {
     return (
-      <Card>
+      <Card className="p-5 sm:p-6">
         <Label>Visitors</Label>
         <p className="mt-3 text-[14px] text-mute dark:text-dark-mute">
           Visitor counting is off. Set <span className="font-mono">NEXT_PUBLIC_SUPABASE_URL</span> and <span className="font-mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</span> in Vercel and redeploy.
@@ -367,7 +367,7 @@ function Visitors() {
 
   if (!rows) {
     return (
-      <Card>
+      <Card className="p-5 sm:p-6">
         <Label>Visitors</Label>
         <p className="mt-3 text-[14px] text-mute dark:text-dark-mute">
           Anonymous daily counts of visits, wallet connects and MCP calls. Enter your owner passphrase to view them.
