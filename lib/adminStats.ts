@@ -1,5 +1,5 @@
 import { formatUnits, unitOfAsset, yoctoToNearNumber } from "./format";
-import type { Mandate, Proposal } from "./types";
+import type { Mandate, Proposal, ProposalStatus } from "./types";
 
 export const DAY_MS = 86_400_000;
 export type DayPoint = { t: number; v: number };
@@ -55,3 +55,30 @@ export const sum = (xs: { v: number }[]) => xs.reduce((a, x) => a + x.v, 0);
 export const STUCK_SIGNING_MS = 10 * 60_000;
 export const proposalMs = (p: Proposal) => ms(p.created_at);
 export const executableMs = (p: Proposal) => ms(p.executable_at);
+
+/** Running total per day over the window, including everything that happened before it. */
+export function cumulativeDaily(items: { ts: number; v: number }[], days: number, now = Date.now()): DayPoint[] {
+  const start = dayStart(now) - (days - 1) * DAY_MS;
+  let base = 0;
+  for (const it of items) if (it.ts < start) base += it.v;
+  let run = base;
+  return bucketDaily(items, days, now).map((d) => ({ t: d.t, v: (run += d.v) }));
+}
+
+/** Payments per day split into [sent, blocked, in progress, stopped]. */
+export const OUTCOME_GROUPS: ProposalStatus[][] = [
+  ["Executed"],
+  ["Rejected"],
+  ["Waiting", "Ready", "Signing", "Flagged"],
+  ["Cancelled", "Vetoed", "Expired"],
+];
+export function outcomeBuckets(ps: Proposal[], days: number, now = Date.now()) {
+  const start = dayStart(now) - (days - 1) * DAY_MS;
+  const out = Array.from({ length: days }, (_, i) => ({ t: start + i * DAY_MS, parts: [0, 0, 0, 0] }));
+  for (const p of ps) {
+    const idx = Math.round((dayStart(proposalMs(p)) - start) / DAY_MS);
+    const g = OUTCOME_GROUPS.findIndex((grp) => grp.includes(p.status));
+    if (idx >= 0 && idx < days && g >= 0) out[idx].parts[g]++;
+  }
+  return out;
+}
