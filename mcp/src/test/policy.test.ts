@@ -36,12 +36,12 @@ test("each rule, in the contract's order", () => {
   assert.equal(rule(checkPayment(mandate({ state: "Revoked" }), NOW_NS, pay(1n, { recipient: "x" }))), "revoked");
 });
 
-test("asset is case-insensitive, recipient is exact", () => {
+test("asset is case-insensitive, Base recipient is case-insensitive", () => {
   assert.equal(rule(checkPayment(mandate({ spent_today: "0" }), NOW_NS, pay(1n, { asset: "usdc" }))), "ready");
-  assert.equal(rule(checkPayment(mandate(), NOW_NS, pay(1n, { recipient: BASE_OK.toUpperCase().replace("0X", "0x") }))), "ready"); // digits only, no letters to change
+  assert.equal(rule(checkPayment(mandate(), NOW_NS, pay(1n, { recipient: BASE_OK.toUpperCase().replace("0X", "0x") }))), "ready");
   const mixed = "0xAbCdEfabcdefABCDEFabcdefabcdefABCDEFabcd";
   const m = mandate({ allowlist: [{ chain: "Base", address: mixed }] });
-  assert.equal(rule(checkPayment(m, NOW_NS, pay(1n, { recipient: mixed.toLowerCase() }))), "recipient");
+  assert.equal(rule(checkPayment(m, NOW_NS, pay(1n, { recipient: mixed.toLowerCase() }))), "ready");
   assert.equal(rule(checkPayment(m, NOW_NS, pay(1n, { recipient: mixed }))), "ready");
 });
 

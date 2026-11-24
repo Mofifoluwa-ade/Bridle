@@ -3,6 +3,7 @@
 import { ChainSelect, ChainTag } from "@/components/app/ChainSelect";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { BaseAccountCard } from "@/components/app/BaseAccountCard";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { NeedsContract } from "@/components/app/Gate";
 import { MandatePolicySummary, MandateStatePill } from "../../../../components/app/MandateCard";
@@ -64,6 +65,16 @@ function Body({ id }: { id: number }) {
     }
   };
   const missing = (BigInt(mandate.bond) - BigInt(mandate.bond_posted)).toString();
+
+  const handleWithdrawBase = async (amount: string, recipient: string) => {
+    const raw = parseUnits(amount, 6);
+    if (!raw) throw new Error("Invalid USDC amount");
+    await act("wbase", "owner_withdraw_base", {
+      mandate_id: id,
+      amount: raw.toString(),
+      recipient,
+    });
+  };
 
   return (
     <>
@@ -235,6 +246,14 @@ function Body({ id }: { id: number }) {
                 );
               })()}
             </Card>
+          )}
+          {mandate.chains.includes("Base") && (
+            <BaseAccountCard
+              mandate={mandate}
+              isOwner={isOwner}
+              onWithdrawBase={handleWithdrawBase}
+              withdrawing={busy === "wbase"}
+            />
           )}
           <Card className="p-6">
             <Label>Contract address</Label>

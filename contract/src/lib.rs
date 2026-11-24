@@ -349,6 +349,17 @@ impl Bridle {
                 Chain::Solana => {}
             }
         }
+        let allowlist: Vec<Recipient> = allowlist
+            .into_iter()
+            .map(|mut r| {
+                if r.chain == Chain::Base {
+                    if let Some(addr) = evm::parse_address(&r.address) {
+                        r.address = format!("0x{}", evm::hex(&addr));
+                    }
+                }
+                r
+            })
+            .collect();
         let now = env::block_timestamp();
         let id = self.next_mandate;
         self.next_mandate += 1;
@@ -534,6 +545,11 @@ impl Bridle {
         require!(env::predecessor_account_id() == m.owner, "only the owner can withdraw");
         require!(amount.0 > 0, "amount must be above zero");
         require!(evm::parse_address(&recipient).is_some(), "recipient is not a valid EVM address");
+        let recipient = if let Some(addr) = evm::parse_address(&recipient) {
+            format!("0x{}", evm::hex(&addr))
+        } else {
+            recipient
+        };
         let now = env::block_timestamp();
         let id = self.next_proposal;
         self.next_proposal += 1;
@@ -595,6 +611,15 @@ impl Bridle {
         self.roll_day(&mut m, now);
         self.apply_due_limits(&mut m, now);
         let asset = asset.to_uppercase();
+        let recipient = if chain == Chain::Base {
+            if let Some(addr) = evm::parse_address(&recipient) {
+                format!("0x{}", evm::hex(&addr))
+            } else {
+                recipient
+            }
+        } else {
+            recipient
+        };
 
         let block: Option<String> = if m.state == MandateState::Revoked {
             Some("The mandate is revoked".into())
@@ -1221,6 +1246,32 @@ mod tests {
         assert_eq!(p.reason.as_deref(), Some("Recipient is not on the allowlist"));
         let p = propose(&mut c, id, 26_000_000, ADDR, T0);
         assert_eq!(p.reason.as_deref(), Some("Over the per-payment cap"));
+    }
+
+    #[test]
+    fn base_recipient_matching_is_case_insensitive() {
+        let (mut c, id) = setup();
+        // ADDR is "0x1111111111111111111111111111111111111111", propose with uppercase or mixed case
+        let upper = "0x1111111111111111111111111111111111111111";
+        let p = propose(&mut c, id, 10_000_000, upper, T0);
+        assert_eq!(p.status, ProposalStatus::Ready);
+
+        // Also test creating a mandate with mixed-case allowlist and proposing in lowercase
+        ctx("owner.testnet", 200_000_000_000_000_000_000_000, T0);
+        let m = c.create_mandate(
+            acct("agent.testnet"),
+            vec![Chain::Base],
+            vec!["usdc".into()],
+            vec![Recipient { chain: Chain::Base, address: "0xAbCdEf0123456789aBcDeF0123456789AbCdEf01".into() }],
+            U128(25_000_000),
+            U128(50_000_000),
+            U128(20_000_000),
+            600,
+            U128(0),
+            7,
+        );
+        let p2 = propose(&mut c, m.id, 10_000_000, "0xabcdef0123456789abcdef0123456789abcdef01", T0);
+        assert_eq!(p2.status, ProposalStatus::Ready);
     }
 
     #[test]

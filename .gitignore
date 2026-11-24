@@ -9,3 +9,4 @@ contract/target
 mcp/dist
 executor/dist
 public/brand/
+.watcher-state.json
