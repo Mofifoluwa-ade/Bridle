@@ -12,6 +12,7 @@ const SEEN_KEY = "bridle_privacy_seen";
  */
 export function PrivacyNotice() {
   const [open, setOpen] = useState(false);
+  const [more, setMore] = useState(false);
 
   useEffect(() => {
     if (!trackingConfigured) return;
@@ -36,32 +37,51 @@ export function PrivacyNotice() {
     <div
       role="dialog"
       aria-label="Privacy notice"
-      className="fixed inset-x-3 bottom-3 z-[60] animate-fade-in sm:inset-x-auto sm:bottom-5 sm:left-5 sm:w-[24rem]"
+      className="fixed inset-x-3 bottom-3 z-[60] animate-fade-in sm:inset-x-auto sm:bottom-4 sm:left-4 sm:w-[26rem]"
     >
-      <div className="rounded-2xl border border-line bg-white p-5 shadow-xl dark:border-dark-border dark:bg-dark-card">
-        <p className="font-mono text-[11px] uppercase tracking-label text-accent dark:text-accent-dark">Privacy</p>
-        <h2 className="mt-1.5 text-[16px] font-semibold text-ink dark:text-white">No cookies. Just a head count.</h2>
-        <p className="mt-2 text-[13.5px] leading-relaxed text-mute dark:text-dark-mute">
-          Bridle sets no cookies and runs no ad trackers. Once a day, when you visit, we add 1 to an anonymous total. We never store your wallet, IP address or anything that identifies you.{" "}
-          <Link href="/privacy" className="text-ink underline underline-offset-4 dark:text-white">
-            Read the details
-          </Link>
-          .
-        </p>
-        <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="rounded-2xl border border-line bg-white p-3.5 shadow-lg dark:border-dark-border dark:bg-dark-card">
+        <p className="text-[13px] leading-snug text-mute dark:text-dark-mute">
+          <span className="font-semibold text-ink dark:text-white">No cookies.</span> We add 1 to an anonymous daily visitor count.{" "}
           <button
             type="button"
-            onClick={() => close(false)}
-            className="h-10 rounded-xl bg-ink text-[13.5px] font-semibold text-white hover:opacity-90 dark:bg-white dark:text-ink"
+            onClick={() => setMore((m) => !m)}
+            aria-expanded={more}
+            className="inline-flex items-center gap-0.5 font-medium text-ink underline underline-offset-4 dark:text-white"
           >
-            Sounds good
+            {more ? "Less" : "Details"}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${more ? "rotate-180" : ""}`} aria-hidden>
+              <path d="m6 9 6 6 6-6" />
+            </svg>
           </button>
+        </p>
+
+        {more && (
+          <ul className="mt-2.5 space-y-1.5 border-t border-line pt-2.5 text-[12.5px] leading-snug text-mute dark:border-dark-border dark:text-dark-mute">
+            <li>Counted: a +1 on a daily total for the kind of page you opened, once a day per browser.</li>
+            <li>Never stored: your wallet, IP address, device or anything that identifies you.</li>
+            <li>No cookies and no ad trackers. A note of today&apos;s date stays in your browser only.</li>
+            <li>
+              <Link href="/privacy" className="font-medium text-ink underline underline-offset-4 dark:text-white">
+                Read the full policy
+              </Link>
+            </li>
+          </ul>
+        )}
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => close(true)}
-            className="h-10 rounded-xl border border-line text-[13.5px] font-semibold text-ink hover:bg-paper dark:border-dark-border dark:text-white dark:hover:bg-dark-card-hover"
+            className="h-9 rounded-lg border border-line bg-white text-[13px] font-semibold text-ink hover:bg-paper dark:border-dark-border dark:bg-dark-card dark:text-white dark:hover:bg-dark-card-hover"
           >
             Don&apos;t count me
+          </button>
+          <button
+            type="button"
+            onClick={() => close(false)}
+            className="h-9 rounded-lg bg-ink text-[13px] font-semibold text-white hover:opacity-90 dark:bg-white dark:text-ink"
+          >
+            OK
           </button>
         </div>
       </div>
