@@ -10,6 +10,24 @@ const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export const trackingConfigured = Boolean(URL_ && KEY);
 
+const OPT_OUT_KEY = "bridle_no_count";
+
+/** True when this visitor asked not to be counted (the privacy notice or the privacy page). */
+export function countingOptedOut(): boolean {
+  try {
+    return localStorage.getItem(OPT_OUT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setCountingOptOut(off: boolean) {
+  try {
+    if (off) localStorage.setItem(OPT_OUT_KEY, "1");
+    else localStorage.removeItem(OPT_OUT_KEY);
+  } catch {}
+}
+
 async function post(rpc: string, body: Record<string, unknown>) {
   return fetch(`${URL_}/rest/v1/rpc/${rpc}`, {
     method: "POST",
@@ -19,10 +37,21 @@ async function post(rpc: string, body: Record<string, unknown>) {
   });
 }
 
-/** Browser: count an event. Never throws. */
+/**
+ * Browser: count an event. Never throws.
+ * Each kind of event is counted once per browser per UTC day, so the totals approximate
+ * people rather than page loads. The browser keeps only today's date, locally, to remember
+ * it already counted; that note is never sent anywhere and identifies no one.
+ */
 export function track(event: TrackEvent) {
   if (!trackingConfigured || typeof window === "undefined") return;
-  if (navigator.doNotTrack === "1") return;
+  if (navigator.doNotTrack === "1" || countingOptedOut()) return;
+  try {
+    const key = `bridle_counted:${event}`;
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(key) === today) return;
+    localStorage.setItem(key, today);
+  } catch {}
   post("bridle_bump", { p_event: event }).catch(() => {});
 }
 
