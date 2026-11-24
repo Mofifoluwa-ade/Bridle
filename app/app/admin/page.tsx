@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { NeedsContract, NeedsWallet } from "@/components/app/Gate";
-import { StemChart } from "@/components/app/StemChart";
+import { AreaChart, ChartNote, Funnel, StackedBars } from "@/components/app/charts";
 import { Card, Empty, Label, PageHeader, Skeleton, StatusPill } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
 import { usePoll } from "@/hooks/usePoll";
 import {
   STUCK_SIGNING_MS,
   bucketDaily,
+  cumulativeDaily,
+  outcomeBuckets,
   executableMs,
   paymentEvents,
   proposalMs,
@@ -97,6 +99,8 @@ function Body() {
   const rules = ruleEvents(d.mandates);
   const activeRules = d.mandates.filter((m) => m.state === "Active" && BigInt(m.expires_at) / 1_000_000n > BigInt(now)).length;
   const executed = d.proposals.filter((p) => p.status === "Executed").length;
+  const blocked = d.proposals.filter((p) => p.status === "Rejected").length;
+  const revoked = d.mandates.filter((m) => m.state === "Revoked").length;
 
   const stuck = d.proposals.filter((p) => p.status === "Signing" && now - executableMs(p) > STUCK_SIGNING_MS);
   const waiting = d.proposals.filter((p) => p.status === "Waiting" || p.status === "Ready").length;
@@ -124,30 +128,65 @@ function Body() {
           title="Payments"
           sub="Requested, last 30 days"
           change={windowChange(pay)}
-          chart={<StemChart data={bucketDaily(pay, 30)} format={count} />}
+          chart={
+            <StackedBars
+              data={outcomeBuckets(d.proposals, 30)}
+              series={[
+                { label: "Sent", dot: "bg-accent dark:bg-accent-dark", bar: "bg-accent dark:bg-accent-dark" },
+                { label: "Blocked", dot: "bg-bad", bar: "bg-bad" },
+                { label: "In progress", dot: "bg-[#E5A93C]", bar: "bg-[#E5A93C]" },
+                { label: "Stopped", dot: "bg-dim dark:bg-dark-dim", bar: "bg-dim dark:bg-dark-dim" },
+              ]}
+            />
+          }
           stats={[
             ["Since launch", String(d.counts.proposals)],
             ["Sent", String(executed)],
+            ["Blocked by rules", String(blocked)],
+            ["Last 30 days", String(sum(bucketDaily(pay, 30)))],
           ]}
         />
         <StatCard
           title="Money moved"
-          sub="USDC sent, last 30 days"
+          sub="USDC sent, running total"
           change={windowChange(usdc)}
-          chart={<StemChart data={bucketDaily(usdc, 30)} format={money} />}
+          chart={
+            <AreaChart
+              series={[{ label: "Total sent", data: cumulativeDaily(usdc, 30), color: "text-accent dark:text-accent-dark", dot: "bg-accent dark:bg-accent-dark" }]}
+              format={money}
+              extra={(i) => {
+                const day = bucketDaily(usdc, 30)[i].v;
+                return day > 0 ? { label: "That day", value: money(day) } : null;
+              }}
+            />
+          }
           stats={[
-            ["Since launch", money(sum(usdc))],
+            ["USDC since launch", money(sum(usdc))],
             ["NEAR sent", `${sum(nearVol).toFixed(2)} Ⓝ`],
+            ["Largest payment", money(usdc.reduce((m, x) => Math.max(m, x.v), 0))],
+            ["Average payment", usdc.length ? money(sum(usdc) / usdc.length) : "$0"],
           ]}
         />
         <StatCard
           title="Rules"
-          sub="Created, last 30 days"
+          sub="Created, running total"
           change={windowChange(rules)}
-          chart={<StemChart data={bucketDaily(rules, 30)} format={count} />}
+          chart={
+            <AreaChart
+              step
+              series={[{ label: "Rules created", data: cumulativeDaily(rules, 30), color: "text-ink dark:text-white", dot: "bg-ink dark:bg-white" }]}
+              format={count}
+              extra={(i) => {
+                const day = bucketDaily(rules, 30)[i].v;
+                return day > 0 ? { label: "New that day", value: String(day) } : null;
+              }}
+            />
+          }
           stats={[
             ["Since launch", String(d.counts.mandates)],
             ["Active now", String(activeRules)],
+            ["Revoked", String(revoked)],
+            ["Last 30 days", String(sum(bucketDaily(rules, 30)))],
           ]}
         />
       </div>
@@ -271,11 +310,11 @@ function StatCard({
         )}
       </div>
       <div className="mt-5">{chart}</div>
-      <div className="mt-6 grid grid-cols-2 gap-4">
+      <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5">
         {stats.map(([k, v]) => (
           <div key={k} className="min-w-0">
             <p className="font-mono text-[11px] uppercase tracking-label text-mute dark:text-dark-mute">{k}</p>
-            <p className="mt-1 truncate text-[26px] font-light tracking-tight text-ink dark:text-white">{v}</p>
+            <p className="mt-1 truncate text-[24px] font-light tracking-tight text-ink dark:text-white">{v}</p>
           </div>
         ))}
       </div>
@@ -301,26 +340,22 @@ function Row({ k, children }: { k: string; children: ReactNode }) {
   );
 }
 
-const VISIT_CARDS: { event: TrackEvent; title: string; sub: string }[] = [
-  { event: "site_view", title: "Site visits", sub: "Marketing pages, last 30 days" },
-  { event: "app_view", title: "App visits", sub: "Inside /app, last 30 days" },
-  { event: "wallet_connect", title: "Wallet connects", sub: "Fresh connections, last 30 days" },
-  { event: "authorize_open", title: "Authorize opened", sub: "Agent sign-in pages, last 30 days" },
-  { event: "mcp_call", title: "MCP calls", sub: "Agent requests, last 30 days" },
-];
+type VisitEvent = TrackEvent;
 
-const seriesFor = (rows: DailyRow[], event: TrackEvent): DayPoint[] => {
-  // The database counts in UTC days; line them up with the same 30 days the chain charts use.
+const seriesFor = (rows: DailyRow[], event: VisitEvent, days: number): DayPoint[] => {
+  // The database counts in UTC days; line them up with the local days the chain charts use.
   const end = dayStart(Date.now());
-  const start = end - 29 * DAY_MS;
-  const out: DayPoint[] = Array.from({ length: 30 }, (_, i) => ({ t: start + i * DAY_MS, v: 0 }));
+  const start = end - (days - 1) * DAY_MS;
+  const out: DayPoint[] = Array.from({ length: days }, (_, i) => ({ t: start + i * DAY_MS, v: 0 }));
   for (const r of rows) {
     if (r.event !== event) continue;
     const idx = Math.round((new Date(`${r.day}T12:00:00`).getTime() - start) / DAY_MS);
-    if (idx >= 0 && idx < 30) out[idx].v += r.n;
+    if (idx >= 0 && idx < days) out[idx].v += r.n;
   }
   return out;
 };
+
+const totalOf = (s: DayPoint[]) => s.reduce((a, x) => a + x.v, 0);
 
 function Visitors() {
   const [token, setToken] = useState("");
@@ -396,34 +431,118 @@ function Visitors() {
     );
   }
 
+  // Counting only began on the first day that has a row, so don't draw 30 days of nothing before it.
+  const firstDay = rows.length ? rows.reduce((m, r) => (r.day < m ? r.day : m), rows[0].day) : null;
+  const sinceDays = firstDay ? Math.round((dayStart(Date.now()) - new Date(`${firstDay}T12:00:00`).getTime()) / DAY_MS) + 1 : 1;
+  const days = Math.min(30, Math.max(7, sinceDays));
+  const site = seriesFor(rows, "site_view", days);
+  const app = seriesFor(rows, "app_view", days);
+  const wallet = seriesFor(rows, "wallet_connect", days);
+  const authorize = seriesFor(rows, "authorize_open", days);
+  const mcp = seriesFor(rows, "mcp_call", days);
+  const last7 = (s: DayPoint[]) => totalOf(s.slice(-7));
+  const best = site.reduce((m, x) => (x.v > m.v ? x : m), site[0]);
+  const siteChange = days >= 14 ? halfChange(site) : null;
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {VISIT_CARDS.map((c) => {
-        const series = seriesFor(rows, c.event);
-        const total = series.reduce((a, x) => a + x.v, 0);
-        const prev = windowTotal(rows, c.event);
-        return (
-          <StatCard
-            key={c.event}
-            title={c.title}
-            sub={c.sub}
-            change={prev}
-            chart={<StemChart data={series} format={(v) => String(Math.round(v))} />}
-            stats={[
-              ["Last 30 days", String(total)],
-              ["Today", String(series[series.length - 1].v)],
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="rounded-3xl border border-line bg-gradient-to-b from-accent-tint/70 via-white to-white p-5 shadow-xs dark:border-dark-border dark:from-accent-tint/10 dark:via-dark-card dark:to-dark-card sm:p-6 lg:col-span-2">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h2 className="text-[17px] font-semibold text-ink dark:text-white">Traffic</h2>
+              <p className="mt-1 text-[14px] text-mute dark:text-dark-mute">Page loads, last {days} days</p>
+            </div>
+            {siteChange !== null && (
+              <span className={`rounded-full px-2 py-0.5 font-mono text-[12px] font-semibold ${siteChange >= 0 ? "bg-accent-tint text-accent dark:bg-accent-tint/15 dark:text-accent-dark" : "bg-red-50 text-bad dark:bg-red-500/10"}`}>
+                {siteChange >= 0 ? "↑" : "↓"} {Math.abs(siteChange).toFixed(1)}% vs earlier half
+              </span>
+            )}
+          </div>
+          <div className="mt-5">
+            <AreaChart
+              height={190}
+              format={(v) => String(Math.round(v))}
+              series={[
+                { label: "Site", data: site, color: "text-ink dark:text-white", dot: "bg-ink dark:bg-white" },
+                { label: "App", data: app, color: "text-accent dark:text-accent-dark", dot: "bg-accent dark:bg-accent-dark" },
+              ]}
+            />
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
+            {(
+              [
+                ["Site today", String(site[site.length - 1].v)],
+                ["App today", String(app[app.length - 1].v)],
+                ["Site, 7 days", String(last7(site))],
+                ["Best site day", best && best.v > 0 ? `${best.v} · ${new Date(best.t).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : "none yet"],
+              ] as [string, string][]
+            ).map(([k, v]) => (
+              <div key={k} className="min-w-0">
+                <p className="font-mono text-[11px] uppercase tracking-label text-mute dark:text-dark-mute">{k}</p>
+                <p className="mt-1 truncate text-[24px] font-light tracking-tight text-ink dark:text-white">{v}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Card className="p-5 sm:p-6">
+          <Label>Visitor journey</Label>
+          <p className="mt-2 mb-5 text-[13px] text-mute dark:text-dark-mute">Last {days} days, step by step.</p>
+          <Funnel
+            steps={[
+              { label: "Site visits", n: totalOf(site) },
+              { label: "App visits", n: totalOf(app) },
+              { label: "Wallets connected", n: totalOf(wallet) },
+              { label: "Authorize opened", n: totalOf(authorize) },
+              { label: "MCP calls", n: totalOf(mcp) },
             ]}
           />
-        );
-      })}
+          <ChartNote>These are page loads and calls, not people. Nothing identifies a visitor, so one person can count more than once.</ChartNote>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {(
+          [
+            ["Wallet connects", "Fresh connections", wallet],
+            ["Authorize opened", "Agent sign-in pages", authorize],
+            ["MCP calls", "Agent requests", mcp],
+          ] as [string, string, DayPoint[]][]
+        ).map(([title, sub, s]) => (
+          <Card key={title} className="p-5 sm:p-6">
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-[15px] font-semibold text-ink dark:text-white">{title}</h3>
+                <p className="text-[13px] text-mute dark:text-dark-mute">{sub}</p>
+              </div>
+              <p className="text-[28px] font-light tracking-tight text-ink dark:text-white">{totalOf(s)}</p>
+            </div>
+            <div className="mt-4">
+              <StackedBars
+                height={72}
+                data={s.map((d) => ({ t: d.t, parts: [d.v] }))}
+                series={[{ label: title, dot: "bg-accent dark:bg-accent-dark", bar: "bg-accent dark:bg-accent-dark" }]}
+              />
+            </div>
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-label text-mute dark:text-dark-mute">
+              Today {s[s.length - 1].v} · 7 days {last7(s)}
+            </p>
+          </Card>
+        ))}
+      </div>
+
+      <p className="text-xs text-mute dark:text-dark-mute">
+        Counting began {firstDay ? new Date(`${firstDay}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "today"}, so there is nothing before that day. Each page load or call adds 1 to a daily total.
+      </p>
     </div>
   );
 }
 
-/** Change of the last 15 days against the 15 before, since only 30 days are loaded. */
-function windowTotal(rows: DailyRow[], event: TrackEvent): number | null {
-  const s = seriesFor(rows, event);
-  const prev = s.slice(0, 15).reduce((a, x) => a + x.v, 0);
-  const cur = s.slice(15).reduce((a, x) => a + x.v, 0);
+/** Change of the later half of the window against the earlier half. */
+function halfChange(s: DayPoint[]): number | null {
+  const mid = Math.floor(s.length / 2);
+  const prev = totalOf(s.slice(0, mid));
+  const cur = totalOf(s.slice(mid));
   return prev === 0 ? null : ((cur - prev) / prev) * 100;
 }
