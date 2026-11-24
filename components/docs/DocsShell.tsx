@@ -379,25 +379,25 @@ export function DocsShell() {
 
             {/* Previous / Next */}
             {(prev || next) && (
-              <nav aria-label="Pagination" className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-2">
+              <nav aria-label="Pagination" className="grid grid-cols-2 gap-2.5 sm:gap-3 pt-2">
                 {prev ? (
                   <a
                     href={`#${prev.slug}`}
-                    className="group rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 hover:border-ink/40 dark:hover:border-white/40 transition-colors"
+                    className="min-w-0 rounded-xl border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3 py-2.5 sm:rounded-2xl sm:px-4 sm:py-3.5 hover:border-ink/40 dark:hover:border-white/40 transition-colors"
                   >
-                    <span className="block text-[11px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">← Previous</span>
-                    <span className="mt-1 block text-sm font-semibold text-ink dark:text-white">{prev.label}</span>
+                    <span className="block text-[10px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">← Prev</span>
+                    <span className="mt-0.5 block text-[13px] sm:text-sm font-semibold leading-snug text-ink dark:text-white">{prev.label}</span>
                   </a>
                 ) : (
-                  <span className="hidden sm:block" />
+                  <span />
                 )}
                 {next && (
                   <a
                     href={`#${next.slug}`}
-                    className="group rounded-2xl border border-line dark:border-dark-border bg-white dark:bg-dark-card p-4 text-right hover:border-ink/40 dark:hover:border-white/40 transition-colors sm:col-start-2"
+                    className="col-start-2 min-w-0 rounded-xl border border-line dark:border-dark-border bg-white dark:bg-dark-card px-3 py-2.5 text-right sm:rounded-2xl sm:px-4 sm:py-3.5 hover:border-ink/40 dark:hover:border-white/40 transition-colors"
                   >
-                    <span className="block text-[11px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">Next →</span>
-                    <span className="mt-1 block text-sm font-semibold text-ink dark:text-white">{next.label}</span>
+                    <span className="block text-[10px] font-mono uppercase tracking-wider text-mute dark:text-dark-mute">Next →</span>
+                    <span className="mt-0.5 block text-[13px] sm:text-sm font-semibold leading-snug text-ink dark:text-white">{next.label}</span>
                   </a>
                 )}
               </nav>
