@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { evaluateMandatePolicy, simulateAgentUnderAttack, PROMPT_TEMPLATES } from "../lib/sandbox/prompt-agent.ts";
+import { evaluateMandatePolicy, parseAttemptAmount, simulateAgentUnderAttack, PROMPT_TEMPLATES } from "../lib/sandbox/prompt-agent.ts";
 import type { Mandate } from "../lib/types.ts";
 
 const mockMandate: Mandate = {
@@ -91,10 +91,24 @@ assert.equal(v4.label, "Held for review");
 // Test 9: Policy Evaluation - Base Case-Insensitive Matching
 const v5 = evaluateMandatePolicy(
   { chain: "Base", asset: "USDC", amount: "5", recipient: "0xa040553b9aa2798377bd1ccf2c78bf015022fec4" }, // lowercase
-  mockMandate,
+  { ...mockMandate, chains: ["Base"], assets: ["USDC"], per_tx_cap: "10000000", daily_cap: "50000000", cooling_threshold: "8000000", allowlist: [{ chain: "Base", address: "0xA040553B9AA2798377bd1ccf2C78bf015022fec4" }] },
   BigInt("5000000")
 );
 assert.equal(v5.blocked, false);
 assert.equal(v5.label, "Allowed");
+
+// Amounts are parsed in the asset's own unit, and junk never becomes a number.
+assert.equal(parseAttemptAmount("1", "NEAR"), BigInt("1000000000000000000000000"));
+assert.equal(parseAttemptAmount("1.5", "USDC"), BigInt("1500000"));
+assert.equal(parseAttemptAmount("abc", "NEAR"), null);
+
+// A NEAR-denominated rule must not judge a USDC amount against its NEAR caps.
+const nearOnly: Mandate = { ...mockMandate, chains: ["Near"], assets: ["NEAR"] };
+const v6 = evaluateMandatePolicy(
+  { chain: "Near", asset: "USDC", amount: "1", recipient: "vendor.testnet" },
+  nearOnly,
+  BigInt("1000000"),
+);
+assert.equal(v6.blocked, true);
 
 console.log("All prompt-agent simulation and policy invariant tests passed!");

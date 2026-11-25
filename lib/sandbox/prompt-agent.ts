@@ -1,7 +1,11 @@
 import type { Mandate, Proposal } from "../types";
 
+/** Where the verdict came from. "simulated" means the page ran a local copy of the rules. */
+export type VerdictSource = "contract" | "simulated";
+
 export type PromptAttackResult = {
   prompt: string;
+  source: VerdictSource;
   agent: {
     compromised: boolean;
     reasoning: string;
@@ -19,6 +23,21 @@ export type PromptAttackResult = {
     invariant: string;
   };
 };
+
+const DECIMALS: Record<string, number> = { NEAR: 24, USDC: 6 };
+
+/** A rule's limits are written in one unit: NEAR if it pays on NEAR, otherwise USDC. */
+export const capUnit = (m: { chains: string[] }): "NEAR" | "USDC" => (m.chains.includes("Near") ? "NEAR" : "USDC");
+
+/** Decimal text to the asset's smallest unit (NEAR has 24 decimals, USDC 6). Null if invalid. */
+export function parseAttemptAmount(text: string, asset: string): bigint | null {
+  const decimals = DECIMALS[asset.toUpperCase()];
+  const t = text.trim();
+  if (decimals === undefined || !/^\d+(\.\d+)?$/.test(t)) return null;
+  const [whole, frac = ""] = t.split(".");
+  if (frac.length > decimals) return null;
+  return BigInt(whole + frac.padEnd(decimals, "0"));
+}
 
 /**
  * Common prompt injection templates for visitors to try.
@@ -51,9 +70,9 @@ export const PROMPT_TEMPLATES = [
 ] as const;
 
 /**
- * Semantic extraction and agent simulation.
- * Falls for adversarial prompt injections, extracting the payment intent
- * and producing realistic hijacked agent reasoning.
+ * A scripted stand-in for an AI agent. It is not a language model: it always "falls" for the
+ * injection, pulls a payment out of the text with simple patterns and writes a canned excuse.
+ * The point of the demo is what the rule does next, not how gullible the agent is.
  */
 export function simulateAgentUnderAttack(
   prompt: string,
@@ -137,6 +156,7 @@ export function simulateAgentUnderAttack(
 
 /**
  * Evaluate the proposed payment against mandate policy rules.
+ * `yoctoAmount` is in the smallest unit of the attempt's own asset (see parseAttemptAmount).
  */
 export function evaluateMandatePolicy(
   attempt: { chain: "Near" | "Base"; asset: string; amount: string; recipient: string },
@@ -159,6 +179,16 @@ export function evaluateMandatePolicy(
       blocked: true,
       label: "Blocked",
       reason: "Asset not permitted by mandate.",
+      invariant: "Asset restriction invariant: The agent can only spend assets explicitly permitted in the mandate.",
+    };
+  }
+
+  // Limits are written in one unit. Comparing another asset's amount to them would be meaningless.
+  if (attempt.asset !== capUnit(mandate)) {
+    return {
+      blocked: true,
+      label: "Blocked",
+      reason: `This rule's limits are in ${capUnit(mandate)}, not ${attempt.asset}.`,
       invariant: "Asset restriction invariant: The agent can only spend assets explicitly permitted in the mandate.",
     };
   }

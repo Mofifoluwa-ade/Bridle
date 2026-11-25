@@ -10,13 +10,13 @@
  * Dispatches instant notifications via Discord Webhook, Telegram Bot, or HTTP Webhook.
  *
  * Usage:
- *   node --experimental-strip-types scripts/watcher-bot.ts           # runs forever
- *   node --experimental-strip-types scripts/watcher-bot.ts --once    # checks once and exits
+ *   node --experimental-strip-types scripts/watcher-bot.mts           # runs forever
+ *   node --experimental-strip-types scripts/watcher-bot.mts --once    # checks once and exits
  */
 
 import fs from "node:fs";
 import path from "node:path";
-import { dispatchAlert, type WatcherAlert } from "../lib/alerts/notifier.ts";
+import { dispatchAlert, wasDelivered, type WatcherAlert } from "../lib/alerts/notifier.ts";
 import { CONFIG } from "../lib/config.ts";
 
 const CONTRACT_ID = process.env.BRIDLE_CONTRACT?.trim() || CONFIG.contractId || "bridle.testnet";
@@ -117,6 +117,13 @@ function formatDecimals(raw: string, decimals = 6): string {
   }
 }
 
+/** Sends an alert and reports whether it should count as seen (delivered, or no channel configured). */
+async function deliver(alert: WatcherAlert): Promise<boolean> {
+  const ok = wasDelivered(await dispatchAlert(alert));
+  if (!ok) console.error(`[Watcher] Could not deliver "${alert.title}". Will retry on the next check.`);
+  return ok;
+}
+
 async function checkOnce(state: WatcherState): Promise<number> {
   let alertCount = 0;
   const nowMs = Date.now();
@@ -147,15 +154,20 @@ async function checkOnce(state: WatcherState): Promise<number> {
           url: `${BASE_APP_URL}/app/proposals/${p.id}`,
           timestamp: nowMs,
         };
-        await dispatchAlert(alert);
-        state.seenProposals[key] = "Flagged";
-        alertCount++;
+        if (await deliver(alert)) {
+          state.seenProposals[key] = "Flagged";
+          alertCount++;
+        }
         continue;
       }
 
       // 2. Alert on Waiting proposal (over cooling threshold)
       if (p.status === "Waiting" && !lastStatus) {
         const expiresAtMs = Number(BigInt(p.executable_at) / 1_000_000n);
+        if (expiresAtMs <= nowMs) {
+          state.seenProposals[key] = "Waiting";
+          continue;
+        }
         const minsLeft = Math.max(0, Math.round((expiresAtMs - nowMs) / 60000));
         const alert: WatcherAlert = {
           kind: "waiting_proposal",
@@ -172,9 +184,10 @@ async function checkOnce(state: WatcherState): Promise<number> {
           url: `${BASE_APP_URL}/app/proposals/${p.id}`,
           timestamp: nowMs,
         };
-        await dispatchAlert(alert);
-        state.seenProposals[key] = "Waiting";
-        alertCount++;
+        if (await deliver(alert)) {
+          state.seenProposals[key] = "Waiting";
+          alertCount++;
+        }
         continue;
       }
 
@@ -182,6 +195,43 @@ async function checkOnce(state: WatcherState): Promise<number> {
     }
   } catch (e) {
     console.error("[Watcher] Error reading proposals:", e instanceof Error ? e.message : e);
+  }
+
+  // 3. Looser limits queued by an owner (visible during their notice period).
+  try {
+    const total = await nearRpcView<number>("count_mandates");
+    for (let id = 1; id <= total; id++) {
+      const m = await nearRpcView<Mandate | null>("get_mandate", { mandate_id: id });
+      const key = String(id);
+      const pending = m?.pending_limits;
+      if (!m || !pending) {
+        delete state.seenPendingLimits[key];
+        continue;
+      }
+      if (state.seenPendingLimits[key] === pending.effective_at) continue;
+      const effMs = Number(BigInt(pending.effective_at) / 1_000_000n);
+      const hoursLeft = Math.max(0, Math.round((effMs - nowMs) / 3_600_000));
+      const alert: WatcherAlert = {
+        kind: "limits_loosening",
+        title: `Spending limits changing on Mandate #${id}`,
+        summary: `The owner queued new limits for Mandate #${id}. They take effect after the notice period.`,
+        mandateId: id,
+        details: {
+          "Per-payment cap": formatDecimals(pending.per_tx_cap, 24),
+          "Daily cap": formatDecimals(pending.daily_cap, 24),
+          "Review threshold": formatDecimals(pending.cooling_threshold, 24),
+          "Takes effect in": `${hoursLeft} h`,
+        },
+        url: `${BASE_APP_URL}/app/mandates/${id}`,
+        timestamp: nowMs,
+      };
+      if (await deliver(alert)) {
+        state.seenPendingLimits[key] = pending.effective_at;
+        alertCount++;
+      }
+    }
+  } catch (e) {
+    console.error("[Watcher] Error reading mandates:", e instanceof Error ? e.message : e);
   }
 
   saveState(state);

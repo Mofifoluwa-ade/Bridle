@@ -14,7 +14,7 @@ export type Deps = {
   propose: (args: { mandate_id: number; chain: Chain; asset: string; amount: string; recipient: string }) => Promise<Proposal>;
 };
 
-export class ToolError extends Error { }
+export class ToolError extends Error {}
 
 const iso = (ns: bigint | string) => new Date(Number(BigInt(ns) / 1_000_000n)).toISOString();
 

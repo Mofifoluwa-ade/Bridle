@@ -11,6 +11,8 @@
     "watcher:once": "node --experimental-strip-types scripts/watcher-bot.mts --once",
     "test:sentence": "node --experimental-strip-types scripts/sentence.test.mts",
     "test:prompt": "node --experimental-strip-types scripts/prompt-agent.test.mts",
+    "test:derive": "node --experimental-strip-types scripts/derive.test.mts",
+    "test:notifier": "node --experimental-strip-types scripts/notifier.test.mts",
     "sync:mcp": "node scripts/sync-mcp.mjs"
   },
   "dependencies": {

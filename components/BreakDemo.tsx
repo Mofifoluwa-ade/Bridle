@@ -8,7 +8,10 @@ import type { Mandate, Proposal } from "@/lib/types";
 type Sandbox =
   | { configured: false }
   | { configured: true; error: string }
-  | { configured: true; mandate: Mandate; balance: string; proposals: Proposal[] };
+  | { configured: true; simulated: boolean; mandate: Mandate; balance: string; proposals: Proposal[] };
+
+/** What the manual tab shows after an attempt. `simulated` means a local copy of the rules decided. */
+type ManualResult = { blocked: boolean; label: string; text: string; meta: string | null; simulated: boolean };
 
 type Attempt = { chain: string; asset: string; amount: string; recipient: string };
 
@@ -42,7 +45,7 @@ export function BreakDemo() {
   const [form, setForm] = useState<Attempt>({ chain: "Near", asset: "NEAR", amount: "5", recipient: "" });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [last, setLast] = useState<Proposal | null>(null);
+  const [last, setLast] = useState<ManualResult | null>(null);
 
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -103,7 +106,13 @@ export function BreakDemo() {
       const j = await r.json();
       if (!r.ok) setErr(j.error ?? "That did not go through.");
       else {
-        setLast(j.proposal);
+        if (j.simulated) {
+          setLast({ blocked: j.verdict.blocked, label: j.verdict.label, text: j.verdict.reason, meta: null, simulated: true });
+        } else {
+          const v = verdict(j.proposal as Proposal);
+          const p = j.proposal as Proposal;
+          setLast({ ...v, meta: `proposal #${p.id} · ${p.chain} · ${p.asset} · ${formatNear(p.amount)}`, simulated: false });
+        }
         load();
       }
     } catch {
@@ -125,6 +134,7 @@ export function BreakDemo() {
     return <div className="rounded-2xl border border-line p-6 text-[15px] dark:border-dark-border">{data.error}</div>;
 
   const m = data.mandate;
+  const simulated = data.simulated;
   const ok = m.allowlist.find((r) => r.chain === "Near")?.address ?? "";
   const cap = BigInt(m.per_tx_cap);
   const over = formatNear(cap * BigInt(10)).replace(/ NEAR$/, "");
@@ -139,13 +149,17 @@ export function BreakDemo() {
     { title: "Control: play fair", hint: "A small payment to the approved account.", a: { chain: "Near", asset: "NEAR", amount: nearAmt(cap / BigInt(10) || BigInt(1)), recipient: ok } },
   ];
 
-  const manualResult = last ? verdict(last) : null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
       {/* Mandate Sidebar */}
       <aside className="h-fit rounded-2xl border border-line p-5 dark:border-dark-border">
         <p className="font-mono text-xs uppercase tracking-label text-mute dark:text-dark-mute">The rule you are attacking</p>
+        {simulated && (
+          <p className="mt-3 rounded-lg border border-warn/30 bg-warn/5 px-3 py-2 text-[12.5px] leading-snug text-warn">
+            Simulated. The live testnet sandbox is not switched on, so a local copy of the rules answers. Nothing here is written on-chain.
+          </p>
+        )}
         <dl className="mt-4 space-y-3 text-[14.5px]">
           <div className="flex justify-between gap-4">
             <dt className="text-mute dark:text-dark-mute">Per payment</dt>
@@ -163,10 +177,12 @@ export function BreakDemo() {
             <dt className="text-mute dark:text-dark-mute">Assets</dt>
             <dd className="font-mono">{m.assets.join(", ")}</dd>
           </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-mute dark:text-dark-mute">Holds</dt>
-            <dd className="font-mono">{formatNear(data.balance)}</dd>
-          </div>
+          {!simulated && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-mute dark:text-dark-mute">Holds</dt>
+              <dd className="font-mono">{formatNear(data.balance)}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-mute dark:text-dark-mute">May pay only</dt>
             {m.allowlist.map((r) => (
@@ -177,7 +193,9 @@ export function BreakDemo() {
           </div>
         </dl>
         <p className="mt-5 text-[13px] leading-relaxed text-mute dark:text-dark-mute">
-          Attempts are sent as the rule&rsquo;s agent. This page only asks the contract for a decision. It cannot execute a payment, so no NEAR moves, whatever you send.
+          {simulated
+            ? "Attempts are checked by a local copy of the rules. No payment is made."
+            : "Attempts are sent as the rule\u2019s agent. This page only asks the contract for a decision. It cannot execute a payment, so no NEAR moves, whatever you send."}
         </p>
       </aside>
 
@@ -279,13 +297,16 @@ export function BreakDemo() {
                   {/* Stage 1: AI Agent Outcome */}
                   <div className="rounded-xl border border-warn/30 bg-warn/5 p-5 dark:border-warn/20 dark:bg-warn/10">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs uppercase tracking-label text-warn">Step 1 · AI agent</span>
+                      <span className="font-mono text-xs uppercase tracking-label text-warn">Step 1 · Scripted agent</span>
                       <span className="rounded-full bg-warn/15 px-2.5 py-0.5 font-mono text-xs font-semibold text-warn">
-                        Compromised
+                        Falls for it
                       </span>
                     </div>
                     <p className="mt-3 text-[15px] font-medium leading-snug">
                       &ldquo;{promptResult.agent.reasoning}&rdquo;
+                    </p>
+                    <p className="mt-1 text-[12.5px] text-mute dark:text-dark-mute">
+                      This agent is a script, not an AI model. It always falls for the injection so you can see what the rule does next.
                     </p>
                     <div className="mt-3 rounded-lg border border-line/60 bg-white/60 p-3 font-mono text-[13px] dark:border-dark-border/60 dark:bg-dark-bg/60">
                       <p className="text-xs text-mute dark:text-dark-mute">Payment proposed by agent:</p>
@@ -307,7 +328,7 @@ export function BreakDemo() {
                           promptResult.verdict.blocked ? "text-bad" : "text-accent"
                         }`}
                       >
-                        Step 2 · Bridle contract
+                        {promptResult.source === "contract" ? "Step 2 · Bridle contract" : "Step 2 · Simulated rules"}
                       </span>
                       <span
                         className={`rounded-full px-2.5 py-0.5 font-mono text-xs font-semibold ${
@@ -324,7 +345,9 @@ export function BreakDemo() {
                       {promptResult.verdict.invariant}
                     </p>
                     <p className="mt-3 text-[13px] leading-relaxed text-mute dark:text-dark-mute">
-                      The agent succumbed to the prompt injection, but the smart contract enforced the policy deterministically on-chain. No funds moved.
+                      {promptResult.source === "contract"
+                        ? "The agent fell for the injection, but the contract applied the rule and decided on-chain. No funds moved."
+                        : "Simulated: a local copy of the rules decided this, not the contract. Nothing was written on-chain and no funds moved."}
                     </p>
                   </div>
                 </div>
@@ -404,15 +427,17 @@ export function BreakDemo() {
             <div aria-live="polite">
               {busy && <p className="text-[15px] text-mute dark:text-dark-mute">Asking the contract…</p>}
               {err && <p className="rounded-xl border border-line p-4 text-[15px] text-bad dark:border-dark-border">{err}</p>}
-              {manualResult && last && (
-                <div className={`rounded-xl border p-5 ${manualResult.blocked ? "border-bad/40" : "border-accent/40"}`}>
-                  <p className={`font-mono text-xs uppercase tracking-label ${manualResult.blocked ? "text-bad" : "text-accent"}`}>
-                    {manualResult.label}
+              {last && (
+                <div className={`rounded-xl border p-5 ${last.blocked ? "border-bad/40" : "border-accent/40"}`}>
+                  <p className={`font-mono text-xs uppercase tracking-label ${last.blocked ? "text-bad" : "text-accent"}`}>
+                    {last.label}
+                    {last.simulated ? " · simulated" : ""}
                   </p>
-                  <p className="mt-2 text-[18px] font-semibold leading-snug">{manualResult.text}</p>
-                  <p className="mt-2 font-mono text-[12.5px] text-mute dark:text-dark-mute">
-                    proposal #{last.id} · {last.chain} · {last.asset} · {formatNear(last.amount)}
-                  </p>
+                  <p className="mt-2 text-[18px] font-semibold leading-snug">{last.text}</p>
+                  {last.meta && <p className="mt-2 font-mono text-[12.5px] text-mute dark:text-dark-mute">{last.meta}</p>}
+                  {last.simulated && (
+                    <p className="mt-2 text-[12.5px] text-mute dark:text-dark-mute">A local copy of the rules decided this. Nothing was written on-chain.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -421,7 +446,7 @@ export function BreakDemo() {
 
         {/* Global Proposal Log */}
         <div>
-          <p className="font-mono text-xs uppercase tracking-label text-mute dark:text-dark-mute">Every attempt, newest first</p>
+          <p className="font-mono text-xs uppercase tracking-label text-mute dark:text-dark-mute">{simulated ? "Attempts" : "Every attempt, newest first"}</p>
           <ul className="mt-3 divide-y divide-line rounded-xl border border-line dark:divide-dark-border dark:border-dark-border">
             {data.proposals.length === 0 && (
               <li className="p-4 text-[14px] text-mute dark:text-dark-mute">Nobody has tried yet. Be the first.</li>

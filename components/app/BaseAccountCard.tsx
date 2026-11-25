@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { QrCode } from "@/components/app/QrCode";
 import { Btn, Card, Label, Notice } from "@/components/app/ui";
 import { CONFIG } from "@/lib/config";
-import { mandateAddress, fetchBaseBalances, type BaseBalances } from "@/lib/derive";
+import { fetchBaseBalances, type BaseBalances } from "@/lib/baseBalances";
+import { mandateAddress } from "@/lib/derive";
 import type { Mandate } from "@/lib/types";
 
 export function BaseAccountCard({
@@ -198,8 +199,8 @@ export function BaseAccountCard({
                         try {
                           await onWithdrawBase(wdAmount, wdRecipient);
                           setShowWithdraw(false);
-                        } catch (err: any) {
-                          setWdError(err?.message ?? "Withdrawal failed");
+                        } catch (err: unknown) {
+                          setWdError(err instanceof Error ? err.message : "Withdrawal failed");
                         }
                       }}
                     >

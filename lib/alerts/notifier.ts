@@ -16,13 +16,23 @@ export type WatcherAlert = {
   timestamp: number;
 };
 
-export async function sendTelegram(botToken: string, chatId: string, alert: WatcherAlert): Promise<boolean> {
+/** Telegram HTML mode needs only these three characters escaped. Recipients and reasons are untrusted. */
+export function escapeHtml(v: unknown): string {
+  return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+export function telegramText(alert: WatcherAlert): string {
   const emoji = alert.kind === "flagged_proposal" ? "🚨" : alert.kind === "waiting_proposal" ? "⏳" : "⚠️";
-  let text = `${emoji} *[Bridle Alert] ${alert.title}*\n\n${alert.summary}\n\n`;
+  let text = `${emoji} <b>[Bridle Alert] ${escapeHtml(alert.title)}</b>\n\n${escapeHtml(alert.summary)}\n\n`;
   for (const [k, v] of Object.entries(alert.details)) {
-    text += `• *${k}*: \`${v}\`\n`;
+    text += `• <b>${escapeHtml(k)}</b>: <code>${escapeHtml(v)}</code>\n`;
   }
-  text += `\n🔗 [Open in Bridle Dashboard](${alert.url})`;
+  text += `\n<a href="${escapeHtml(alert.url).replace(/"/g, "&quot;")}">Open in Bridle Dashboard</a>`;
+  return text;
+}
+
+export async function sendTelegram(botToken: string, chatId: string, alert: WatcherAlert): Promise<boolean> {
+  const text = telegramText(alert);
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -31,7 +41,7 @@ export async function sendTelegram(botToken: string, chatId: string, alert: Watc
       body: JSON.stringify({
         chat_id: chatId,
         text,
-        parse_mode: "Markdown",
+        parse_mode: "HTML",
         disable_web_page_preview: true,
       }),
       signal: AbortSignal.timeout(6000),
@@ -92,6 +102,12 @@ export async function sendWebhook(url: string, alert: WatcherAlert): Promise<boo
     console.error("[Watcher Alert] Webhook dispatch failed:", e);
     return false;
   }
+}
+
+/** True when no channel is configured (console fallback) or at least one channel accepted the alert. */
+export function wasDelivered(r: { telegram?: boolean; discord?: boolean; webhook?: boolean }): boolean {
+  const sent = Object.values(r);
+  return sent.length === 0 || sent.some(Boolean);
 }
 
 export async function dispatchAlert(alert: WatcherAlert): Promise<{ telegram?: boolean; discord?: boolean; webhook?: boolean }> {
