@@ -12,7 +12,7 @@ export const trackingConfigured = Boolean(URL_ && KEY);
 
 const OPT_OUT_KEY = "bridle_no_count";
 
-/** True when this visitor asked not to be counted (the privacy notice or the privacy page). */
+/** True when this visitor asked not to be counted (the privacy page). */
 export function countingOptedOut(): boolean {
   try {
     return localStorage.getItem(OPT_OUT_KEY) === "1";

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { Track } from "@/components/Track";
 
 const sans = Instrument_Sans({
@@ -76,7 +75,6 @@ export default function RootLayout({
       <body>
         {children}
         <Track />
-        <PrivacyNotice />
       </body>
     </html>
   );
