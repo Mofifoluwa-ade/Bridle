@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useEthPrice } from "@/hooks/useEthPrice";
 import { QrCode } from "@/components/app/QrCode";
 import { Btn, Card, Label, Notice } from "@/components/app/ui";
 import { CONFIG } from "@/lib/config";
@@ -73,6 +74,8 @@ export function BaseAccountCard({
   if (!mandate.chains.includes("Base")) return null;
 
   const expiredOrRevoked = mandate.state === "Revoked" || Date.now() >= Number(BigInt(mandate.expires_at) / 1_000_000n);
+  const ethPrice = useEthPrice();
+  const usd = (n: number) => `≈ ${n.toLocaleString("en-US", { style: "currency", currency: "USD" })}`;
   const hasUsdc = balances && balances.rawUsdc > 0n;
   const needsGas = balances && balances.rawEth < 1_000_000_000_000_000n; // < 0.001 ETH
 
@@ -132,14 +135,16 @@ export function BaseAccountCard({
             <div>
               <span className="text-[13px] text-mute">USDC Balance</span>
               <p className="font-mono text-[18px] font-semibold mt-0.5">
-                {balances ? `$${balances.usdc}` : loading ? "…" : "—"}
+                {balances ? `${balances.usdc} USDC` : loading ? "…" : "—"}
               </p>
+              {balances && <p className="text-[11px] text-mute">{usd(Number(balances.usdc))}</p>}
             </div>
             <div>
               <span className="text-[13px] text-mute">ETH Gas</span>
               <p className="font-mono text-[18px] font-semibold mt-0.5">
                 {balances ? `${balances.eth} ETH` : loading ? "…" : "—"}
               </p>
+              {balances && ethPrice !== null && <p className="text-[11px] text-mute">{usd(Number(balances.eth) * ethPrice)}</p>}
             </div>
           </div>
 
