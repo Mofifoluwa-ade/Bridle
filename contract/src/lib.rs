@@ -10,17 +10,6 @@
 
 pub mod evm;
 
-/// Base (EVM) addresses match regardless of letter case. Rules saved before addresses were
-/// normalised may hold a checksummed (mixed-case) address, so compare without case. Other
-/// chains stay exact.
-fn same_recipient(chain: Chain, a: &str, b: &str) -> bool {
-    if chain == Chain::Base {
-        a.eq_ignore_ascii_case(b)
-    } else {
-        a == b
-    }
-}
-
 use near_sdk::json_types::{U128, U64};
 use near_sdk::store::{IterableMap, LookupMap, LookupSet};
 use near_sdk::{
@@ -360,17 +349,6 @@ impl Bridle {
                 Chain::Solana => {}
             }
         }
-        let allowlist: Vec<Recipient> = allowlist
-            .into_iter()
-            .map(|mut r| {
-                if r.chain == Chain::Base {
-                    if let Some(addr) = evm::parse_address(&r.address) {
-                        r.address = format!("0x{}", evm::hex(&addr));
-                    }
-                }
-                r
-            })
-            .collect();
         let now = env::block_timestamp();
         let id = self.next_mandate;
         self.next_mandate += 1;
@@ -556,11 +534,6 @@ impl Bridle {
         require!(env::predecessor_account_id() == m.owner, "only the owner can withdraw");
         require!(amount.0 > 0, "amount must be above zero");
         require!(evm::parse_address(&recipient).is_some(), "recipient is not a valid EVM address");
-        let recipient = if let Some(addr) = evm::parse_address(&recipient) {
-            format!("0x{}", evm::hex(&addr))
-        } else {
-            recipient
-        };
         let now = env::block_timestamp();
         let id = self.next_proposal;
         self.next_proposal += 1;
@@ -622,15 +595,6 @@ impl Bridle {
         self.roll_day(&mut m, now);
         self.apply_due_limits(&mut m, now);
         let asset = asset.to_uppercase();
-        let recipient = if chain == Chain::Base {
-            if let Some(addr) = evm::parse_address(&recipient) {
-                format!("0x{}", evm::hex(&addr))
-            } else {
-                recipient
-            }
-        } else {
-            recipient
-        };
 
         let block: Option<String> = if m.state == MandateState::Revoked {
             Some("The mandate is revoked".into())
@@ -650,7 +614,7 @@ impl Bridle {
             Some("Native NEAR payments use the NEAR asset".into())
         } else if chain == Chain::Near && recipient.parse::<AccountId>().is_err() {
             Some("Recipient is not a valid NEAR account".into())
-        } else if !m.allowlist.iter().any(|r| r.chain == chain && same_recipient(chain, &r.address, &recipient)) {
+        } else if !m.allowlist.iter().any(|r| r.chain == chain && r.address == recipient) {
             Some("Recipient is not on the allowlist".into())
         } else if amount.0 == 0 {
             Some("Amount must be above zero".into())
@@ -1257,46 +1221,6 @@ mod tests {
         assert_eq!(p.reason.as_deref(), Some("Recipient is not on the allowlist"));
         let p = propose(&mut c, id, 26_000_000, ADDR, T0);
         assert_eq!(p.reason.as_deref(), Some("Over the per-payment cap"));
-    }
-
-    #[test]
-    fn base_recipient_matching_is_case_insensitive() {
-        // A mandate made with a mixed-case address is saved in lowercase, so any case matches.
-        ctx("owner.testnet", 0, T0);
-        let mut c = Bridle::new(acct("exec.testnet"));
-        ctx("owner.testnet", NEAR / 5, T0);
-        let m = c.create_mandate(
-            acct("agent.testnet"),
-            vec![Chain::Base],
-            vec!["usdc".into()],
-            vec![Recipient { chain: Chain::Base, address: "0xAbCdEf0123456789aBcDeF0123456789AbCdEf01".into() }],
-            U128(25_000_000),
-            U128(50_000_000),
-            U128(20_000_000),
-            600,
-            U128(NEAR),
-            7,
-        );
-        ctx("agent.testnet", NEAR, T0);
-        c.post_bond(m.id);
-        let lower = propose(&mut c, m.id, 10_000_000, "0xabcdef0123456789abcdef0123456789abcdef01", T0);
-        assert_eq!(lower.status, ProposalStatus::Ready);
-        let upper = propose(&mut c, m.id, 10_000_000, "0xABCDEF0123456789ABCDEF0123456789ABCDEF01", T0);
-        assert_eq!(upper.status, ProposalStatus::Ready);
-    }
-
-    #[test]
-    fn legacy_mixed_case_allowlist_still_matches() {
-        // Rules made before normalisation hold the address exactly as typed. Simulate one by
-        // writing the mixed-case address straight into storage.
-        let (mut c, id) = setup();
-        let mut m = c.mandates.get(&id).unwrap().clone();
-        m.allowlist[0].address = "0xAbCdEf0123456789aBcDeF0123456789AbCdEf01".into();
-        c.mandates.insert(id, m);
-        let p = propose(&mut c, id, 10_000_000, "0xabcdef0123456789abcdef0123456789abcdef01", T0);
-        assert_eq!(p.status, ProposalStatus::Ready);
-        let other = propose(&mut c, id, 10_000_000, "0xabcdef0123456789abcdef0123456789abcdef02", T0);
-        assert_eq!(other.reason.as_deref(), Some("Recipient is not on the allowlist"));
     }
 
     #[test]
