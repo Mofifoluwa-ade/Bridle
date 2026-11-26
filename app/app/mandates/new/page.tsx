@@ -272,7 +272,10 @@ function Form() {
   }, [agent, chains, rows, perTx, daily, threshold, windowMin, bond, days, accountId, dec]);
 
   const ok = Object.keys(v.e).length === 0;
-  const filledAddresses = v.filled.map((r) => ({ chain: r.chain, address: r.address.trim() }));
+  const filledAddresses = v.filled.map((r) => ({
+    chain: r.chain,
+    address: r.chain === "Base" ? r.address.trim().toLowerCase() : r.address.trim(),
+  }));
   const testValue = parseUnits(testAmount, dec);
   const testValid = testValue !== null && testValue > BigInt(0);
   const testAllowedRecipient = Boolean(testRecipient.trim()) && filledAddresses.some(

@@ -61,7 +61,12 @@ export function checkPayment(m: Mandate, nowNs: bigint, input: PaymentInput): Ve
   if (!m.assets.includes(asset)) return blocked("asset", "Asset is not allowed by the mandate");
   if (input.chain === "Near" && asset !== "NEAR") return blocked("asset", "Native NEAR payments use the NEAR asset");
   if (input.chain === "Near" && !isNearAccount(input.recipient)) return blocked("recipient", "Recipient is not a valid NEAR account");
-  if (!m.allowlist.some((r) => r.chain === input.chain && r.address === input.recipient))
+  const matchRecipient = (r: { chain: Chain; address: string }) => {
+    if (r.chain !== input.chain) return false;
+    if (input.chain === "Base") return r.address.toLowerCase() === input.recipient.toLowerCase();
+    return r.address === input.recipient;
+  };
+  if (!m.allowlist.some(matchRecipient))
     return blocked("recipient", "Recipient is not on the allowlist");
   if (input.amount === 0n) return blocked("zero_amount", "Amount must be above zero");
   if (input.amount > perTx) return blocked("per_tx_cap", "Over the per-payment cap");

@@ -102,7 +102,8 @@ function normalise(a: PaymentArgs) {
   const amount = parseAmount(a.amount, dec);
   if (amount === null)
     throw new ToolError(`Amount "${a.amount}" is not valid. Use a plain decimal in ${asset}, such as ${asset === "NEAR" ? "1.5" : "18.50"} (up to ${dec} decimals).`);
-  return { amount, asset, recipient: a.recipient.trim() };
+  const recipient = a.chain === "Base" ? a.recipient.trim().toLowerCase() : a.recipient.trim();
+  return { amount, asset, recipient };
 }
 
 export async function checkPaymentTool(d: Deps, a: PaymentArgs) {
@@ -112,7 +113,7 @@ export async function checkPaymentTool(d: Deps, a: PaymentArgs) {
   const base = { mandate_id: m.id, chain: a.chain, asset, [`amount_${asset.toLowerCase()}`]: formatAmount(amount, decimalsOf(asset)), recipient, dry_run: true };
   const hint =
     v.outcome === "blocked" && v.rule === "recipient"
-      ? " The address must match the approved list exactly, including letter case."
+      ? " The address must match the approved list."
       : "";
   if (v.outcome === "blocked") {
     return { summary: `Would be blocked. ${v.reason}.${hint} Nothing was sent.`, outcome: v.outcome, rule: v.rule, ...base };

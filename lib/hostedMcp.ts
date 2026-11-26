@@ -27,7 +27,7 @@ const payment = {
     chain: { type: "string", enum: ["Base", "Near"], description: "Destination chain. Near pays native NEAR to a NEAR account" },
     asset: { type: "string", description: "Asset symbol: USDC on Base, NEAR on Near. Defaults to the chain's asset" },
     amount: { type: "string", description: "Decimal amount in the asset, for example 18.50 USDC or 1.5 NEAR. Not smallest units" },
-    recipient: { type: "string", description: "Destination address. Must match an approved recipient exactly, including letter case" },
+    recipient: { type: "string", description: "Destination address. Must match an approved recipient" },
   },
   required: ["mandate_id", "chain", "amount", "recipient"],
 };

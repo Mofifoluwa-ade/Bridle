@@ -3,6 +3,7 @@
 import { ChainSelect, ChainTag } from "@/components/app/ChainSelect";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { BaseAccountCard } from "@/components/app/BaseAccountCard";
 import { ConfirmDialog } from "@/components/app/ConfirmDialog";
 import { NeedsContract } from "@/components/app/Gate";
 import { MandatePolicySummary, MandateStatePill } from "../../../../components/app/MandateCard";
@@ -15,6 +16,41 @@ import { CONFIG } from "@/lib/config";
 import { countdown, duration, formatNear, formatNearWithUsd, money, nsToMs, parseNear, parseUnits, unitDecimals, unitOfMandate } from "@/lib/format";
 import { api } from "@/lib/near";
 import type { Chain } from "@/lib/types";
+
+function RecipientRow({ chain, address }: { chain: Chain; address: string }) {
+  const [copied, setCopied] = useState(false);
+  const href =
+    chain === "Base" ? `https://sepolia.basescan.org/address/${address}` : chain === "Near" ? `${CONFIG.explorer}/address/${address}` : null;
+  return (
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2.5 rounded-xl border border-line bg-paper/50 px-3.5 py-3 dark:border-dark-border dark:bg-white/[0.03]">
+      <ChainTag chain={chain} size={26} name={false} className="flex-none" />
+      <div className="min-w-[12rem] flex-1">
+        <p className="text-[12px] text-mute dark:text-dark-mute">{chain === "Near" ? "NEAR" : chain}</p>
+        <p className="break-all font-mono text-[13px] leading-snug text-ink dark:text-white" title={address}>{address}</p>
+      </div>
+      <div className="flex flex-none items-center gap-1.5">
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(address);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1200);
+            } catch {}
+          }}
+          className="rounded-lg border border-line px-2.5 py-1.5 text-[12px] text-mute transition-colors hover:text-ink dark:border-dark-border dark:hover:text-white"
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+        {href && (
+          <a href={href} target="_blank" rel="noreferrer" className="rounded-lg border border-line px-2.5 py-1.5 text-[12px] text-mute transition-colors hover:text-ink dark:border-dark-border dark:hover:text-white">
+            View ↗
+          </a>
+        )}
+      </div>
+    </li>
+  );
+}
 
 export default function MandatePage() {
   const id = Number(useParams<{ id: string }>()?.id);
@@ -64,6 +100,16 @@ function Body({ id }: { id: number }) {
     }
   };
   const missing = (BigInt(mandate.bond) - BigInt(mandate.bond_posted)).toString();
+
+  const handleWithdrawBase = async (amount: string, recipient: string) => {
+    const raw = parseUnits(amount, 6);
+    if (!raw) throw new Error("Invalid USDC amount");
+    await act("wbase", "owner_withdraw_base", {
+      mandate_id: id,
+      amount: raw.toString(),
+      recipient,
+    });
+  };
 
   return (
     <>
@@ -131,10 +177,7 @@ function Body({ id }: { id: number }) {
               ) : (
                 <ul className="space-y-2">
                   {mandate.allowlist.map((r, i) => (
-                    <li key={i} className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm sm:text-[15px]">
-                      <span className="flex w-16 justify-center rounded-full border border-line px-3 py-1"><ChainTag chain={r.chain as Chain} size={16} name={false} /></span>
-                      <Addr value={r.address} chars={10} />
-                    </li>
+                    <RecipientRow key={i} chain={r.chain as Chain} address={r.address} />
                   ))}
                 </ul>
               )}
@@ -235,6 +278,14 @@ function Body({ id }: { id: number }) {
                 );
               })()}
             </Card>
+          )}
+          {mandate.chains.includes("Base") && (
+            <BaseAccountCard
+              mandate={mandate}
+              isOwner={isOwner}
+              onWithdrawBase={handleWithdrawBase}
+              withdrawing={busy === "wbase"}
+            />
           )}
           <Card className="p-6">
             <Label>Contract address</Label>
