@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { NeedsContract, NeedsWallet } from "@/components/app/Gate";
 import { AreaChart, ChartNote, Funnel, StackedBars } from "@/components/app/charts";
 import { Card, Empty, Label, PageHeader, Skeleton, StatusPill } from "@/components/app/ui";
 import { useWallet } from "@/components/app/WalletProvider";
@@ -49,30 +49,25 @@ async function loadAll() {
 }
 
 export default function Admin() {
+  const { accountId, ready } = useWallet();
+  // Everyone except the contract account gets the ordinary 404, as if the page did not exist.
+  // Wait for the wallet to finish restoring first so the owner is not turned away on a slow load.
+  if (ready && accountId !== CONFIG.contractId) notFound();
+  if (!ready) {
+    return (
+      <div className="grid gap-4 md:grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-[340px]" />
+        ))}
+      </div>
+    );
+  }
   return (
     <>
       <PageHeader title="Monitor" lead="How Bridle is doing on-chain: activity, money moved, and anything that needs attention." />
-      <NeedsContract>
-        <NeedsWallet why="Connect the contract account to open the owner monitor.">
-          <Gate />
-        </NeedsWallet>
-      </NeedsContract>
+      <Body />
     </>
   );
-}
-
-function Gate() {
-  const { accountId } = useWallet();
-  if (accountId !== CONFIG.contractId) {
-    return (
-      <Card className="p-5 sm:p-6">
-        <Empty title="Owner only">
-          This page is for {CONFIG.contractId}. You are signed in as {accountId}. Everything on it is public chain data, but the page is kept to the owner.
-        </Empty>
-      </Card>
-    );
-  }
-  return <Body />;
 }
 
 function Body() {
